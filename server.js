@@ -29,9 +29,14 @@ const getSSLConfig = () => {
   return { rejectUnauthorized: false };
 };
 
+const sslConfig = getSSLConfig();
+if (!process.env.DATABASE_URL) {
+  console.warn('⚠️  DATABASE_URL is not set. Falling back to local defaults (will fail on Railway).');
+}
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: getSSLConfig(),
+  ssl: sslConfig,
   // Connection pool settings for better reliability
   max: 20,
   idleTimeoutMillis: 30000,
@@ -132,6 +137,29 @@ app.get('/health', async (req, res) => {
     res.json({ status: 'healthy', database: 'connected' });
   } catch (err) {
     res.status(503).json({ status: 'unhealthy', database: 'disconnected', error: err.message });
+  }
+});
+
+// Minimal, safe DB debug endpoint (no secrets)
+app.get('/debug/db', (req, res) => {
+  try {
+    const hasEnv = !!process.env.DATABASE_URL;
+    let host = null;
+    if (hasEnv) {
+      try {
+        const urlObj = new URL(process.env.DATABASE_URL);
+        host = urlObj.hostname || null;
+      } catch (_) {
+        host = 'unparseable';
+      }
+    }
+    res.json({
+      hasDatabaseUrl: hasEnv,
+      dbHost: host,
+      sslEnabled: !!sslConfig
+    });
+  } catch (e) {
+    res.status(500).json({ message: 'debug failed' });
   }
 });
 
