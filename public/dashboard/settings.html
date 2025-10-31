@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings - RealSphere</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+  
+  <!-- Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <header>
+      <h1>Settings</h1>
+      <div class="user-info">
+        <span>Manage your account settings</span>
+      </div>
+    </header>
+
+    <div class="page-section">
+      <h2>Profile Settings</h2>
+      
+      <div class="error-message" id="errorMessage"></div>
+      <div class="success-message" id="successMessage"></div>
+
+      <form id="profileForm" style="max-width: 600px;">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" placeholder="Enter your username" required>
+          <small style="color: rgba(255,255,255,0.6); margin-top: 0.5rem; display: block;">
+            This will be displayed on your dashboard
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" readonly style="background: rgba(0,0,0,0.2);">
+          <small style="color: rgba(255,255,255,0.6); margin-top: 0.5rem; display: block;">
+            Email cannot be changed
+          </small>
+        </div>
+
+        <div style="margin-top: 2rem;">
+          <button type="submit" class="btn">
+            <i class="fas fa-save"></i> Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="page-section">
+      <h2>Password Settings</h2>
+      <form id="passwordForm" style="max-width: 600px;">
+        <div class="form-group">
+          <label for="currentPassword">Current Password</label>
+          <input type="password" id="currentPassword" placeholder="Enter current password">
+        </div>
+        <div class="form-group">
+          <label for="newPassword">New Password</label>
+          <input type="password" id="newPassword" placeholder="Enter new password" minlength="6">
+        </div>
+        <div class="form-group">
+          <label for="confirmPassword">Confirm New Password</label>
+          <input type="password" id="confirmPassword" placeholder="Confirm new password" minlength="6">
+        </div>
+        <small style="color: rgba(255,255,255,0.6); margin-bottom: 1rem; display: block;">
+          Note: Password change functionality is coming soon
+        </small>
+        <div>
+          <button type="submit" class="btn-secondary" disabled>
+            <i class="fas fa-lock"></i> Change Password (Coming Soon)
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="page-section">
+      <h2>Appearance</h2>
+      <div class="theme-toggle">
+        <span style="color: rgba(255,255,255,0.9);">Theme:</span>
+        <div class="toggle-switch" id="themeToggle" onclick="toggleTheme()">
+          <span></span>
+        </div>
+        <span id="themeLabel" style="color: rgba(255,255,255,0.9);">Dark</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // Hide loading overlay immediately (multiple safety checks)
+    function hideLoaderNow() {
+      showLoading(false);
+    }
+    
+    // Try to hide immediately
+    if (document.readyState !== 'loading') {
+      hideLoaderNow();
+    }
+    let currentUser = null;
+
+    function toggleTheme() {
+      const current = localStorage.getItem('theme') || 'dark';
+      const newTheme = current === 'dark' ? 'light' : 'dark';
+      
+      document.body.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      
+      const toggle = document.getElementById('themeToggle');
+      const label = document.getElementById('themeLabel');
+      
+      if (toggle) {
+        toggle.classList.toggle('active', newTheme === 'light');
+      }
+      if (label) {
+        label.textContent = newTheme === 'dark' ? 'Dark' : 'Light';
+      }
+    }
+
+    function loadUserData() {
+      if (!currentUser) return;
+
+      document.getElementById('username').value = currentUser.name || '';
+      document.getElementById('email').value = currentUser.email || '';
+      
+      const theme = localStorage.getItem('theme') || 'dark';
+      const toggle = document.getElementById('themeToggle');
+      const label = document.getElementById('themeLabel');
+      
+      if (toggle) {
+        toggle.classList.toggle('active', theme === 'light');
+      }
+      if (label) {
+        label.textContent = theme === 'dark' ? 'Dark' : 'Light';
+      }
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      if (!currentUser) return;
+
+      const username = document.getElementById('username').value.trim();
+      
+      if (!username) {
+        showError('Username cannot be empty');
+        return;
+      }
+
+      try {
+        await updateUserSettings(currentUser.email, { name: username });
+        
+        // Update localStorage
+        const userData = JSON.parse(localStorage.getItem('rs_user'));
+        userData.name = username;
+        localStorage.setItem('rs_user', JSON.stringify(userData));
+        
+        showSuccess('Username updated successfully!');
+        setTimeout(() => {
+          location.reload();
+        }, 1000);
+      } catch (error) {
+        showError(error.message || 'Failed to update username');
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      currentUser = getCurrentUser();
+      if (!currentUser) return;
+
+      loadUserData();
+      
+      // Hide loading overlay immediately after data loads
+      setTimeout(() => {
+        showLoading(false);
+      }, 500);
+    });
+    
+    // Also hide on window load as backup
+    window.addEventListener('load', () => {
+      showLoading(false);
+    });
+    
+    // Force hide after 2 seconds maximum
+    setTimeout(() => {
+      showLoading(false);
+    }, 2000);
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Withdraw - RealSphere</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+  
+  <!-- Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <header>
+      <h1>Withdraw Funds</h1>
+      <div class="user-info">
+        <span id="availableProfit">Loading...</span>
+      </div>
+    </header>
+
+    <div class="page-section">
+      <h2>Request Withdrawal</h2>
+      <p style="margin-bottom: 2rem; opacity: 0.8;">Withdraw your profits to your cryptocurrency wallet</p>
+      
+      <div class="error-message" id="errorMessage"></div>
+      <div class="success-message" id="successMessage"></div>
+
+      <form id="withdrawForm" style="max-width: 600px;">
+        <div class="form-group">
+          <label for="withdrawAmount">Withdrawal Amount (USD)</label>
+          <input type="number" id="withdrawAmount" placeholder="Enter amount" min="1" step="0.01" required>
+          <small style="color: rgba(255,255,255,0.6); margin-top: 0.5rem; display: block;">
+            Available Profit: $<span id="availableProfitAmount">0.00</span>
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="cryptoType">Cryptocurrency Type</label>
+          <select id="cryptoType" required>
+            <option value="">Select cryptocurrency</option>
+            <option value="BTC">Bitcoin (BTC)</option>
+            <option value="ETH">Ethereum (ETH)</option>
+            <option value="USDT">Tether (USDT)</option>
+            <option value="SOL">Solana (SOL)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="walletAddress">Wallet Address</label>
+          <input type="text" id="walletAddress" placeholder="Enter your wallet address" required>
+          <small style="color: rgba(255,255,255,0.6); margin-top: 0.5rem; display: block;">
+            Please double-check your wallet address before submitting
+          </small>
+        </div>
+
+        <div style="margin-top: 2rem;">
+          <button type="submit" class="withdraw-btn">
+            <i class="fas fa-money-bill-wave"></i> Request Withdrawal
+          </button>
+        </div>
+      </form>
+
+      <!-- Recent Withdrawals -->
+      <div class="table-section" style="margin-top: 3rem;">
+        <h2>Withdrawal History</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Amount</th>
+              <th>Currency</th>
+              <th>Wallet</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="withdrawalsBody">
+            <tr>
+              <td colspan="5">
+                <div class="empty-state">
+                  <i class="fas fa-inbox"></i>
+                  <p>No withdrawals yet</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    let currentUser = null;
+
+    async function loadUserData() {
+      if (!currentUser) return;
+
+      try {
+        const userData = await fetchUserData(currentUser.email);
+        const totalProfit = Number(userData.totalProfit || 0);
+        
+        document.getElementById('availableProfit').textContent = `Available Profit: $${totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('availableProfitAmount').textContent = totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        
+        // Load withdrawal history
+        const withdrawals = userData.withdrawals || [];
+        const body = document.getElementById('withdrawalsBody');
+        if (body) {
+          if (withdrawals.length === 0) {
+            body.innerHTML = `
+              <tr>
+                <td colspan="5">
+                  <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No withdrawals yet</p>
+                  </div>
+                </td>
+              </tr>
+            `;
+          } else {
+            body.innerHTML = withdrawals.map(wd => {
+              const date = new Date(wd.timestamp);
+              return `<tr>
+                <td>$${Number(wd.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                <td>${sanitizeHTML(wd.cryptoType || 'N/A')}</td>
+                <td style="font-family: monospace; font-size: 0.85rem;">${sanitizeHTML(wd.walletAddress || 'N/A').substring(0, 20)}...</td>
+                <td><span style="color: ${wd.status === 'completed' ? '#4ef5a3' : '#ffc107'}">${sanitizeHTML(wd.status || 'pending')}</span></td>
+                <td>${date.toLocaleDateString()}</td>
+              </tr>`;
+            }).join('');
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        showError('Could not load withdrawal data');
+      }
+    }
+
+    document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      if (!currentUser) {
+        showError('Please login to withdraw');
+        return;
+      }
+
+      const amount = Number(document.getElementById('withdrawAmount').value);
+      const cryptoType = document.getElementById('cryptoType').value;
+      const walletAddress = document.getElementById('walletAddress').value.trim();
+
+      if (!amount || amount <= 0) {
+        showError('Please enter a valid amount');
+        return;
+      }
+
+      try {
+        const userData = await fetchUserData(currentUser.email);
+        const totalProfit = Number(userData.totalProfit || 0);
+
+        if (amount > totalProfit) {
+          showError(`Insufficient profit. Available: $${totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2})}`);
+          return;
+        }
+
+        const result = await makeWithdrawal(currentUser.email, amount, cryptoType, walletAddress);
+        showSuccess('Withdrawal request submitted successfully!');
+        document.getElementById('withdrawForm').reset();
+        await loadUserData();
+      } catch (error) {
+        showError(error.message || 'Withdrawal failed');
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      currentUser = getCurrentUser();
+      if (!currentUser) return;
+
+      await loadUserData();
+    });
+  </script>
+</body>
+</html>
+

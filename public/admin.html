@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RealSphere Admin Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      background: linear-gradient(135deg, #0a3d2e, #0f5132);
+      color: #fff;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 250px;
+      background: rgba(10, 61, 46, 0.95);
+      backdrop-filter: blur(10px);
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar h2 {
+      text-align: center;
+      padding: 20px 0;
+      font-size: 1.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      letter-spacing: 1px;
+    }
+
+    .sidebar ul {
+      list-style: none;
+      padding: 20px;
+    }
+
+    .sidebar ul li {
+      margin: 20px 0;
+    }
+
+    .sidebar ul li a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 1rem;
+      padding: 10px 15px;
+      border-radius: 10px;
+      display: block;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar ul li a:hover {
+      background: linear-gradient(90deg, #198754, #25d366);
+      box-shadow: 0 0 10px #25d366;
+      transform: translateX(5px);
+    }
+
+    .logout {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .logout button {
+      background: #198754;
+      border: none;
+      padding: 10px 25px;
+      border-radius: 8px;
+      color: white;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .logout button:hover {
+      background: #25d366;
+      box-shadow: 0 0 10px #25d366;
+    }
+
+    /* Main Content */
+    .main {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    .main header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .main header h1 {
+      font-size: 1.8rem;
+      color: #25d366;
+      text-shadow: 0 0 10px rgba(37, 211, 102, 0.6);
+    }
+
+    .main header input {
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      width: 250px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      transition: 0.3s;
+    }
+
+    .main header input:focus {
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 10px #25d366;
+    }
+
+    /* Dashboard cards */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 25px;
+      margin-bottom: 40px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 20px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 0 15px rgba(37, 211, 102, 0.3);
+    }
+
+    .card h3 {
+      font-size: 1.3rem;
+      margin-bottom: 10px;
+      color: #25d366;
+    }
+
+    .counter {
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    /* Chart Section */
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 25px;
+    }
+
+    .chart-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 20px;
+    }
+
+    .chart-card h3 {
+      text-align: center;
+      color: #25d366;
+      margin-bottom: 15px;
+    }
+
+    /* Users Table */
+    .users-table-container {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .users-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .users-table th,
+    .users-table td {
+      padding: 15px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .users-table th {
+      color: #25d366;
+      font-weight: 600;
+    }
+
+    .users-table tr:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .status-badge {
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .status-pending {
+      background: rgba(255, 193, 7, 0.2);
+      color: #ffc107;
+    }
+
+    .status-approved {
+      background: rgba(37, 211, 102, 0.2);
+      color: #25d366;
+    }
+
+    .btn-approve {
+      background: #25d366;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-weight: 500;
+      transition: 0.3s;
+    }
+
+    .btn-approve:hover {
+      background: #198754;
+      box-shadow: 0 0 10px #25d366;
+    }
+
+    .btn-approve:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+
+    .section {
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      border-radius: 10px;
+      color: white;
+      font-weight: 500;
+      z-index: 10000;
+      animation: slideIn 0.3s ease;
+    }
+
+    .notification.success {
+      background: #25d366;
+    }
+
+    .notification.error {
+      background: #dc3545;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 70px;
+      }
+      .sidebar h2, .logout {
+        display: none;
+      }
+      .sidebar ul li a {
+        text-align: center;
+        padding: 12px;
+      }
+      .users-table-container {
+        overflow-x: scroll;
+      }
+    }
+  </style>
+</head>
+<body>
+    <div class="sidebar">
+    <div>
+      <h2>RS Admin</h2>
+      <ul>
+        <li><a href="#" onclick="showSection('dashboard'); return false;">Dashboard</a></li>
+        <li><a href="#" onclick="showSection('users'); return false;">User Approvals</a></li>
+        <li><a href="#" onclick="showSection('investments'); return false;">Investments</a></li>
+      </ul>
+    </div>
+    <div class="logout">
+      <button onclick="window.location.href='index.html'">Logout</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <header>
+      <h1>Admin Dashboard</h1>
+      <input type="text" id="searchInput" placeholder="Search users..." onkeyup="filterUsers()" />
+    </header>
+
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="section">
+      <div class="cards">
+        <div class="card">
+          <h3>Total Users</h3>
+          <p class="counter" id="totalUsers">0</p>
+        </div>
+        <div class="card">
+          <h3>Pending Approvals</h3>
+          <p class="counter" id="pendingUsers">0</p>
+        </div>
+        <div class="card">
+          <h3>Approved Users</h3>
+          <p class="counter" id="approvedUsers">0</p>
+        </div>
+        <div class="card">
+          <h3>Total Investments</h3>
+          <p class="counter" id="totalInvestments">0</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Users Approval Section -->
+    <div id="usersSection" class="section" style="display: none;">
+      <div class="users-table-container">
+        <h2 style="margin-bottom: 20px; color: #25d366;">User Approval Management</h2>
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Name</th>
+              <th>Balance</th>
+              <th>Investments</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 20px;">Loading users...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Investments Section -->
+    <div id="investmentsSection" class="section" style="display: none;">
+      <h2 style="margin-bottom: 20px; color: #25d366;">All Investments</h2>
+      <div id="investmentsContainer">
+        <p style="text-align: center; padding: 20px;">Loading investments...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allUsers = [];
+
+    function showNotification(message, type = 'success') {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        notification.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
+    }
+
+    function showSection(sectionName) {
+      document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+      document.getElementById(sectionName + 'Section').style.display = 'block';
+      
+      if (sectionName === 'users') {
+        loadUsers();
+      } else if (sectionName === 'dashboard') {
+        loadDashboard();
+      }
+    }
+
+    async function loadDashboard() {
+      try {
+        const response = await fetch('/admin/users');
+        if (!response.ok) throw new Error('Failed to fetch users');
+        const data = await response.json();
+        const users = data.users || [];
+        
+        const total = users.length;
+        const pending = users.filter(u => !u.adminApproved).length;
+        const approved = users.filter(u => u.adminApproved).length;
+        const totalInvestments = users.reduce((sum, u) => {
+          return sum + (u.investments || []).reduce((s, inv) => s + Number(inv.amount || 0), 0);
+        }, 0);
+
+        document.getElementById('totalUsers').textContent = total;
+        document.getElementById('pendingUsers').textContent = pending;
+        document.getElementById('approvedUsers').textContent = approved;
+        document.getElementById('totalInvestments').textContent = '$' + totalInvestments.toLocaleString();
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+      }
+    }
+
+    async function loadUsers() {
+      try {
+        const response = await fetch('/admin/users');
+        if (!response.ok) throw new Error('Failed to fetch users');
+        const data = await response.json();
+        allUsers = data.users || [];
+        renderUsers(allUsers);
+      } catch (error) {
+        console.error('Error loading users:', error);
+        document.getElementById('usersTableBody').innerHTML = 
+          '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #dc3545;">Error loading users</td></tr>';
+      }
+    }
+
+    function renderUsers(users) {
+      const tbody = document.getElementById('usersTableBody');
+      if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No users found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = users.map(user => {
+        const status = user.adminApproved ? 'approved' : 'pending';
+        const statusText = user.adminApproved ? 'Approved' : 'Pending';
+        const investments = (user.investments || []).length;
+        const balance = Number(user.balance || 0).toFixed(2);
+        
+        return `
+          <tr>
+            <td>${escapeHtml(user.email || 'N/A')}</td>
+            <td>${escapeHtml(user.name || 'N/A')}</td>
+            <td>$${balance}</td>
+            <td>${investments}</td>
+            <td><span class="status-badge status-${status}">${statusText}</span></td>
+            <td>
+              ${!user.adminApproved ? 
+                `<button class="btn-approve" onclick="approveUser('${escapeHtml(user.email)}')">Approve</button>` :
+                '<span style="color: #25d366;">✓ Approved</span>'
+              }
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    async function approveUser(email) {
+      try {
+        const response = await fetch('/admin/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to approve user');
+        }
+
+        showNotification('User approved successfully!', 'success');
+        loadUsers();
+        loadDashboard();
+      } catch (error) {
+        console.error('Error approving user:', error);
+        showNotification(error.message || 'Failed to approve user', 'error');
+      }
+    }
+
+    function filterUsers() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = allUsers.filter(user => 
+        (user.email && user.email.toLowerCase().includes(searchTerm)) ||
+        (user.name && user.name.toLowerCase().includes(searchTerm))
+      );
+      renderUsers(filtered);
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadDashboard();
+      loadUsers();
+    });
+  </script>
+</body>
+</html>
+
+

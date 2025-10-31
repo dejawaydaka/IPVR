@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RealSphere - Premium Real Estate Investment Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="nav-brand">
+                <div class="logo">
+                    <i class="fas fa-building"></i>
+                    <span>RealSphere</span>
+                </div>
+            </div>
+            <nav class="nav">
+                <ul class="nav-list">
+                    <li><a href="index.html" class="nav-link active">Home</a></li>
+                    <li><a href="services.html" class="nav-link">Services</a></li>
+                    <li><a href="projects.html" class="nav-link">Projects</a></li>
+                    <li><a href="about.html" class="nav-link">About</a></li>
+                    <li><a href="team.html" class="nav-link">Team</a></li>
+                    <li><a href="contact.html" class="nav-link">Contact</a></li>
+                </ul>
+            </nav>
+            <div class="nav-actions">
+                <button class="btn btn-outline" id="loginBtn">Login</button>
+                <button class="btn btn-primary" id="registerBtn">Get Started</button>
+            </div>
+            <div class="mobile-menu-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section id="hero" class="hero">
+            <div class="hero-background">
+                <div class="hero-image">
+                    <img src="/home-hero.jpg" alt="Aerial view of residential estate" class="hero-bg-img">
+                    <div class="hero-overlay"></div>
+                </div>
+            </div>
+            <div class="container">
+                <div class="hero-content">
+                    <div class="hero-text">
+                        <span class="hero-badge">Premium Investment Platform</span>
+                        <h1 class="hero-title">
+                            Building Tomorrow's
+                            <span class="gradient-text">Real Estate Empire</span>
+                        </h1>
+                        <p class="hero-description">
+                            Transform your investment portfolio with our cutting-edge real estate platform. 
+                            Experience guaranteed returns through AI-powered property analysis and strategic acquisitions.
+                        </p>
+                        <div class="hero-actions">
+                            <button class="btn btn-primary btn-large" id="explorePlansBtn" type="button">
+                                <i class="fas fa-chart-line"></i>
+                                Start Investing
+                            </button>
+                            <button class="btn btn-outline btn-large" id="learnMoreBtn" type="button">
+                                <i class="fas fa-play"></i>
+                                Learn More
+                            </button>
+                        </div>
+                        <div class="hero-stats">
+                            <div class="stat">
+                                <span class="stat-number">$2.5M+</span>
+                                <span class="stat-label">Assets Managed</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">15,000+</span>
+                                <span class="stat-label">Happy Investors</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">98.5%</span>
+                                <span class="stat-label">Success Rate</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        
+
+        <!-- Trust Section -->
+        <section id="trust" class="trust-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Trusted by Industry Leaders</h2>
+                    <p class="section-description">Join thousands of satisfied investors who trust RealSphere</p>
+                </div>
+                <div class="trust-logos">
+                    <div class="trust-logo">
+                        <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80" alt="Corporate Partner 1">
+                    </div>
+                    <div class="trust-logo">
+                        <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80" alt="Corporate Partner 2">
+                    </div>
+                    <div class="trust-logo">
+                        <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80" alt="Corporate Partner 3">
+                    </div>
+                    <div class="trust-logo">
+                        <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80" alt="Corporate Partner 4">
+                    </div>
+                    <div class="trust-logo">
+                        <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80" alt="Corporate Partner 5">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section id="services" class="services-section">
+            <div class="container">
+                <div class="section-header">
+                    <span class="section-badge">Our Services</span>
+                    <h2 class="section-title">Comprehensive Real Estate Solutions</h2>
+                    <p class="section-description">
+                        From property acquisition to portfolio management, we provide end-to-end real estate investment services
+                    </p>
+                </div>
+                <div class="services-grid">
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <h3>Property Acquisition</h3>
+                        <p>Strategic property identification and acquisition with comprehensive due diligence and market analysis.</p>
+                        <a href="#" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>Portfolio Management</h3>
+                        <p>Professional portfolio optimization with AI-driven insights and automated rebalancing strategies.</p>
+                        <a href="#" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i class="fas fa-handshake"></i>
+                        </div>
+                        <h3>Investment Advisory</h3>
+                        <p>Expert guidance on real estate investment strategies tailored to your financial goals and risk tolerance.</p>
+                        <a href="#" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3>Risk Management</h3>
+                        <p>Comprehensive risk assessment and mitigation strategies to protect your investment portfolio.</p>
+                        <a href="#" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <h3>Property Development</h3>
+                        <p>End-to-end property development services from planning to construction and final delivery.</p>
+                        <a href="#" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3>Tenant Management</h3>
+                        <p>Professional tenant screening, lease management, and property maintenance services.</p>
+                        <a href="#" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Investment Plans Section (moved after services) -->
+        <section id="plans" class="plans-section">
+            <div class="container">
+                <div class="section-header">
+                    <span class="section-badge">Investment Plans</span>
+                    <h2 class="section-title">Choose a Plan and Start Earning</h2>
+                    <p class="section-description">3D frosted-glass cards with flexible ranges and daily returns</p>
+                </div>
+                <div class="plans-grid">
+                    <div class="plan-card" data-plan="Starter Plan" data-range="$50 – $499" data-rate="2%" data-days="7">
+                        <h3>Starter Plan</h3>
+                        <p class="plan-range">$50 – $499</p>
+                        <div class="plan-meta">
+                            <span class="badge">2% daily</span>
+                            <span class="badge">7 days</span>
+                            <span class="badge">Total 14%</span>
+                        </div>
+                        <button class="btn btn-primary plan-invest-btn">Invest Now</button>
+                    </div>
+
+                    <div class="plan-card" data-plan="Bronze Plan" data-range="$500 – $999" data-rate="2.5%" data-days="7">
+                        <h3>Bronze Plan</h3>
+                        <p class="plan-range">$500 – $999</p>
+                        <div class="plan-meta">
+                            <span class="badge">2.5% daily</span>
+                            <span class="badge">7 days</span>
+                            <span class="badge">Total 17.5%</span>
+                        </div>
+                        <button class="btn btn-primary plan-invest-btn">Invest Now</button>
+                    </div>
+
+                    <div class="plan-card" data-plan="Silver Plan" data-range="$1,000 – $1,999" data-rate="3%" data-days="7">
+                        <h3>Silver Plan</h3>
+                        <p class="plan-range">$1,000 – $1,999</p>
+                        <div class="plan-meta">
+                            <span class="badge">3% daily</span>
+                            <span class="badge">7 days</span>
+                            <span class="badge">Total 21%</span>
+                        </div>
+                        <button class="btn btn-primary plan-invest-btn">Invest Now</button>
+                    </div>
+
+                    <div class="plan-card" data-plan="Gold Plan" data-range="$2,000 – $3,999" data-rate="3.5%" data-days="7">
+                        <h3>Gold Plan</h3>
+                        <p class="plan-range">$2,000 – $3,999</p>
+                        <div class="plan-meta">
+                            <span class="badge">3.5% daily</span>
+                            <span class="badge">7 days</span>
+                            <span class="badge">Total 24.5%</span>
+                        </div>
+                        <button class="btn btn-primary plan-invest-btn">Invest Now</button>
+                    </div>
+
+                    <div class="plan-card" data-plan="Platinum Plan" data-range="$4,000 – $6,999" data-rate="4%" data-days="7">
+                        <h3>Platinum Plan</h3>
+                        <p class="plan-range">$4,000 – $6,999</p>
+                        <div class="plan-meta">
+                            <span class="badge">4% daily</span>
+                            <span class="badge">7 days</span>
+                            <span class="badge">Total 28%</span>
+                        </div>
+                        <button class="btn btn-primary plan-invest-btn">Invest Now</button>
+                    </div>
+
+                    <div class="plan-card" data-plan="Diamond Plan" data-range="$7,000 +" data-rate="5%" data-days="7">
+                        <h3>Diamond Plan</h3>
+                        <p class="plan-range">$7,000 +</p>
+                        <div class="plan-meta">
+                            <span class="badge">5% daily</span>
+                            <span class="badge">7 days</span>
+                            <span class="badge">Total 35%</span>
+                        </div>
+                        <button class="btn btn-primary plan-invest-btn">Invest Now</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Projects Section -->
+        <section id="projects" class="projects-section">
+            <div class="container">
+                <div class="section-header">
+                    <span class="section-badge">Featured Projects</span>
+                    <h2 class="section-title">Our Latest Real Estate Developments</h2>
+                    <p class="section-description">
+                        Discover our portfolio of successful real estate projects and investment opportunities
+                    </p>
+                </div>
+                <div class="projects-grid">
+                    <div class="project-card">
+                        <div class="project-image">
+                            <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Luxury Residential Complex">
+                            <div class="project-overlay">
+                                <div class="project-info">
+                                    <span class="project-category">Residential</span>
+                                    <h3>Luxury Residential Complex</h3>
+                                    <p>Modern living spaces with premium amenities in downtown district</p>
+                                    <div class="project-meta">
+                                        <span><i class="fas fa-map-marker-alt"></i> New York, NY</span>
+                                        <span><i class="fas fa-calendar"></i> 2024</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-card">
+                        <div class="project-image">
+                            <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Commercial Office Building">
+                            <div class="project-overlay">
+                                <div class="project-info">
+                                    <span class="project-category">Commercial</span>
+                                    <h3>Commercial Office Building</h3>
+                                    <p>State-of-the-art office spaces with sustainable design features</p>
+                                    <div class="project-meta">
+                                        <span><i class="fas fa-map-marker-alt"></i> San Francisco, CA</span>
+                                        <span><i class="fas fa-calendar"></i> 2024</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-card">
+                        <div class="project-image">
+                            <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Mixed-Use Development">
+                            <div class="project-overlay">
+                                <div class="project-info">
+                                    <span class="project-category">Mixed-Use</span>
+                                    <h3>Mixed-Use Development</h3>
+                                    <p>Integrated residential and commercial spaces with retail components</p>
+                                    <div class="project-meta">
+                                        <span><i class="fas fa-map-marker-alt"></i> Miami, FL</span>
+                                        <span><i class="fas fa-calendar"></i> 2024</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="projects-cta">
+                    <button class="btn btn-primary btn-large">
+                        <i class="fas fa-eye"></i>
+                        View All Projects
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="about-section">
+            <div class="container">
+                <div class="about-content">
+                    <div class="about-text">
+                        <h2>About RealSphere</h2>
+                        <p>
+                            RealSphere is a leading real estate investment platform that combines 
+                            cutting-edge technology with proven investment strategies. Our mission 
+                            is to democratize real estate investment and provide accessible, 
+                            profitable opportunities for investors of all levels.
+                        </p>
+                        <div class="about-stats">
+                            <div class="about-stat">
+                                <span class="stat-number">5+</span>
+                                <span class="stat-label">Years Experience</span>
+                            </div>
+                            <div class="about-stat">
+                                <span class="stat-number">$50M+</span>
+                                <span class="stat-label">Assets Under Management</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="about-visual">
+                        <div class="about-image">
+                            <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Modern Office Building" class="about-img">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Team Section -->
+        <section id="team" class="team-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Meet Our Expert Team</h2>
+                    <p class="section-description">Experienced professionals dedicated to your investment success</p>
+                </div>
+                <div class="team-grid">
+                    <div class="team-member">
+                        <div class="member-image">
+                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="CEO">
+                        </div>
+                        <div class="member-info">
+                            <h3>Michael Chen</h3>
+                            <p class="member-role">CEO & Founder</p>
+                            <p class="member-bio">15+ years in real estate investment and portfolio management</p>
+                        </div>
+                    </div>
+                    <div class="team-member">
+                        <div class="member-image">
+                            <img src="https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="CTO">
+                        </div>
+                        <div class="member-info">
+                            <h3>Sarah Johnson</h3>
+                            <p class="member-role">Chief Technology Officer</p>
+                            <p class="member-bio">Expert in AI-driven investment algorithms and fintech solutions</p>
+                        </div>
+                    </div>
+                    <div class="team-member">
+                        <div class="member-image">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="CFO">
+                        </div>
+                        <div class="member-info">
+                            <h3>David Rodriguez</h3>
+                            <p class="member-role">Chief Financial Officer</p>
+                            <p class="member-bio">Former Wall Street analyst with expertise in risk management</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials Section -->
+        <section id="testimonials" class="testimonials-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">What Our Investors Say</h2>
+                    <p class="section-description">Real stories from successful investors</p>
+                </div>
+                <div class="testimonials-grid">
+                    <div class="testimonial-card">
+                        <div class="testimonial-content">
+                            <div class="quote-icon">
+                                <i class="fas fa-quote-left"></i>
+                            </div>
+                            <p>"RealSphere transformed my investment strategy. The returns have been consistently impressive, and the platform is incredibly user-friendly."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80" alt="Client">
+                            <div class="author-info">
+                                <h4>Jennifer Martinez</h4>
+                                <span>Real Estate Investor</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card">
+                        <div class="testimonial-content">
+                            <div class="quote-icon">
+                                <i class="fas fa-quote-left"></i>
+                            </div>
+                            <p>"The AI-powered insights have helped me make better investment decisions. I've seen a 40% increase in my portfolio value in just one year."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80" alt="Client">
+                            <div class="author-info">
+                                <h4>Robert Kim</h4>
+                                <span>Portfolio Manager</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card">
+                        <div class="testimonial-content">
+                            <div class="quote-icon">
+                                <i class="fas fa-quote-left"></i>
+                            </div>
+                            <p>"Outstanding customer service and transparent reporting. I trust RealSphere with my entire real estate investment portfolio."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80" alt="Client">
+                            <div class="author-info">
+                                <h4>Amanda Thompson</h4>
+                                <span>Business Owner</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- News Section -->
+        <section id="news" class="news-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Latest News & Insights</h2>
+                    <p class="section-description">Stay updated with market trends and investment opportunities</p>
+                </div>
+                <div class="news-grid">
+                    <article class="news-card">
+                        <div class="news-image">
+                            <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="Real Estate Market">
+                        </div>
+                        <div class="news-content">
+                            <div class="news-meta">
+                                <span class="news-date">Dec 15, 2024</span>
+                                <span class="news-category">Market Analysis</span>
+                            </div>
+                            <h3>Real Estate Market Outlook for 2025</h3>
+                            <p>Our analysts predict strong growth in commercial real estate investments with emerging opportunities in sustainable properties.</p>
+                            <a href="#" class="news-link">Read More <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </article>
+                    <article class="news-card">
+                        <div class="news-image">
+                            <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="Investment Strategy">
+                        </div>
+                        <div class="news-content">
+                            <div class="news-meta">
+                                <span class="news-date">Dec 12, 2024</span>
+                                <span class="news-category">Investment Tips</span>
+                            </div>
+                            <h3>5 Strategies for Diversified Real Estate Portfolio</h3>
+                            <p>Learn how to build a resilient real estate portfolio that can weather market fluctuations and generate consistent returns.</p>
+                            <a href="#" class="news-link">Read More <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </article>
+                    <article class="news-card">
+                        <div class="news-image">
+                            <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="Technology">
+                        </div>
+                        <div class="news-content">
+                            <div class="news-meta">
+                                <span class="news-date">Dec 10, 2024</span>
+                                <span class="news-category">Technology</span>
+                            </div>
+                            <h3>AI Revolution in Real Estate Investment</h3>
+                            <p>Discover how artificial intelligence is transforming the way we analyze and invest in real estate properties.</p>
+                            <a href="#" class="news-link">Read More <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="contact-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Get In Touch</h2>
+                    <p class="section-description">
+                        Ready to start your investment journey? Contact our team today.
+                    </p>
+                </div>
+                <div class="contact-content">
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <i class="fas fa-envelope"></i>
+                            <span>support@realsphere.com</span>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-phone"></i>
+                            <span>+1 (555) 123-4567</span>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>New York, NY</span>
+                        </div>
+                    </div>
+                    <form class="contact-form" id="contactForm">
+                        <div class="form-group">
+                            <input type="text" placeholder="Your Name" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" placeholder="Your Email" required>
+                        </div>
+                        <div class="form-group">
+                            <textarea placeholder="Your Message" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="logo">
+                        <i class="fas fa-building"></i>
+                        <span>RealSphere</span>
+                    </div>
+                    <p>Premium real estate investment platform</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Company</h4>
+                        <ul>
+                            <li><a href="#about">About</a></li>
+                            <li><a href="#careers">Careers</a></li>
+                            <li><a href="#press">Press</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Investors</h4>
+                        <ul>
+                            <li><a href="#plans">Plans</a></li>
+                            <li><a href="#dashboard">Dashboard</a></li>
+                            <li><a href="#support">Support</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Legal</h4>
+                        <ul>
+                            <li><a href="#privacy">Privacy</a></li>
+                            <li><a href="#terms">Terms</a></li>
+                            <li><a href="#compliance">Compliance</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 RealSphere. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Login to Your Account</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form class="modal-form" id="loginForm">
+                <div class="form-group">
+                    <input type="email" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" placeholder="Password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Your Account</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form class="modal-form" id="registerForm">
+                <div class="form-group">
+                    <input type="text" id="registerName" placeholder="Full Name" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" placeholder="Password" required>
+                </div>
+                <div class="form-group">
+                    <input type="file" id="registerAvatar" accept="image/*">
+                </div>
+                <button type="submit" class="btn btn-primary">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Invest Modal -->
+    <div class="modal" id="investModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="investModalTitle">Invest</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form class="modal-form" id="investForm">
+                <div class="form-group">
+                    <input type="number" id="investAmount" placeholder="Amount (USD)" min="1" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Confirm Investment</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

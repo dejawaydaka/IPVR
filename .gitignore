@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+
+# Data files (no longer used, but keeping for safety)
+data.json
+data.json.tmp
+
+# Logs
+server.log
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Uploads (keep directory structure)
+public/uploads/*.jpeg
+public/uploads/*.jpg
+public/uploads/*.png
+public/uploads/*.gif
+public/uploads/proofs/*
+
+# Server PID
+server.pid
+
+# Build files
+dist/
+build/
+

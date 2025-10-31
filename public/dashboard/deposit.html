@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deposit - RealSphere</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+  
+  <!-- Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <header>
+      <h1>Make a Deposit</h1>
+      <div class="user-info">
+        <span>Deposit crypto to fund your account</span>
+      </div>
+    </header>
+
+    <div class="page-section">
+      <h2>Select Deposit Method</h2>
+      <p style="margin-bottom: 2rem; opacity: 0.8;">Choose your preferred cryptocurrency and send funds to the wallet address</p>
+      
+      <div class="error-message" id="errorMessage"></div>
+      <div class="success-message" id="successMessage"></div>
+
+      <div class="crypto-grid" id="cryptoGrid">
+        <!-- Crypto cards will be rendered here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Deposit Modal -->
+  <div class="modal-overlay" id="depositModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="depositModalTitle">Confirm Deposit</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="depositForm">
+          <div class="form-group">
+            <label>Cryptocurrency</label>
+            <input type="text" id="depositCryptoName" readonly style="background: rgba(0,0,0,0.2);">
+          </div>
+          <div class="form-group">
+            <label>Wallet Address</label>
+            <input type="text" id="depositWalletAddress" readonly style="background: rgba(0,0,0,0.2); font-family: monospace;">
+          </div>
+          <div class="form-group">
+            <label>Deposit Amount (USD)</label>
+            <input type="number" id="depositAmount" placeholder="Enter amount you sent" min="1" step="0.01" required>
+          </div>
+          <div class="form-group">
+            <label>Transaction Hash (Optional)</label>
+            <input type="text" id="transactionHash" placeholder="Enter transaction hash if available">
+          </div>
+          <div class="form-group">
+            <label>Upload Payment Proof</label>
+            <div class="file-upload" onclick="document.getElementById('proofFile').click()">
+              <input type="file" id="proofFile" accept="image/*" onchange="handleFileSelect(event)">
+              <label class="file-upload-label">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span id="fileName">Click to upload proof of payment</span>
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('depositModal')">Cancel</button>
+        <button class="btn" onclick="confirmDeposit()">Confirm Deposit</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // Hide loading overlay immediately (multiple safety checks)
+    function hideLoaderNow() {
+      showLoading(false);
+    }
+    
+    // Try to hide immediately
+    if (document.readyState !== 'loading') {
+      hideLoaderNow();
+    }
+    const depositMethods = [
+      { name: "Bitcoin (BTC)", symbol: "BTC", address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", qr: "" },
+      { name: "Ethereum (ETH)", symbol: "ETH", address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb", qr: "" },
+      { name: "USDT (TRC20)", symbol: "USDT", address: "TQzKjJmhUjq2sVtXwYzAbCdEfGhIjKlMn", qr: "" }
+    ];
+
+    let selectedCrypto = null;
+    let proofFile = null;
+    let currentUser = null;
+
+    function renderCryptoMethods() {
+      const grid = document.getElementById('cryptoGrid');
+      if (!grid) return;
+
+      grid.innerHTML = depositMethods.map((crypto, index) => `
+        <div class="crypto-card" style="animation-delay: ${index * 0.1}s">
+          <div class="crypto-icon">
+            <i class="fab fa-${crypto.symbol === 'BTC' ? 'bitcoin' : crypto.symbol === 'ETH' ? 'ethereum' : 'coins'}"></i>
+          </div>
+          <div class="crypto-name">${crypto.name}</div>
+          <div class="crypto-symbol">${crypto.symbol}</div>
+          <div class="address-section">
+            <div class="address-label">Wallet Address:</div>
+            <div class="address-box" id="address-${crypto.symbol}">${crypto.address}</div>
+            <button class="copy-btn" onclick="copyAddress('${crypto.symbol}')">
+              <i class="fas fa-copy"></i> Copy Address
+            </button>
+          </div>
+          <button class="deposit-btn" style="margin-top: 1rem; width: 100%;" onclick="openDepositModal('${crypto.symbol}')">
+            <i class="fas fa-plus-circle"></i> Deposit ${crypto.symbol}
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function copyAddress(symbol) {
+      const crypto = depositMethods.find(c => c.symbol === symbol);
+      if (!crypto) return;
+
+      const address = crypto.address;
+      navigator.clipboard.writeText(address).then(() => {
+        showToast('Address copied to clipboard!', 'success');
+      }).catch(err => {
+        showError('Failed to copy address');
+      });
+    }
+
+    function openDepositModal(symbol) {
+      selectedCrypto = depositMethods.find(c => c.symbol === symbol);
+      if (!selectedCrypto) return;
+
+      if (!currentUser) {
+        showError('Please login to deposit');
+        return;
+      }
+
+      document.getElementById('depositCryptoName').value = selectedCrypto.name;
+      document.getElementById('depositWalletAddress').value = selectedCrypto.address;
+      document.getElementById('depositAmount').value = '';
+      document.getElementById('transactionHash').value = '';
+      document.getElementById('proofFile').value = '';
+      document.getElementById('fileName').textContent = 'Click to upload proof of payment';
+      proofFile = null;
+
+      openModal('depositModal');
+    }
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+          showError('File size must be less than 5MB');
+          return;
+        }
+        proofFile = file;
+        document.getElementById('fileName').textContent = file.name;
+      }
+    }
+
+    async function confirmDeposit() {
+      if (!selectedCrypto || !currentUser) return;
+
+      const amount = Number(document.getElementById('depositAmount').value);
+      const transactionHash = document.getElementById('transactionHash').value.trim();
+
+      if (!amount || amount <= 0) {
+        showError('Please enter a valid amount');
+        return;
+      }
+
+      try {
+        await makeDeposit(currentUser.email, amount, selectedCrypto.symbol, transactionHash, proofFile);
+        showSuccess('Deposit request submitted! Your balance will be updated after confirmation.');
+        closeModal('depositModal');
+        document.getElementById('depositForm').reset();
+        proofFile = null;
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 2000);
+      } catch (error) {
+        showError(error.message || 'Deposit failed');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      currentUser = getCurrentUser();
+      if (!currentUser) return;
+
+      renderCryptoMethods();
+      
+      // Hide loading overlay immediately
+      showLoading(false);
+    });
+    
+    // Also hide on window load as backup
+    window.addEventListener('load', () => {
+      showLoading(false);
+    });
+    
+    // Force hide after 2 seconds maximum
+    setTimeout(() => {
+      showLoading(false);
+    }, 2000);
+  </script>
+</body>
+</html>
+
