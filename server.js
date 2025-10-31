@@ -228,6 +228,9 @@ app.post('/login', [
     }
 
     try {
+        // Check database connection
+        await checkDatabase();
+
         const { email, password } = req.body;
 
         const { rows: users } = await pool.query(
@@ -253,6 +256,9 @@ app.post('/login', [
         res.json({ message: 'Login successful', user: userData });
     } catch (err) {
         console.error('Login error:', err);
+        if (err.message === 'Database connection failed' || err.message === 'DATABASE_URL not set') {
+            return res.status(503).json({ message: 'Database service unavailable. Please try again later.' });
+        }
         res.status(500).json({ message: 'Server error' });
     }
 });

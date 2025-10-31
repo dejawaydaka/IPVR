@@ -386,12 +386,19 @@ class RealSphere {
                 this.showNotification('Login successful!', 'success');
                 this.hideModal('loginModal');
                 this.updateAuthUI();
+                // Redirect to dashboard for seamless UX
+                try { window.location.href = 'dashboard/index.html'; } catch(_) {}
             } else {
-                this.showNotification('Login failed. Please try again.', 'error');
+                let errorMsg = 'Login failed. Please try again.';
+                try {
+                    const errData = await response.json();
+                    if (errData && errData.message) errorMsg = errData.message;
+                } catch(_) {}
+                this.showNotification(errorMsg, 'error');
             }
         } catch (error) {
             console.error('Login error:', error);
-            this.showNotification('Login failed. Please try again.', 'error');
+            this.showNotification(`Login error: ${error.message || 'Network error'}`, 'error');
         }
     }
 
@@ -448,12 +455,19 @@ class RealSphere {
                     });
                 }
                 this.updateAuthUI();
+                // Optional redirect to dashboard after registration
+                try { window.location.href = 'dashboard/index.html'; } catch(_) {}
             } else {
-                this.showNotification('Registration failed. Please try again.', 'error');
+                let errorMsg = 'Registration failed. Please try again.';
+                try {
+                    const errData = await response.json();
+                    if (errData && errData.message) errorMsg = errData.message;
+                } catch(_) {}
+                this.showNotification(errorMsg, 'error');
             }
         } catch (error) {
             console.error('Registration error:', error);
-            this.showNotification('Registration failed. Please try again.', 'error');
+            this.showNotification(`Registration error: ${error.message || 'Network error'}`, 'error');
         }
     }
 
