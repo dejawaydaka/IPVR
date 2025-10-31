@@ -11,22 +11,59 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // PostgreSQL connection pool
+// Railway and most cloud providers require SSL
+const getSSLConfig = () => {
+  if (!process.env.DATABASE_URL) {
+    return false;
+  }
+  
+  // Local development (localhost) doesn't need SSL
+  const isLocal = process.env.DATABASE_URL.includes('localhost') || 
+                  process.env.DATABASE_URL.includes('127.0.0.1');
+  
+  if (isLocal) {
+    return false;
+  }
+  
+  // Production/cloud databases (Railway, Heroku, etc.) need SSL
+  return { rejectUnauthorized: false };
+};
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('railway') || process.env.DATABASE_URL?.includes('localhost') === false
-    ? { rejectUnauthorized: false }
-    : false
+  ssl: getSSLConfig(),
+  // Connection pool settings for better reliability
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
 });
 
-// Test database connection
+// Test database connection (non-blocking for Railway)
+let dbConnected = false;
+
 pool.connect()
-  .then(() => {
+  .then((client) => {
     console.log('✅ Connected to PostgreSQL');
+    dbConnected = true;
+    client.release();
   })
   .catch(err => {
-    console.error('❌ Database connection error:', err);
-    process.exit(1);
+    console.error('❌ Database connection error:', err.message);
+    console.error('⚠️  Server will start but database operations may fail');
+    console.error('💡 Make sure DATABASE_URL is set and PostgreSQL service is running');
+    // Don't exit - allow server to start (Railway needs the process to stay alive)
+    dbConnected = false;
   });
+
+// Health check endpoint for database
+app.get('/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'healthy', database: 'connected' });
+  } catch (err) {
+    res.status(503).json({ status: 'unhealthy', database: 'disconnected', error: err.message });
+  }
+});
 
 // Enable CORS for all routes
 app.use(cors());
@@ -104,6 +141,20 @@ async function calculateUserProfits(userId) {
     }
 }
 
+// Helper to check database connection before queries
+async function checkDatabase() {
+    if (!process.env.DATABASE_URL) {
+        throw new Error('DATABASE_URL not set');
+    }
+    try {
+        await pool.query('SELECT 1');
+        return true;
+    } catch (err) {
+        console.error('Database check failed:', err.message);
+        throw new Error('Database connection failed');
+    }
+}
+
 // Public route to view investment plans
 app.get('/plans', (req, res) => {
     res.json({
@@ -130,6 +181,9 @@ app.post('/register', [
     }
     
     try {
+        // Check database connection first
+        await checkDatabase();
+        
         const { email, password, name } = req.body;
 
         // Check if user exists
@@ -156,6 +210,9 @@ app.post('/register', [
         res.json({ message: 'Registered successfully' });
     } catch (err) {
         console.error('Registration error:', err);
+        if (err.message === 'Database connection failed' || err.message === 'DATABASE_URL not set') {
+            return res.status(503).json({ message: 'Database service unavailable. Please try again later.' });
+        }
         res.status(500).json({ message: 'Server error' });
     }
 });
