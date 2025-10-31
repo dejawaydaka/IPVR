@@ -10,6 +10,9 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Behind Railway/Proxies - trust X-Forwarded-* headers for correct client IPs
+app.set('trust proxy', 1);
+
 // PostgreSQL connection pool
 // Railway and most cloud providers require SSL
 const getSSLConfig = () => {
