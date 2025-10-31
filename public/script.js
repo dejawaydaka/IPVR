@@ -44,6 +44,34 @@ class RealSphere {
             });
         }
 
+        // Mobile menu login/register buttons
+        const loginBtnMobile = document.getElementById('loginBtnMobile');
+        const registerBtnMobile = document.getElementById('registerBtnMobile');
+        
+        if (loginBtnMobile) {
+            loginBtnMobile.addEventListener('click', () => {
+                const user = this.getCurrentUser();
+                if (user) {
+                    window.location.href = 'dashboard/index.html';
+                } else {
+                    this.showModal('loginModal');
+                    nav.classList.remove('open'); // Close mobile menu
+                }
+            });
+        }
+
+        if (registerBtnMobile) {
+            registerBtnMobile.addEventListener('click', () => {
+                const user = this.getCurrentUser();
+                if (user) {
+                    this.logout();
+                } else {
+                    this.showModal('registerModal');
+                    nav.classList.remove('open'); // Close mobile menu
+                }
+            });
+        }
+
         // Modal controls
         const loginBtn = document.getElementById('loginBtn');
         const registerBtn = document.getElementById('registerBtn');
