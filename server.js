@@ -38,14 +38,84 @@ const pool = new Pool({
   connectionTimeoutMillis: 10000,
 });
 
-// Test database connection (non-blocking for Railway)
+// Test database connection (non-blocking for Railway) and ensure schema
 let dbConnected = false;
 
+async function ensureSchema() {
+  const createUsers = `
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password VARCHAR(255) NOT NULL,
+      name VARCHAR(255),
+      profile_image TEXT,
+      balance NUMERIC(12, 2) DEFAULT 0,
+      total_investment NUMERIC(12, 2) DEFAULT 0,
+      total_profit NUMERIC(12, 2) DEFAULT 0,
+      total_deposits NUMERIC(12, 2) DEFAULT 0,
+      bonus NUMERIC(12, 2) DEFAULT 0,
+      admin_approved BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`;
+
+  const createInvestments = `
+    CREATE TABLE IF NOT EXISTS investments (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      plan VARCHAR(100) NOT NULL,
+      amount NUMERIC(12, 2) NOT NULL,
+      daily_percent NUMERIC(5, 4) NOT NULL,
+      days INTEGER DEFAULT 7,
+      start_date BIGINT NOT NULL,
+      profit NUMERIC(12, 2) DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`;
+
+  const createDeposits = `
+    CREATE TABLE IF NOT EXISTS deposits (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      amount NUMERIC(12, 2) NOT NULL,
+      currency VARCHAR(10) DEFAULT 'USD',
+      transaction_hash TEXT,
+      proof TEXT,
+      status VARCHAR(20) DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`;
+
+  const createWithdrawals = `
+    CREATE TABLE IF NOT EXISTS withdrawals (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      amount NUMERIC(12, 2) NOT NULL,
+      crypto_type VARCHAR(50) NOT NULL,
+      wallet_address TEXT NOT NULL,
+      status VARCHAR(20) DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`;
+
+  await pool.query(createUsers);
+  await pool.query(createInvestments);
+  await pool.query(createDeposits);
+  await pool.query(createWithdrawals);
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_investments_user_id ON investments(user_id);');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_deposits_user_id ON deposits(user_id);');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_withdrawals_user_id ON withdrawals(user_id);');
+}
+
 pool.connect()
-  .then((client) => {
+  .then(async (client) => {
     console.log('✅ Connected to PostgreSQL');
     dbConnected = true;
     client.release();
+    try {
+      await ensureSchema();
+      console.log('🛠️  Database schema ensured');
+    } catch (schemaErr) {
+      console.error('Schema init error:', schemaErr.message);
+    }
   })
   .catch(err => {
     console.error('❌ Database connection error:', err.message);
@@ -151,7 +221,14 @@ async function checkDatabase() {
         return true;
     } catch (err) {
         console.error('Database check failed:', err.message);
-        throw new Error('Database connection failed');
+        // Try to re-initialize connection once
+        try {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            await pool.query('SELECT 1');
+            return true;
+        } catch (_) {
+            throw new Error('Database connection failed');
+        }
     }
 }
 
