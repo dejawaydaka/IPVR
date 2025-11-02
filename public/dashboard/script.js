@@ -359,8 +359,7 @@ function renderSidebar(currentPage = '') {
     { path: 'investments.html', name: 'Investments', icon: 'fas fa-coins' },
     { path: 'deposit.html', name: 'Deposit', icon: 'fas fa-plus-circle' },
     { path: 'withdraw.html', name: 'Withdraw', icon: 'fas fa-money-bill-wave' },
-    { path: 'settings.html', name: 'Settings', icon: 'fas fa-cog' },
-    { path: 'admin.html', name: 'Admin Panel', icon: 'fas fa-shield-alt' }
+    { path: 'settings.html', name: 'Settings', icon: 'fas fa-cog' }
   ];
   
   currentPage = currentPath;
@@ -419,17 +418,25 @@ function setupMobileMenu() {
   const sidebar = document.querySelector('.sidebar');
   
   if (mobileToggle && sidebar) {
-    mobileToggle.addEventListener('click', () => {
+    const toggleMenu = () => {
+      const isOpen = sidebar.classList.contains('open');
       sidebar.classList.toggle('open');
       mobileToggle.classList.toggle('active');
+      document.body.classList.toggle('sidebar-open');
+      
       const icon = mobileToggle.querySelector('i');
-      if (sidebar.classList.contains('open')) {
+      if (!isOpen) {
         icon.classList.remove('fa-bars');
         icon.classList.add('fa-times');
       } else {
         icon.classList.remove('fa-times');
         icon.classList.add('fa-bars');
       }
+    };
+    
+    mobileToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMenu();
     });
     
     // Close menu when clicking on a link
@@ -438,6 +445,7 @@ function setupMobileMenu() {
         if (window.innerWidth <= 768) {
           sidebar.classList.remove('open');
           mobileToggle.classList.remove('active');
+          document.body.classList.remove('sidebar-open');
           const icon = mobileToggle.querySelector('i');
           icon.classList.remove('fa-times');
           icon.classList.add('fa-bars');
@@ -445,16 +453,19 @@ function setupMobileMenu() {
       });
     });
     
-    // Close menu when clicking outside
+    // Close menu when clicking on overlay
     document.addEventListener('click', (e) => {
       if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
         if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
-          sidebar.classList.remove('open');
-          mobileToggle.classList.remove('active');
-          const icon = mobileToggle.querySelector('i');
-          icon.classList.remove('fa-times');
-          icon.classList.add('fa-bars');
+          toggleMenu();
         }
+      }
+    });
+    
+    // Close on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+        toggleMenu();
       }
     });
   }

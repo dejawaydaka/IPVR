@@ -103,14 +103,65 @@ async function ensureSchema() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );`;
 
+  const createWallets = `
+    CREATE TABLE IF NOT EXISTS wallets (
+      id SERIAL PRIMARY KEY,
+      coin_name VARCHAR(100) NOT NULL UNIQUE,
+      address TEXT NOT NULL,
+      qr_url TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`;
+
+  const createProjects = `
+    CREATE TABLE IF NOT EXISTS projects (
+      id SERIAL PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      description TEXT,
+      image_url TEXT,
+      slug VARCHAR(255) UNIQUE NOT NULL,
+      content_html TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`;
+
+  const createTestimonials = `
+    CREATE TABLE IF NOT EXISTS testimonials (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      image_url TEXT,
+      content TEXT NOT NULL,
+      date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`;
+
+  const createNews = `
+    CREATE TABLE IF NOT EXISTS news (
+      id SERIAL PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      summary TEXT,
+      content_html TEXT NOT NULL,
+      image_url TEXT,
+      slug VARCHAR(255) UNIQUE NOT NULL,
+      date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`;
+
   await pool.query(createUsers);
   await pool.query(createInvestments);
   await pool.query(createDeposits);
   await pool.query(createWithdrawals);
+  await pool.query(createWallets);
+  await pool.query(createProjects);
+  await pool.query(createTestimonials);
+  await pool.query(createNews);
   await pool.query('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_investments_user_id ON investments(user_id);');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_deposits_user_id ON deposits(user_id);');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_withdrawals_user_id ON withdrawals(user_id);');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_projects_slug ON projects(slug);');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_news_slug ON news(slug);');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_news_date ON news(date);');
 }
 
 pool.connect()
@@ -1275,6 +1326,276 @@ app.post('/api/admin/withdrawals/:id/reject', async (req, res) => {
         res.json({ message: 'Withdrawal rejected and amount refunded' });
     } catch (err) {
         console.error('Reject withdrawal error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// ===== WALLET MANAGEMENT ROUTES =====
+app.get('/api/wallets', async (req, res) => {
+    try {
+        const { rows: wallets } = await pool.query(
+            'SELECT * FROM wallets ORDER BY coin_name ASC'
+        );
+        res.json({ wallets });
+    } catch (err) {
+        console.error('Get wallets error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/admin/wallets', [
+    body('coin_name').notEmpty(),
+    body('address').notEmpty()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: errors.array()[0].msg });
+    }
+    
+    try {
+        const { coin_name, address, qr_url } = req.body;
+        
+        // Check if wallet exists
+        const { rows: existing } = await pool.query(
+            'SELECT id FROM wallets WHERE coin_name = $1',
+            [coin_name]
+        );
+        
+        if (existing.length > 0) {
+            // Update existing
+            await pool.query(
+                'UPDATE wallets SET address = $1, qr_url = $2, updated_at = CURRENT_TIMESTAMP WHERE coin_name = $3',
+                [address, qr_url || null, coin_name]
+            );
+            res.json({ message: 'Wallet updated successfully' });
+        } else {
+            // Create new
+            await pool.query(
+                'INSERT INTO wallets (coin_name, address, qr_url) VALUES ($1, $2, $3)',
+                [coin_name, address, qr_url || null]
+            );
+            res.json({ message: 'Wallet added successfully' });
+        }
+    } catch (err) {
+        console.error('Wallet management error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// ===== PROJECTS ROUTES =====
+app.get('/api/projects', async (req, res) => {
+    try {
+        const { rows: projects } = await pool.query(
+            'SELECT id, title, description, image_url, slug FROM projects ORDER BY created_at DESC'
+        );
+        res.json({ projects });
+    } catch (err) {
+        console.error('Get projects error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/projects/:slug', async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const { rows: projects } = await pool.query(
+            'SELECT * FROM projects WHERE slug = $1',
+            [slug]
+        );
+        
+        if (projects.length === 0) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
+        
+        res.json({ project: projects[0] });
+    } catch (err) {
+        console.error('Get project error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/admin/projects', [
+    body('title').notEmpty(),
+    body('slug').notEmpty()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: errors.array()[0].msg });
+    }
+    
+    try {
+        const { id, title, description, image_url, slug, content_html } = req.body;
+        
+        if (id) {
+            // Update existing
+            await pool.query(
+                'UPDATE projects SET title = $1, description = $2, image_url = $3, slug = $4, content_html = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $6',
+                [title, description || null, image_url || null, slug, content_html || null, id]
+            );
+            res.json({ message: 'Project updated successfully' });
+        } else {
+            // Create new
+            const { rows: newProject } = await pool.query(
+                'INSERT INTO projects (title, description, image_url, slug, content_html) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+                [title, description || null, image_url || null, slug, content_html || null]
+            );
+            res.json({ message: 'Project created successfully', id: newProject[0].id });
+        }
+    } catch (err) {
+        if (err.code === '23505') { // Unique constraint violation
+            return res.status(400).json({ message: 'Slug already exists' });
+        }
+        console.error('Project management error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.delete('/api/admin/projects/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query('DELETE FROM projects WHERE id = $1', [id]);
+        res.json({ message: 'Project deleted successfully' });
+    } catch (err) {
+        console.error('Delete project error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// ===== TESTIMONIALS ROUTES =====
+app.get('/api/testimonials', async (req, res) => {
+    try {
+        const { rows: testimonials } = await pool.query(
+            'SELECT * FROM testimonials ORDER BY date_added DESC'
+        );
+        res.json({ testimonials });
+    } catch (err) {
+        console.error('Get testimonials error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/admin/testimonials', [
+    body('name').notEmpty(),
+    body('content').notEmpty()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: errors.array()[0].msg });
+    }
+    
+    try {
+        const { id, name, image_url, content } = req.body;
+        
+        if (id) {
+            // Update existing
+            await pool.query(
+                'UPDATE testimonials SET name = $1, image_url = $2, content = $3 WHERE id = $4',
+                [name, image_url || null, content, id]
+            );
+            res.json({ message: 'Testimonial updated successfully' });
+        } else {
+            // Create new
+            const { rows: newTestimonial } = await pool.query(
+                'INSERT INTO testimonials (name, image_url, content) VALUES ($1, $2, $3) RETURNING id',
+                [name, image_url || null, content]
+            );
+            res.json({ message: 'Testimonial created successfully', id: newTestimonial[0].id });
+        }
+    } catch (err) {
+        console.error('Testimonial management error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.delete('/api/admin/testimonials/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query('DELETE FROM testimonials WHERE id = $1', [id]);
+        res.json({ message: 'Testimonial deleted successfully' });
+    } catch (err) {
+        console.error('Delete testimonial error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// ===== NEWS ROUTES =====
+app.get('/api/news', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 10;
+        const { rows: news } = await pool.query(
+            'SELECT id, title, summary, image_url, slug, date FROM news ORDER BY date DESC LIMIT $1',
+            [limit]
+        );
+        res.json({ news });
+    } catch (err) {
+        console.error('Get news error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/news/:slug', async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const { rows: news } = await pool.query(
+            'SELECT * FROM news WHERE slug = $1',
+            [slug]
+        );
+        
+        if (news.length === 0) {
+            return res.status(404).json({ message: 'Article not found' });
+        }
+        
+        res.json({ article: news[0] });
+    } catch (err) {
+        console.error('Get article error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/admin/news', [
+    body('title').notEmpty(),
+    body('slug').notEmpty(),
+    body('content_html').notEmpty()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: errors.array()[0].msg });
+    }
+    
+    try {
+        const { id, title, summary, image_url, slug, content_html } = req.body;
+        
+        if (id) {
+            // Update existing
+            await pool.query(
+                'UPDATE news SET title = $1, summary = $2, image_url = $3, slug = $4, content_html = $5 WHERE id = $6',
+                [title, summary || null, image_url || null, slug, content_html, id]
+            );
+            res.json({ message: 'Article updated successfully' });
+        } else {
+            // Create new
+            const { rows: newArticle } = await pool.query(
+                'INSERT INTO news (title, summary, image_url, slug, content_html) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+                [title, summary || null, image_url || null, slug, content_html]
+            );
+            res.json({ message: 'Article created successfully', id: newArticle[0].id });
+        }
+    } catch (err) {
+        if (err.code === '23505') { // Unique constraint violation
+            return res.status(400).json({ message: 'Slug already exists' });
+        }
+        console.error('News management error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.delete('/api/admin/news/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query('DELETE FROM news WHERE id = $1', [id]);
+        res.json({ message: 'Article deleted successfully' });
+    } catch (err) {
+        console.error('Delete article error:', err);
         res.status(500).json({ message: 'Server error' });
     }
 });

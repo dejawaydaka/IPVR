@@ -54,10 +54,57 @@ CREATE TABLE IF NOT EXISTS withdrawals (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Wallets table for admin-managed crypto addresses
+CREATE TABLE IF NOT EXISTS wallets (
+  id SERIAL PRIMARY KEY,
+  coin_name VARCHAR(100) NOT NULL UNIQUE,
+  address TEXT NOT NULL,
+  qr_url TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Projects table for featured projects
+CREATE TABLE IF NOT EXISTS projects (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  image_url TEXT,
+  slug VARCHAR(255) UNIQUE NOT NULL,
+  content_html TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Testimonials table
+CREATE TABLE IF NOT EXISTS testimonials (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  image_url TEXT,
+  content TEXT NOT NULL,
+  date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- News/Insights table
+CREATE TABLE IF NOT EXISTS news (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  summary TEXT,
+  content_html TEXT NOT NULL,
+  image_url TEXT,
+  slug VARCHAR(255) UNIQUE NOT NULL,
+  date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_investments_user_id ON investments(user_id);
 CREATE INDEX IF NOT EXISTS idx_deposits_user_id ON deposits(user_id);
 CREATE INDEX IF NOT EXISTS idx_withdrawals_user_id ON withdrawals(user_id);
 CREATE INDEX IF NOT EXISTS idx_investments_start_date ON investments(start_date);
+CREATE INDEX IF NOT EXISTS idx_projects_slug ON projects(slug);
+CREATE INDEX IF NOT EXISTS idx_news_slug ON news(slug);
+CREATE INDEX IF NOT EXISTS idx_news_date ON news(date);
 
