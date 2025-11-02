@@ -1090,6 +1090,195 @@ app.post('/admin/approve', [
     }
 });
 
+// Admin stats endpoint
+app.get('/api/admin/stats', async (req, res) => {
+    try {
+        // Total users
+        const { rows: userCount } = await pool.query('SELECT COUNT(*) as count FROM users');
+        const totalUsers = parseInt(userCount[0].count) || 0;
+        
+        // Total investments
+        const { rows: invSum } = await pool.query('SELECT COALESCE(SUM(amount), 0) as total FROM investments');
+        const totalInvestments = parseFloat(invSum[0].total) || 0;
+        
+        // Total deposits
+        const { rows: depSum } = await pool.query('SELECT COALESCE(SUM(amount), 0) as total FROM deposits WHERE status = $1', ['approved']);
+        const totalDeposits = parseFloat(depSum[0].total) || 0;
+        
+        // Total withdrawals
+        const { rows: wdSum } = await pool.query('SELECT COALESCE(SUM(amount), 0) as total FROM withdrawals WHERE status = $1', ['approved']);
+        const totalWithdrawals = parseFloat(wdSum[0].total) || 0;
+        
+        // Pending deposits
+        const { rows: pendingDep } = await pool.query('SELECT COUNT(*) as count FROM deposits WHERE status = $1', ['pending']);
+        const pendingDeposits = parseInt(pendingDep[0].count) || 0;
+        
+        // Pending withdrawals
+        const { rows: pendingWd } = await pool.query('SELECT COUNT(*) as count FROM withdrawals WHERE status = $1', ['pending']);
+        const pendingWithdrawals = parseInt(pendingWd[0].count) || 0;
+        
+        res.json({
+            totalUsers,
+            totalInvestments,
+            totalDeposits,
+            totalWithdrawals,
+            pendingDeposits,
+            pendingWithdrawals
+        });
+    } catch (err) {
+        console.error('Admin stats error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Get pending deposits
+app.get('/api/admin/deposits/pending', async (req, res) => {
+    try {
+        const { rows: deposits } = await pool.query(
+            `SELECT d.*, u.email as user_email 
+             FROM deposits d 
+             LEFT JOIN users u ON d.user_id = u.id 
+             WHERE d.status = 'pending' 
+             ORDER BY d.created_at DESC`
+        );
+        res.json({ deposits });
+    } catch (err) {
+        console.error('Pending deposits error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Get pending withdrawals
+app.get('/api/admin/withdrawals/pending', async (req, res) => {
+    try {
+        const { rows: withdrawals } = await pool.query(
+            `SELECT w.*, u.email as user_email 
+             FROM withdrawals w 
+             LEFT JOIN users u ON w.user_id = u.id 
+             WHERE w.status = 'pending' 
+             ORDER BY w.created_at DESC`
+        );
+        res.json({ withdrawals });
+    } catch (err) {
+        console.error('Pending withdrawals error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Approve deposit
+app.post('/api/admin/deposits/:id/approve', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rows: deposits } = await pool.query(
+            'SELECT * FROM deposits WHERE id = $1',
+            [id]
+        );
+        
+        if (deposits.length === 0) {
+            return res.status(404).json({ message: 'Deposit not found' });
+        }
+        
+        const deposit = deposits[0];
+        
+        // Update deposit status
+        await pool.query(
+            'UPDATE deposits SET status = $1 WHERE id = $2',
+            ['approved', id]
+        );
+        
+        // Update user balance if not already done
+        if (deposit.status === 'pending') {
+            await pool.query(
+                'UPDATE users SET balance = balance + $1, total_deposits = total_deposits + $1 WHERE id = $2',
+                [deposit.amount, deposit.user_id]
+            );
+        }
+        
+        res.json({ message: 'Deposit approved successfully' });
+    } catch (err) {
+        console.error('Approve deposit error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Reject deposit
+app.post('/api/admin/deposits/:id/reject', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query(
+            'UPDATE deposits SET status = $1 WHERE id = $2',
+            ['rejected', id]
+        );
+        res.json({ message: 'Deposit rejected' });
+    } catch (err) {
+        console.error('Reject deposit error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Approve withdrawal
+app.post('/api/admin/withdrawals/:id/approve', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rows: withdrawals } = await pool.query(
+            'SELECT * FROM withdrawals WHERE id = $1',
+            [id]
+        );
+        
+        if (withdrawals.length === 0) {
+            return res.status(404).json({ message: 'Withdrawal not found' });
+        }
+        
+        const withdrawal = withdrawals[0];
+        
+        // Update withdrawal status
+        await pool.query(
+            'UPDATE withdrawals SET status = $1 WHERE id = $2',
+            ['approved', id]
+        );
+        
+        // Deduct from user's total profit (already deducted when created, just update status)
+        res.json({ message: 'Withdrawal approved successfully' });
+    } catch (err) {
+        console.error('Approve withdrawal error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Reject withdrawal
+app.post('/api/admin/withdrawals/:id/reject', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rows: withdrawals } = await pool.query(
+            'SELECT * FROM withdrawals WHERE id = $1',
+            [id]
+        );
+        
+        if (withdrawals.length === 0) {
+            return res.status(404).json({ message: 'Withdrawal not found' });
+        }
+        
+        const withdrawal = withdrawals[0];
+        
+        // Update withdrawal status
+        await pool.query(
+            'UPDATE withdrawals SET status = $1 WHERE id = $2',
+            ['rejected', id]
+        );
+        
+        // Refund the amount back to user's total profit
+        await pool.query(
+            'UPDATE users SET total_profit = total_profit + $1, total_balance = total_balance + $1 WHERE id = $2',
+            [withdrawal.amount, withdrawal.user_id]
+        );
+        
+        res.json({ message: 'Withdrawal rejected and amount refunded' });
+    } catch (err) {
+        console.error('Reject withdrawal error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // Daily profit auto calculation (runs every 24 hours)
 setInterval(async () => {
     try {

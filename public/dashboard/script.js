@@ -359,7 +359,8 @@ function renderSidebar(currentPage = '') {
     { path: 'investments.html', name: 'Investments', icon: 'fas fa-coins' },
     { path: 'deposit.html', name: 'Deposit', icon: 'fas fa-plus-circle' },
     { path: 'withdraw.html', name: 'Withdraw', icon: 'fas fa-money-bill-wave' },
-    { path: 'settings.html', name: 'Settings', icon: 'fas fa-cog' }
+    { path: 'settings.html', name: 'Settings', icon: 'fas fa-cog' },
+    { path: 'admin.html', name: 'Admin Panel', icon: 'fas fa-shield-alt' }
   ];
   
   currentPage = currentPath;
@@ -412,10 +413,61 @@ function initDashboard() {
   document.body.setAttribute('data-theme', theme);
 }
 
+// Mobile menu toggle
+function setupMobileMenu() {
+  const mobileToggle = document.getElementById('mobileMenuToggle');
+  const sidebar = document.querySelector('.sidebar');
+  
+  if (mobileToggle && sidebar) {
+    mobileToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      mobileToggle.classList.toggle('active');
+      const icon = mobileToggle.querySelector('i');
+      if (sidebar.classList.contains('open')) {
+        icon.classList.remove('fa-bars');
+        icon.classList.add('fa-times');
+      } else {
+        icon.classList.remove('fa-times');
+        icon.classList.add('fa-bars');
+      }
+    });
+    
+    // Close menu when clicking on a link
+    document.querySelectorAll('.sidebar a').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove('open');
+          mobileToggle.classList.remove('active');
+          const icon = mobileToggle.querySelector('i');
+          icon.classList.remove('fa-times');
+          icon.classList.add('fa-bars');
+        }
+      });
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
+        if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
+          sidebar.classList.remove('open');
+          mobileToggle.classList.remove('active');
+          const icon = mobileToggle.querySelector('i');
+          icon.classList.remove('fa-times');
+          icon.classList.add('fa-bars');
+        }
+      }
+    });
+  }
+}
+
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initDashboard);
+  document.addEventListener('DOMContentLoaded', () => {
+    initDashboard();
+    setupMobileMenu();
+  });
 } else {
   initDashboard();
+  setupMobileMenu();
 }
 

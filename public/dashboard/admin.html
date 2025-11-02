@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel - RealSphere</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+  
+  <!-- Mobile Hamburger Menu -->
+  <div class="mobile-menu-toggle" id="mobileMenuToggle">
+    <i class="fas fa-bars"></i>
+  </div>
+  
+  <!-- Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <header>
+      <h1>Admin Panel <i class="fas fa-shield-alt"></i></h1>
+      <div class="user-info">
+        <button class="btn btn-primary" onclick="refreshAdminData()">
+          <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+      </div>
+    </header>
+
+    <!-- Admin Metrics -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-icon"><i class="fas fa-users"></i></div>
+        <h3>Total Users</h3>
+        <div class="metric-value" id="adminTotalUsers">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon"><i class="fas fa-coins"></i></div>
+        <h3>Total Investments</h3>
+        <div class="metric-value" id="adminTotalInvestments">$0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon"><i class="fas fa-arrow-down"></i></div>
+        <h3>Total Deposits</h3>
+        <div class="metric-value" id="adminTotalDeposits">$0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon"><i class="fas fa-arrow-up"></i></div>
+        <h3>Total Withdrawals</h3>
+        <div class="metric-value" id="adminTotalWithdrawals">$0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon"><i class="fas fa-clock"></i></div>
+        <h3>Pending Deposits</h3>
+        <div class="metric-value" id="adminPendingDeposits">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon"><i class="fas fa-exclamation-circle"></i></div>
+        <h3>Pending Withdrawals</h3>
+        <div class="metric-value" id="adminPendingWithdrawals">0</div>
+      </div>
+    </div>
+
+    <!-- Pending Deposits Section -->
+    <div class="admin-section">
+      <h2><i class="fas fa-inbox"></i> Pending Deposits</h2>
+      <div class="table-section">
+        <table id="pendingDepositsTable">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Amount</th>
+              <th>Currency</th>
+              <th>Transaction Hash</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="pendingDepositsBody">
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 2rem;">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pending Withdrawals Section -->
+    <div class="admin-section">
+      <h2><i class="fas fa-paper-plane"></i> Pending Withdrawals</h2>
+      <div class="table-section">
+        <table id="pendingWithdrawalsTable">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Amount</th>
+              <th>Crypto Type</th>
+              <th>Wallet Address</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="pendingWithdrawalsBody">
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 2rem;">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- All Users Section -->
+    <div class="admin-section">
+      <h2><i class="fas fa-user-friends"></i> All Users</h2>
+      <div class="table-section">
+        <table id="allUsersTable">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Name</th>
+              <th>Balance</th>
+              <th>Total Investment</th>
+              <th>Total Profit</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="allUsersBody">
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 2rem;">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
+
