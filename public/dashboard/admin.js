@@ -1,5 +1,22 @@
 // ===== ADMIN PANEL FUNCTIONALITY =====
 
+// Modal helpers (if not already in script.js)
+function openModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+  }
+}
+
 // Check if user is admin (simple check - in production use proper admin flag)
 function checkAdminAuth() {
   const user = getCurrentUser();
@@ -46,6 +63,34 @@ async function loadAdminData() {
     if (usersRes.ok) {
       const data = await usersRes.json();
       renderAllUsers(data.users || []);
+    }
+    
+    // Fetch wallets
+    const walletsRes = await fetch('/api/wallets');
+    if (walletsRes.ok) {
+      const data = await walletsRes.json();
+      renderWallets(data.wallets || []);
+    }
+    
+    // Fetch projects
+    const projectsRes = await fetch('/api/projects');
+    if (projectsRes.ok) {
+      const data = await projectsRes.json();
+      renderProjects(data.projects || []);
+    }
+    
+    // Fetch testimonials
+    const testimonialsRes = await fetch('/api/testimonials');
+    if (testimonialsRes.ok) {
+      const data = await testimonialsRes.json();
+      renderTestimonials(data.testimonials || []);
+    }
+    
+    // Fetch news
+    const newsRes = await fetch('/api/news?limit=100');
+    if (newsRes.ok) {
+      const data = await newsRes.json();
+      renderNews(data.news || []);
     }
     
   } catch (error) {
@@ -289,6 +334,344 @@ function formatDate(dateStr) {
   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
 }
 
+// Render wallets
+function renderWallets(wallets) {
+  const tbody = document.getElementById('walletsBody');
+  if (!tbody) return;
+  
+  if (wallets.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem;">No wallets configured</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = wallets.map(wallet => `
+    <tr>
+      <td>${wallet.coin_name}</td>
+      <td style="font-family: monospace; font-size: 0.85rem;">${wallet.address.substring(0, 30)}...</td>
+      <td>${wallet.qr_url ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times"></i>'}</td>
+      <td>
+        <button class="btn btn-primary btn-sm" onclick="editWallet(${wallet.id}, '${wallet.coin_name}', '${wallet.address}', '${wallet.qr_url || ''}')">
+          <i class="fas fa-edit"></i> Edit
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// Render projects
+function renderProjects(projects) {
+  const tbody = document.getElementById('projectsBody');
+  if (!tbody) return;
+  
+  if (projects.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem;">No projects yet</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = projects.map(project => `
+    <tr>
+      <td>${project.title}</td>
+      <td><code>${project.slug}</code></td>
+      <td>${(project.description || '').substring(0, 50)}...</td>
+      <td>
+        <button class="btn btn-primary btn-sm" onclick="editProject(${project.id}, '${escape(project.title)}', '${escape(project.slug)}', '${escape(project.description || '')}', '${escape(project.image_url || '')}', '${escape(project.content_html || '')}')">
+          <i class="fas fa-edit"></i> Edit
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="deleteProject(${project.id})" style="margin-left: 0.5rem;">
+          <i class="fas fa-trash"></i> Delete
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// Render testimonials
+function renderTestimonials(testimonials) {
+  const tbody = document.getElementById('testimonialsBody');
+  if (!tbody) return;
+  
+  if (testimonials.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem;">No testimonials yet</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = testimonials.map(test => `
+    <tr>
+      <td>${test.name}</td>
+      <td>${(test.content || '').substring(0, 60)}...</td>
+      <td>${formatDate(test.date_added)}</td>
+      <td>
+        <button class="btn btn-primary btn-sm" onclick="editTestimonial(${test.id}, '${escape(test.name)}', '${escape(test.image_url || '')}', '${escape(test.content)}')">
+          <i class="fas fa-edit"></i> Edit
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="deleteTestimonial(${test.id})" style="margin-left: 0.5rem;">
+          <i class="fas fa-trash"></i> Delete
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// Render news
+function renderNews(news) {
+  const tbody = document.getElementById('newsBody');
+  if (!tbody) return;
+  
+  if (news.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">No articles yet</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = news.map(article => {
+    const date = new Date(article.date);
+    return `
+      <tr>
+        <td>${article.title}</td>
+        <td><code>${article.slug}</code></td>
+        <td>${(article.summary || '').substring(0, 40)}...</td>
+        <td>${date.toLocaleDateString()}</td>
+        <td>
+          <button class="btn btn-primary btn-sm" onclick="editNews(${article.id}, '${escape(article.title)}', '${escape(article.slug)}', '${escape(article.summary || '')}', '${escape(article.image_url || '')}', '${escape(article.content_html)}')">
+            <i class="fas fa-edit"></i> Edit
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="deleteNews(${article.id})" style="margin-left: 0.5rem;">
+            <i class="fas fa-trash"></i> Delete
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Wallet management
+function openWalletModal(id = null, coinName = '', address = '', qrUrl = '') {
+  document.getElementById('walletId').value = id || '';
+  document.getElementById('walletCoinName').value = coinName;
+  document.getElementById('walletAddress').value = address;
+  document.getElementById('walletQrUrl').value = qrUrl;
+  document.getElementById('walletModalTitle').textContent = id ? 'Edit Wallet' : 'Add Wallet';
+  openModal('walletModal');
+}
+
+function editWallet(id, coinName, address, qrUrl) {
+  openWalletModal(id, coinName, address, qrUrl);
+}
+
+async function saveWallet(e) {
+  e.preventDefault();
+  const id = document.getElementById('walletId').value;
+  const coinName = document.getElementById('walletCoinName').value;
+  const address = document.getElementById('walletAddress').value;
+  const qrUrl = document.getElementById('walletQrUrl').value;
+  
+  try {
+    const res = await fetch('/api/admin/wallets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id || null, coin_name: coinName, address, qr_url: qrUrl })
+    });
+    
+    if (res.ok) {
+      showToast('Wallet saved successfully', 'success');
+      closeModal('walletModal');
+      loadAdminData();
+    } else {
+      const data = await res.json();
+      showToast(data.message || 'Failed to save wallet', 'error');
+    }
+  } catch (error) {
+    console.error('Save wallet error:', error);
+    showToast('Failed to save wallet', 'error');
+  }
+}
+
+// Project management
+function openProjectModal(id = null, title = '', slug = '', description = '', imageUrl = '', content = '') {
+  document.getElementById('projectId').value = id || '';
+  document.getElementById('projectTitle').value = title;
+  document.getElementById('projectSlug').value = slug;
+  document.getElementById('projectDescription').value = description;
+  document.getElementById('projectImageUrl').value = imageUrl;
+  document.getElementById('projectContent').value = content;
+  document.getElementById('projectModalTitle').textContent = id ? 'Edit Project' : 'Add Project';
+  openModal('projectModal');
+}
+
+function editProject(id, title, slug, description, imageUrl, content) {
+  openProjectModal(id, unescape(title), unescape(slug), unescape(description), unescape(imageUrl), unescape(content));
+}
+
+async function saveProject(e) {
+  e.preventDefault();
+  const id = document.getElementById('projectId').value;
+  const title = document.getElementById('projectTitle').value;
+  const slug = document.getElementById('projectSlug').value;
+  const description = document.getElementById('projectDescription').value;
+  const imageUrl = document.getElementById('projectImageUrl').value;
+  const content = document.getElementById('projectContent').value;
+  
+  try {
+    const res = await fetch('/api/admin/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id || null, title, slug, description, image_url: imageUrl, content_html: content })
+    });
+    
+    if (res.ok) {
+      showToast('Project saved successfully', 'success');
+      closeModal('projectModal');
+      loadAdminData();
+    } else {
+      const data = await res.json();
+      showToast(data.message || 'Failed to save project', 'error');
+    }
+  } catch (error) {
+    console.error('Save project error:', error);
+    showToast('Failed to save project', 'error');
+  }
+}
+
+async function deleteProject(id) {
+  if (!confirm('Delete this project?')) return;
+  try {
+    const res = await fetch(`/api/admin/projects/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Project deleted', 'success');
+      loadAdminData();
+    } else {
+      showToast('Failed to delete project', 'error');
+    }
+  } catch (error) {
+    showToast('Failed to delete project', 'error');
+  }
+}
+
+// Testimonial management
+function openTestimonialModal(id = null, name = '', imageUrl = '', content = '') {
+  document.getElementById('testimonialId').value = id || '';
+  document.getElementById('testimonialName').value = name;
+  document.getElementById('testimonialImageUrl').value = imageUrl;
+  document.getElementById('testimonialContent').value = content;
+  document.getElementById('testimonialModalTitle').textContent = id ? 'Edit Testimonial' : 'Add Testimonial';
+  openModal('testimonialModal');
+}
+
+function editTestimonial(id, name, imageUrl, content) {
+  openTestimonialModal(id, unescape(name), unescape(imageUrl), unescape(content));
+}
+
+async function saveTestimonial(e) {
+  e.preventDefault();
+  const id = document.getElementById('testimonialId').value;
+  const name = document.getElementById('testimonialName').value;
+  const imageUrl = document.getElementById('testimonialImageUrl').value;
+  const content = document.getElementById('testimonialContent').value;
+  
+  try {
+    const res = await fetch('/api/admin/testimonials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id || null, name, image_url: imageUrl, content })
+    });
+    
+    if (res.ok) {
+      showToast('Testimonial saved successfully', 'success');
+      closeModal('testimonialModal');
+      loadAdminData();
+    } else {
+      const data = await res.json();
+      showToast(data.message || 'Failed to save testimonial', 'error');
+    }
+  } catch (error) {
+    console.error('Save testimonial error:', error);
+    showToast('Failed to save testimonial', 'error');
+  }
+}
+
+async function deleteTestimonial(id) {
+  if (!confirm('Delete this testimonial?')) return;
+  try {
+    const res = await fetch(`/api/admin/testimonials/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Testimonial deleted', 'success');
+      loadAdminData();
+    } else {
+      showToast('Failed to delete testimonial', 'error');
+    }
+  } catch (error) {
+    showToast('Failed to delete testimonial', 'error');
+  }
+}
+
+// News management
+function openNewsModal(id = null, title = '', slug = '', summary = '', imageUrl = '', content = '') {
+  document.getElementById('newsId').value = id || '';
+  document.getElementById('newsTitle').value = title;
+  document.getElementById('newsSlug').value = slug;
+  document.getElementById('newsSummary').value = summary;
+  document.getElementById('newsImageUrl').value = imageUrl;
+  document.getElementById('newsContent').value = content;
+  document.getElementById('newsModalTitle').textContent = id ? 'Edit Article' : 'Add Article';
+  openModal('newsModal');
+}
+
+function editNews(id, title, slug, summary, imageUrl, content) {
+  openNewsModal(id, unescape(title), unescape(slug), unescape(summary), unescape(imageUrl), unescape(content));
+}
+
+async function saveNews(e) {
+  e.preventDefault();
+  const id = document.getElementById('newsId').value;
+  const title = document.getElementById('newsTitle').value;
+  const slug = document.getElementById('newsSlug').value;
+  const summary = document.getElementById('newsSummary').value;
+  const imageUrl = document.getElementById('newsImageUrl').value;
+  const content = document.getElementById('newsContent').value;
+  
+  try {
+    const res = await fetch('/api/admin/news', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id || null, title, slug, summary, image_url: imageUrl, content_html: content })
+    });
+    
+    if (res.ok) {
+      showToast('Article saved successfully', 'success');
+      closeModal('newsModal');
+      loadAdminData();
+    } else {
+      const data = await res.json();
+      showToast(data.message || 'Failed to save article', 'error');
+    }
+  } catch (error) {
+    console.error('Save article error:', error);
+    showToast('Failed to save article', 'error');
+  }
+}
+
+async function deleteNews(id) {
+  if (!confirm('Delete this article?')) return;
+  try {
+    const res = await fetch(`/api/admin/news/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Article deleted', 'success');
+      loadAdminData();
+    } else {
+      showToast('Failed to delete article', 'error');
+    }
+  } catch (error) {
+    showToast('Failed to delete article', 'error');
+  }
+}
+
+function escape(str) {
+  return str.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n');
+}
+
+function unescape(str) {
+  return str.replace(/\\'/g, "'").replace(/&quot;/g, '"').replace(/\\n/g, '\n');
+}
+
 // Make functions global
 window.approveDeposit = approveDeposit;
 window.rejectDeposit = rejectDeposit;
@@ -296,6 +679,21 @@ window.approveWithdrawal = approveWithdrawal;
 window.rejectWithdrawal = rejectWithdrawal;
 window.approveUser = approveUser;
 window.refreshAdminData = refreshAdminData;
+window.openWalletModal = openWalletModal;
+window.saveWallet = saveWallet;
+window.editWallet = editWallet;
+window.openProjectModal = openProjectModal;
+window.saveProject = saveProject;
+window.editProject = editProject;
+window.deleteProject = deleteProject;
+window.openTestimonialModal = openTestimonialModal;
+window.saveTestimonial = saveTestimonial;
+window.editTestimonial = editTestimonial;
+window.deleteTestimonial = deleteTestimonial;
+window.openNewsModal = openNewsModal;
+window.saveNews = saveNews;
+window.editNews = editNews;
+window.deleteNews = deleteNews;
 
 // Initialize on page load
 if (document.readyState === 'loading') {

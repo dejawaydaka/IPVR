@@ -138,6 +138,216 @@
         </table>
       </div>
     </div>
+
+    <!-- Wallet Management Section -->
+    <div class="admin-section">
+      <h2><i class="fas fa-wallet"></i> Wallet Management</h2>
+      <button class="btn btn-primary" onclick="openWalletModal()" style="margin-bottom: 1rem;">
+        <i class="fas fa-plus"></i> Add/Update Wallet
+      </button>
+      <div class="table-section">
+        <table id="walletsTable">
+          <thead>
+            <tr>
+              <th>Coin Name</th>
+              <th>Address</th>
+              <th>QR Code</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="walletsBody">
+            <tr><td colspan="4" style="text-align: center; padding: 2rem;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Projects Management Section -->
+    <div class="admin-section">
+      <h2><i class="fas fa-building"></i> Projects Management</h2>
+      <button class="btn btn-primary" onclick="openProjectModal()" style="margin-bottom: 1rem;">
+        <i class="fas fa-plus"></i> Add Project
+      </button>
+      <div class="table-section">
+        <table id="projectsTable">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Slug</th>
+              <th>Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="projectsBody">
+            <tr><td colspan="4" style="text-align: center; padding: 2rem;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Testimonials Management Section -->
+    <div class="admin-section">
+      <h2><i class="fas fa-comments"></i> Testimonials Management</h2>
+      <button class="btn btn-primary" onclick="openTestimonialModal()" style="margin-bottom: 1rem;">
+        <i class="fas fa-plus"></i> Add Testimonial
+      </button>
+      <div class="table-section">
+        <table id="testimonialsTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Content</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="testimonialsBody">
+            <tr><td colspan="4" style="text-align: center; padding: 2rem;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- News Management Section -->
+    <div class="admin-section">
+      <h2><i class="fas fa-newspaper"></i> News & Insights Management</h2>
+      <button class="btn btn-primary" onclick="openNewsModal()" style="margin-bottom: 1rem;">
+        <i class="fas fa-plus"></i> Add Article
+      </button>
+      <div class="table-section">
+        <table id="newsTable">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Slug</th>
+              <th>Summary</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="newsBody">
+            <tr><td colspan="5" style="text-align: center; padding: 2rem;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <div id="walletModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="walletModalTitle">Add Wallet</h3>
+        <button class="modal-close" onclick="closeModal('walletModal')">&times;</button>
+      </div>
+      <form id="walletForm" onsubmit="saveWallet(event)">
+        <input type="hidden" id="walletId">
+        <div class="form-group">
+          <label>Coin Name</label>
+          <input type="text" id="walletCoinName" required>
+        </div>
+        <div class="form-group">
+          <label>Wallet Address</label>
+          <input type="text" id="walletAddress" required>
+        </div>
+        <div class="form-group">
+          <label>QR Code URL (optional)</label>
+          <input type="text" id="walletQrUrl">
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="projectModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="projectModalTitle">Add Project</h3>
+        <button class="modal-close" onclick="closeModal('projectModal')">&times;</button>
+      </div>
+      <form id="projectForm" onsubmit="saveProject(event)">
+        <input type="hidden" id="projectId">
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="projectTitle" required>
+        </div>
+        <div class="form-group">
+          <label>Slug (URL-friendly)</label>
+          <input type="text" id="projectSlug" required>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="projectDescription" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Image URL</label>
+          <input type="text" id="projectImageUrl">
+        </div>
+        <div class="form-group">
+          <label>Content (HTML)</label>
+          <textarea id="projectContent" rows="5"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="testimonialModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="testimonialModalTitle">Add Testimonial</h3>
+        <button class="modal-close" onclick="closeModal('testimonialModal')">&times;</button>
+      </div>
+      <form id="testimonialForm" onsubmit="saveTestimonial(event)">
+        <input type="hidden" id="testimonialId">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" id="testimonialName" required>
+        </div>
+        <div class="form-group">
+          <label>Image URL</label>
+          <input type="text" id="testimonialImageUrl">
+        </div>
+        <div class="form-group">
+          <label>Content</label>
+          <textarea id="testimonialContent" rows="4" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="newsModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="newsModalTitle">Add Article</h3>
+        <button class="modal-close" onclick="closeModal('newsModal')">&times;</button>
+      </div>
+      <form id="newsForm" onsubmit="saveNews(event)">
+        <input type="hidden" id="newsId">
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="newsTitle" required>
+        </div>
+        <div class="form-group">
+          <label>Slug (URL-friendly)</label>
+          <input type="text" id="newsSlug" required>
+        </div>
+        <div class="form-group">
+          <label>Summary</label>
+          <textarea id="newsSummary" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Image URL</label>
+          <input type="text" id="newsImageUrl">
+        </div>
+        <div class="form-group">
+          <label>Content (HTML)</label>
+          <textarea id="newsContent" rows="8" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </form>
+    </div>
   </div>
 
   <script src="script.js"></script>

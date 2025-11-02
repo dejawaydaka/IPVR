@@ -98,11 +98,38 @@
     if (document.readyState !== 'loading') {
       hideLoaderNow();
     }
-    const depositMethods = [
-      { name: "Bitcoin (BTC)", symbol: "BTC", address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", qr: "" },
-      { name: "Ethereum (ETH)", symbol: "ETH", address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb", qr: "" },
-      { name: "USDT (TRC20)", symbol: "USDT", address: "TQzKjJmhUjq2sVtXwYzAbCdEfGhIjKlMn", qr: "" }
-    ];
+    let depositMethods = [];
+    
+    async function loadWallets() {
+      try {
+        const response = await fetch('/api/wallets');
+        if (response.ok) {
+          const data = await response.json();
+          depositMethods = (data.wallets || []).map(wallet => ({
+            name: wallet.coin_name,
+            symbol: wallet.coin_name.split(' ')[0].toUpperCase(),
+            address: wallet.address,
+            qr_url: wallet.qr_url
+          }));
+        } else {
+          // Fallback if API fails
+          depositMethods = [
+            { name: 'Bitcoin (BTC)', symbol: 'BTC', address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', qr_url: '' },
+            { name: 'Ethereum (ETH)', symbol: 'ETH', address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb', qr_url: '' },
+            { name: 'USDT (TRC20)', symbol: 'USDT', address: 'TQzKjJmhUjq2sVtXwYzAbCdEfGhIjKlMn', qr_url: '' }
+          ];
+        }
+      } catch (error) {
+        console.error('Failed to load wallets:', error);
+        // Fallback
+        depositMethods = [
+          { name: 'Bitcoin (BTC)', symbol: 'BTC', address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', qr_url: '' },
+          { name: 'Ethereum (ETH)', symbol: 'ETH', address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb', qr_url: '' },
+          { name: 'USDT (TRC20)', symbol: 'USDT', address: 'TQzKjJmhUjq2sVtXwYzAbCdEfGhIjKlMn', qr_url: '' }
+        ];
+      }
+      renderCryptoMethods();
+    }
 
     let selectedCrypto = null;
     let proofFile = null;
@@ -112,13 +139,19 @@
       const grid = document.getElementById('cryptoGrid');
       if (!grid) return;
 
+      if (depositMethods.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-wallet"></i><p>No deposit methods available. Please contact support.</p></div>';
+        return;
+      }
+      
       grid.innerHTML = depositMethods.map((crypto, index) => `
         <div class="crypto-card" style="animation-delay: ${index * 0.1}s">
           <div class="crypto-icon">
-            <i class="fab fa-${crypto.symbol === 'BTC' ? 'bitcoin' : crypto.symbol === 'ETH' ? 'ethereum' : 'coins'}"></i>
+            <i class="fab fa-${crypto.symbol === 'BTC' ? 'bitcoin' : crypto.symbol === 'ETH' ? 'ethereum' : crypto.symbol === 'USDT' ? 'coins' : 'coins'}"></i>
           </div>
           <div class="crypto-name">${crypto.name}</div>
           <div class="crypto-symbol">${crypto.symbol}</div>
+          ${crypto.qr_url ? `<div class="qr-code" style="margin: 1rem 0; text-align: center;"><img src="${crypto.qr_url}" alt="QR Code" style="max-width: 150px; border-radius: 10px;"></div>` : ''}
           <div class="address-section">
             <div class="address-label">Wallet Address:</div>
             <div class="address-box" id="address-${crypto.symbol}">${crypto.address}</div>
@@ -202,11 +235,11 @@
       }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       currentUser = getCurrentUser();
       if (!currentUser) return;
 
-      renderCryptoMethods();
+      await loadWallets();
       
       // Hide loading overlay immediately
       showLoading(false);

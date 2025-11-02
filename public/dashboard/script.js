@@ -364,13 +364,14 @@ function renderSidebar(currentPage = '') {
   
   currentPage = currentPath;
   
-  const displayName = user.name || user.email?.split('@')[0] || 'User';
+        const displayName = user.name || user.email?.split('@')[0] || 'User';
+        const profileImg = user.profileImage || user.profile_image || '/uploads/user.png';
   
   return `
     <aside class="sidebar">
       <h2>RealSphere</h2>
       <div class="user-display">
-        <img src="${user.profileImage || 'https://i.pravatar.cc/50'}" alt="User" />
+        <img src="${profileImg}" alt="User" onerror="this.src='/uploads/user.png'" />
         <span>${sanitizeHTML(displayName)}</span>
       </div>
       <ul>

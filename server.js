@@ -5,6 +5,8 @@ const rateLimit = require('express-rate-limit');
 const { body, validationResult, query } = require('express-validator');
 const multer = require('multer');
 const { Pool } = require('pg');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
@@ -226,6 +228,15 @@ app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
 // Middleware to serve static files
 app.use(express.static('public'));
+
+// Serve project/news pages dynamically
+app.get('/projects/:slug.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/projects/template.html'));
+});
+
+app.get('/news/:slug.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/news/template.html'));
+});
 
 // Rate limiting
 const limiter = rateLimit({
