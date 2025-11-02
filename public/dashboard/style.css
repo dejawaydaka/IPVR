@@ -952,10 +952,14 @@ tr:hover {
     height: 100vh;
     top: 0;
     left: 0;
+    visibility: hidden;
+    opacity: 0;
   }
   
   .sidebar.open {
     transform: translateX(0);
+    visibility: visible;
+    opacity: 1;
     box-shadow: 4px 0 30px rgba(0, 0, 0, 0.5);
   }
   
