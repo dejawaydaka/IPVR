@@ -505,6 +505,9 @@ function renderProjects(projects) {
         <button class="btn btn-primary btn-sm" onclick="editProject(${project.id}, '${escape(project.title)}', '${escape(project.slug)}', '${escape(project.description || '')}', '${escape(project.image_url || '')}', '${escape(project.content_html || '')}')">
           <i class="fas fa-edit"></i> Edit
         </button>
+        <a href="/projects/${escape(project.slug)}.html" target="_blank" class="btn btn-outline btn-sm" style="margin-left: 0.5rem; text-decoration: none;" title="View on homepage">
+          <i class="fas fa-external-link-alt"></i> View Live
+        </a>
         <button class="btn btn-outline btn-sm" onclick="deleteProject(${project.id})" style="margin-left: 0.5rem;">
           <i class="fas fa-trash"></i> Delete
         </button>
@@ -551,7 +554,7 @@ function renderNews(news) {
   }
   
   tbody.innerHTML = news.map(article => {
-    const date = new Date(article.date);
+    const date = article.date ? new Date(article.date) : (article.created_at ? new Date(article.created_at) : new Date());
     return `
       <tr>
         <td>${article.title}</td>
@@ -562,6 +565,9 @@ function renderNews(news) {
           <button class="btn btn-primary btn-sm" onclick="editNews(${article.id}, '${escape(article.title)}', '${escape(article.slug)}', '${escape(article.summary || '')}', '${escape(article.image_url || '')}', '${escape(article.content_html)}')">
             <i class="fas fa-edit"></i> Edit
           </button>
+          <a href="/news/${escape(article.slug)}.html" target="_blank" class="btn btn-outline btn-sm" style="margin-left: 0.5rem; text-decoration: none;" title="View on homepage">
+            <i class="fas fa-external-link-alt"></i> View Live
+          </a>
           <button class="btn btn-outline btn-sm" onclick="deleteNews(${article.id})" style="margin-left: 0.5rem;">
             <i class="fas fa-trash"></i> Delete
           </button>
@@ -777,16 +783,39 @@ async function saveProject(e) {
       }
     }
     
-    const res = await adminFetch('/api/admin/projects', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: id || null, title, slug, description, image_url: imageUrl, content_html: content })
-    });
+    // Use FormData for file upload, otherwise JSON
+    let res;
+    if (imageFile) {
+      const formData = new FormData();
+      formData.append('id', id || '');
+      formData.append('title', title);
+      formData.append('slug', slug);
+      formData.append('description', description);
+      formData.append('content_html', content);
+      if (imageFile) formData.append('image', imageFile);
+      else if (imageUrl) formData.append('image_url', imageUrl);
+      
+      res = await adminFetch('/api/admin/projects', {
+        method: 'POST',
+        body: formData
+      });
+    } else {
+      res = await adminFetch('/api/admin/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id || null, title, slug, description, image_url: imageUrl, content_html: content })
+      });
+    }
     
-    if (res.ok) {
-      showToast('Project saved successfully', 'success');
-      closeModal('projectModal');
-      loadAdminData();
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ message: 'Failed to save project' }));
+      throw new Error(errorData.message || `HTTP ${res.status}`);
+    }
+    
+    showToast('Project saved successfully', 'success');
+    closeModal('projectModal');
+    loadAdminData();
+    // Note: Homepage will automatically show new project on next page load
     } else {
       const data = await res.json();
       showToast(data.message || 'Failed to save project', 'error');
@@ -941,16 +970,39 @@ async function saveNews(e) {
       }
     }
     
-    const res = await adminFetch('/api/admin/news', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: id || null, title, slug, summary, image_url: imageUrl, content_html: content })
-    });
+    // Use FormData for file upload, otherwise JSON
+    let res;
+    if (imageFile) {
+      const formData = new FormData();
+      formData.append('id', id || '');
+      formData.append('title', title);
+      formData.append('slug', slug);
+      formData.append('summary', summary);
+      formData.append('content_html', content);
+      if (imageFile) formData.append('image', imageFile);
+      else if (imageUrl) formData.append('image_url', imageUrl);
+      
+      res = await adminFetch('/api/admin/news', {
+        method: 'POST',
+        body: formData
+      });
+    } else {
+      res = await adminFetch('/api/admin/news', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id || null, title, slug, summary, image_url: imageUrl, content_html: content })
+      });
+    }
     
-    if (res.ok) {
-      showToast('Article saved successfully', 'success');
-      closeModal('newsModal');
-      loadAdminData();
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ message: 'Failed to save article' }));
+      throw new Error(errorData.message || `HTTP ${res.status}`);
+    }
+    
+    showToast('Article saved successfully', 'success');
+    closeModal('newsModal');
+    loadAdminData();
+    // Note: Homepage will automatically show new article on next page load
     } else {
       const data = await res.json();
       showToast(data.message || 'Failed to save article', 'error');
