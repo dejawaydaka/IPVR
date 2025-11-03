@@ -303,9 +303,22 @@
 
         // Update charts
         updateCharts(data);
+        
+        // Clear any previous errors
+        const errorEl = document.getElementById('errorMessage');
+        if (errorEl) {
+          errorEl.textContent = '';
+          errorEl.style.display = 'none';
+        }
       } catch (error) {
         console.error('Dashboard refresh failed:', error);
-        showError('Could not load dashboard data. Please try refreshing the page.');
+        // Only show error if data wasn't actually loaded
+        const balanceEl = document.getElementById('dashTotalBalance');
+        const hasData = balanceEl && balanceEl.textContent && balanceEl.textContent !== '$0.00' && balanceEl.textContent !== '0';
+        
+        if (!hasData) {
+          showError('Could not load dashboard data. Please try refreshing the page.');
+        }
       }
     }
 

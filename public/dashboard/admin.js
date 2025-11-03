@@ -133,64 +133,83 @@ async function loadAdminData() {
   try {
     showLoading(true);
     
-    // Fetch admin stats
+    // Fetch admin stats (only update if on dashboard page)
     const statsRes = await adminFetch('/api/admin/stats');
     if (!statsRes.ok) {
       throw new Error(`HTTP ${statsRes.status}: Failed to fetch admin stats`);
     }
     const stats = await statsRes.json();
-    updateAdminMetrics(stats);
+    updateAdminMetrics(stats); // This function now checks if elements exist
     
-    // Fetch pending deposits
+    // Fetch pending deposits (only render if element exists)
     const depositsRes = await adminFetch('/api/admin/deposits/pending');
     if (!depositsRes.ok) {
-      throw new Error(`HTTP ${depositsRes.status}: Failed to fetch pending deposits`);
+      console.warn('Failed to fetch pending deposits:', depositsRes.status);
+    } else {
+      const depositsData = await depositsRes.json();
+      renderPendingDeposits(depositsData.deposits || []); // This function checks if element exists
     }
-    const depositsData = await depositsRes.json();
-    renderPendingDeposits(depositsData.deposits || []);
     
-    // Fetch pending withdrawals
+    // Fetch pending withdrawals (only render if element exists)
     const withdrawalsRes = await adminFetch('/api/admin/withdrawals/pending');
     if (!withdrawalsRes.ok) {
-      throw new Error(`HTTP ${withdrawalsRes.status}: Failed to fetch pending withdrawals`);
+      console.warn('Failed to fetch pending withdrawals:', withdrawalsRes.status);
+    } else {
+      const withdrawalsData = await withdrawalsRes.json();
+      renderPendingWithdrawals(withdrawalsData.withdrawals || []); // This function checks if element exists
     }
-    const withdrawalsData = await withdrawalsRes.json();
-    renderPendingWithdrawals(withdrawalsData.withdrawals || []);
     
-    // Fetch all users
+    // Fetch all users (only render if element exists)
     const usersRes = await adminFetch('/api/admin/users');
     if (!usersRes.ok) {
-      throw new Error(`HTTP ${usersRes.status}: Failed to fetch users`);
-    }
-    const usersData = await usersRes.json();
-    renderAllUsers(usersData.users || []);
-    
-    // Fetch wallets (public route, no auth needed)
-    const walletsRes = await fetch('/api/wallets');
-    if (walletsRes.ok) {
-      const walletsData = await walletsRes.json();
-      renderWallets(walletsData.wallets || []);
+      console.warn('Failed to fetch users:', usersRes.status);
+    } else {
+      const usersData = await usersRes.json();
+      renderAllUsers(usersData.users || []); // This function checks if element exists
     }
     
-    // Fetch projects (public route, no auth needed)
-    const projectsRes = await fetch('/api/projects');
-    if (projectsRes.ok) {
-      const projectsData = await projectsRes.json();
-      renderProjects(projectsData.projects || []);
+    // Fetch wallets (public route, no auth needed - only render if element exists)
+    try {
+      const walletsRes = await fetch('/api/wallets');
+      if (walletsRes.ok) {
+        const walletsData = await walletsRes.json();
+        renderWallets(walletsData.wallets || []); // This function checks if element exists
+      }
+    } catch (e) {
+      console.warn('Failed to fetch wallets:', e);
     }
     
-    // Fetch testimonials (public route, no auth needed)
-    const testimonialsRes = await fetch('/api/testimonials');
-    if (testimonialsRes.ok) {
-      const testimonialsData = await testimonialsRes.json();
-      renderTestimonials(testimonialsData.testimonials || []);
+    // Fetch projects (public route, no auth needed - only render if element exists)
+    try {
+      const projectsRes = await fetch('/api/projects');
+      if (projectsRes.ok) {
+        const projectsData = await projectsRes.json();
+        renderProjects(projectsData.projects || []); // This function checks if element exists
+      }
+    } catch (e) {
+      console.warn('Failed to fetch projects:', e);
     }
     
-    // Fetch news (public route, no auth needed)
-    const newsRes = await fetch('/api/news?limit=100');
-    if (newsRes.ok) {
-      const newsData = await newsRes.json();
-      renderNews(newsData.news || []);
+    // Fetch testimonials (public route, no auth needed - only render if element exists)
+    try {
+      const testimonialsRes = await fetch('/api/testimonials');
+      if (testimonialsRes.ok) {
+        const testimonialsData = await testimonialsRes.json();
+        renderTestimonials(testimonialsData.testimonials || []); // This function checks if element exists
+      }
+    } catch (e) {
+      console.warn('Failed to fetch testimonials:', e);
+    }
+    
+    // Fetch news (public route, no auth needed - only render if element exists)
+    try {
+      const newsRes = await fetch('/api/news?limit=100');
+      if (newsRes.ok) {
+        const newsData = await newsRes.json();
+        renderNews(newsData.news || []); // This function checks if element exists
+      }
+    } catch (e) {
+      console.warn('Failed to fetch news:', e);
     }
     
   } catch (error) {
@@ -201,14 +220,23 @@ async function loadAdminData() {
   }
 }
 
-// Update admin metrics
+// Update admin metrics (only if elements exist - for dashboard page only)
 function updateAdminMetrics(stats) {
-  document.getElementById('adminTotalUsers').textContent = stats.totalUsers || 0;
-  document.getElementById('adminTotalInvestments').textContent = `$${formatNumber(stats.totalInvestments || 0)}`;
-  document.getElementById('adminTotalDeposits').textContent = `$${formatNumber(stats.totalDeposits || 0)}`;
-  document.getElementById('adminTotalWithdrawals').textContent = `$${formatNumber(stats.totalWithdrawals || 0)}`;
-  document.getElementById('adminPendingDeposits').textContent = stats.pendingDeposits || 0;
-  document.getElementById('adminPendingWithdrawals').textContent = stats.pendingWithdrawals || 0;
+  const elements = {
+    adminTotalUsers: document.getElementById('adminTotalUsers'),
+    adminTotalInvestments: document.getElementById('adminTotalInvestments'),
+    adminTotalDeposits: document.getElementById('adminTotalDeposits'),
+    adminTotalWithdrawals: document.getElementById('adminTotalWithdrawals'),
+    adminPendingDeposits: document.getElementById('adminPendingDeposits'),
+    adminPendingWithdrawals: document.getElementById('adminPendingWithdrawals')
+  };
+  
+  if (elements.adminTotalUsers) elements.adminTotalUsers.textContent = stats.totalUsers || 0;
+  if (elements.adminTotalInvestments) elements.adminTotalInvestments.textContent = `$${formatNumber(stats.totalInvestments || 0)}`;
+  if (elements.adminTotalDeposits) elements.adminTotalDeposits.textContent = `$${formatNumber(stats.totalDeposits || 0)}`;
+  if (elements.adminTotalWithdrawals) elements.adminTotalWithdrawals.textContent = `$${formatNumber(stats.totalWithdrawals || 0)}`;
+  if (elements.adminPendingDeposits) elements.adminPendingDeposits.textContent = stats.pendingDeposits || 0;
+  if (elements.adminPendingWithdrawals) elements.adminPendingWithdrawals.textContent = stats.pendingWithdrawals || 0;
 }
 
 // Render pending deposits
