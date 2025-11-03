@@ -15,6 +15,19 @@ const port = process.env.PORT || 3000;
 // Behind Railway/Proxies - trust X-Forwarded-* headers for correct client IPs
 app.set('trust proxy', 1);
 
+// ===== ADMIN AUTHENTICATION MIDDLEWARE =====
+function adminAuth(req, res, next) {
+    const username = req.headers['x-admin-username'] || req.headers['username'];
+    const password = req.headers['x-admin-password'] || req.headers['password'];
+    
+    if (username === 'admin' && password === 'pass2002word') {
+        return next();
+    }
+    
+    // If no credentials provided, return 403
+    res.status(403).json({ error: 'Unauthorized access', message: 'Admin authentication required' });
+}
+
 // PostgreSQL connection pool
 // Railway and most cloud providers require SSL
 const getSSLConfig = () => {
@@ -1135,8 +1148,8 @@ app.put('/api/user/:email/update', [
     }
 });
 
-// Admin endpoints
-app.get('/admin/users', async (req, res) => {
+// Legacy admin route (redirect to /api/admin/users for consistency)
+app.get('/admin/users', adminAuth, async (req, res) => {
     try {
         const { rows: users } = await pool.query(
             'SELECT id, email, name, profile_image, balance, total_investment, total_profit, total_deposits, bonus, admin_approved, created_at FROM users ORDER BY created_at DESC'
@@ -1180,7 +1193,7 @@ app.post('/admin/approve', [
 });
 
 // Admin stats endpoint
-app.get('/api/admin/stats', async (req, res) => {
+app.get('/api/admin/stats', adminAuth, async (req, res) => {
     try {
         // Total users
         const { rows: userCount } = await pool.query('SELECT COUNT(*) as count FROM users');
@@ -1221,7 +1234,7 @@ app.get('/api/admin/stats', async (req, res) => {
 });
 
 // Get pending deposits
-app.get('/api/admin/deposits/pending', async (req, res) => {
+app.get('/api/admin/deposits/pending', adminAuth, async (req, res) => {
     try {
         const { rows: deposits } = await pool.query(
             `SELECT d.*, u.email as user_email 
@@ -1238,7 +1251,7 @@ app.get('/api/admin/deposits/pending', async (req, res) => {
 });
 
 // Get pending withdrawals
-app.get('/api/admin/withdrawals/pending', async (req, res) => {
+app.get('/api/admin/withdrawals/pending', adminAuth, async (req, res) => {
     try {
         const { rows: withdrawals } = await pool.query(
             `SELECT w.*, u.email as user_email 
@@ -1255,7 +1268,7 @@ app.get('/api/admin/withdrawals/pending', async (req, res) => {
 });
 
 // Approve deposit
-app.post('/api/admin/deposits/:id/approve', async (req, res) => {
+app.post('/api/admin/deposits/:id/approve', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
         const { rows: deposits } = await pool.query(
@@ -1291,7 +1304,7 @@ app.post('/api/admin/deposits/:id/approve', async (req, res) => {
 });
 
 // Reject deposit
-app.post('/api/admin/deposits/:id/reject', async (req, res) => {
+app.post('/api/admin/deposits/:id/reject', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
         await pool.query(
@@ -1306,7 +1319,7 @@ app.post('/api/admin/deposits/:id/reject', async (req, res) => {
 });
 
 // Approve withdrawal
-app.post('/api/admin/withdrawals/:id/approve', async (req, res) => {
+app.post('/api/admin/withdrawals/:id/approve', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
         const { rows: withdrawals } = await pool.query(
@@ -1335,7 +1348,7 @@ app.post('/api/admin/withdrawals/:id/approve', async (req, res) => {
 });
 
 // Reject withdrawal
-app.post('/api/admin/withdrawals/:id/reject', async (req, res) => {
+app.post('/api/admin/withdrawals/:id/reject', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
         const { rows: withdrawals } = await pool.query(
@@ -1381,7 +1394,7 @@ app.get('/api/wallets', async (req, res) => {
     }
 });
 
-app.post('/api/admin/wallets', [
+app.post('/api/admin/wallets', adminAuth, adminUpload.single('qr_code'), [
     body('coin_name').notEmpty(),
     body('address').notEmpty()
 ], async (req, res) => {
@@ -1391,26 +1404,43 @@ app.post('/api/admin/wallets', [
     }
     
     try {
-        const { coin_name, address, qr_url } = req.body;
+        const { coin_name, address, qr_url, id } = req.body;
         
-        // Check if wallet exists
-        const { rows: existing } = await pool.query(
-            'SELECT id FROM wallets WHERE coin_name = $1',
-            [coin_name]
-        );
+        // Handle QR code file upload
+        let qrCodeUrl = qr_url || null;
+        if (req.file) {
+            qrCodeUrl = `/uploads/admin/${req.file.filename}`;
+        }
+        
+        // Check if wallet exists (by ID if provided, or by coin_name)
+        let existing = [];
+        if (id) {
+            const { rows } = await pool.query('SELECT id FROM wallets WHERE id = $1', [id]);
+            existing = rows;
+        } else if (coin_name) {
+            const { rows } = await pool.query('SELECT id FROM wallets WHERE coin_name = $1', [coin_name]);
+            existing = rows;
+        }
         
         if (existing.length > 0) {
             // Update existing
-            await pool.query(
-                'UPDATE wallets SET address = $1, qr_url = $2, updated_at = CURRENT_TIMESTAMP WHERE coin_name = $3',
-                [address, qr_url || null, coin_name]
-            );
+            if (qrCodeUrl) {
+                await pool.query(
+                    'UPDATE wallets SET coin_name = $1, address = $2, qr_url = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4',
+                    [coin_name, address, qrCodeUrl, existing[0].id]
+                );
+            } else {
+                await pool.query(
+                    'UPDATE wallets SET coin_name = $1, address = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+                    [coin_name, address, existing[0].id]
+                );
+            }
             res.json({ message: 'Wallet updated successfully' });
         } else {
             // Create new
             await pool.query(
                 'INSERT INTO wallets (coin_name, address, qr_url) VALUES ($1, $2, $3)',
-                [coin_name, address, qr_url || null]
+                [coin_name, address, qrCodeUrl]
             );
             res.json({ message: 'Wallet added successfully' });
         }
@@ -1452,7 +1482,7 @@ app.get('/api/projects/:slug', async (req, res) => {
     }
 });
 
-app.post('/api/admin/projects', [
+app.post('/api/admin/projects', adminAuth, adminUpload.single('image'), [
     body('title').notEmpty(),
     body('slug').notEmpty()
 ], async (req, res) => {
@@ -1464,18 +1494,24 @@ app.post('/api/admin/projects', [
     try {
         const { id, title, description, image_url, slug, content_html } = req.body;
         
+        // Handle image file upload
+        let imageUrl = image_url || null;
+        if (req.file) {
+            imageUrl = `/uploads/admin/${req.file.filename}`;
+        }
+        
         if (id) {
             // Update existing
             await pool.query(
                 'UPDATE projects SET title = $1, description = $2, image_url = $3, slug = $4, content_html = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $6',
-                [title, description || null, image_url || null, slug, content_html || null, id]
+                [title, description || null, imageUrl, slug, content_html || null, id]
             );
             res.json({ message: 'Project updated successfully' });
         } else {
             // Create new
             const { rows: newProject } = await pool.query(
                 'INSERT INTO projects (title, description, image_url, slug, content_html) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-                [title, description || null, image_url || null, slug, content_html || null]
+                [title, description || null, imageUrl, slug, content_html || null]
             );
             res.json({ message: 'Project created successfully', id: newProject[0].id });
         }
@@ -1488,7 +1524,7 @@ app.post('/api/admin/projects', [
     }
 });
 
-app.delete('/api/admin/projects/:id', async (req, res) => {
+app.delete('/api/admin/projects/:id', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
         await pool.query('DELETE FROM projects WHERE id = $1', [id]);
@@ -1512,7 +1548,7 @@ app.get('/api/testimonials', async (req, res) => {
     }
 });
 
-app.post('/api/admin/testimonials', [
+app.post('/api/admin/testimonials', adminAuth, adminUpload.single('image'), [
     body('name').notEmpty(),
     body('content').notEmpty()
 ], async (req, res) => {
@@ -1524,18 +1560,24 @@ app.post('/api/admin/testimonials', [
     try {
         const { id, name, image_url, content } = req.body;
         
+        // Handle image file upload
+        let imageUrl = image_url || null;
+        if (req.file) {
+            imageUrl = `/uploads/admin/${req.file.filename}`;
+        }
+        
         if (id) {
             // Update existing
             await pool.query(
                 'UPDATE testimonials SET name = $1, image_url = $2, content = $3 WHERE id = $4',
-                [name, image_url || null, content, id]
+                [name, imageUrl, content, id]
             );
             res.json({ message: 'Testimonial updated successfully' });
         } else {
             // Create new
             const { rows: newTestimonial } = await pool.query(
                 'INSERT INTO testimonials (name, image_url, content) VALUES ($1, $2, $3) RETURNING id',
-                [name, image_url || null, content]
+                [name, imageUrl, content]
             );
             res.json({ message: 'Testimonial created successfully', id: newTestimonial[0].id });
         }
@@ -1545,7 +1587,7 @@ app.post('/api/admin/testimonials', [
     }
 });
 
-app.delete('/api/admin/testimonials/:id', async (req, res) => {
+app.delete('/api/admin/testimonials/:id', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
         await pool.query('DELETE FROM testimonials WHERE id = $1', [id]);
@@ -1590,7 +1632,7 @@ app.get('/api/news/:slug', async (req, res) => {
     }
 });
 
-app.post('/api/admin/news', [
+app.post('/api/admin/news', adminAuth, adminUpload.single('image'), [
     body('title').notEmpty(),
     body('slug').notEmpty(),
     body('content_html').notEmpty()
@@ -1603,18 +1645,24 @@ app.post('/api/admin/news', [
     try {
         const { id, title, summary, image_url, slug, content_html } = req.body;
         
+        // Handle image file upload
+        let imageUrl = image_url || null;
+        if (req.file) {
+            imageUrl = `/uploads/admin/${req.file.filename}`;
+        }
+        
         if (id) {
             // Update existing
             await pool.query(
                 'UPDATE news SET title = $1, summary = $2, image_url = $3, slug = $4, content_html = $5 WHERE id = $6',
-                [title, summary || null, image_url || null, slug, content_html, id]
+                [title, summary || null, imageUrl, slug, content_html, id]
             );
             res.json({ message: 'Article updated successfully' });
         } else {
             // Create new
             const { rows: newArticle } = await pool.query(
                 'INSERT INTO news (title, summary, image_url, slug, content_html) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-                [title, summary || null, image_url || null, slug, content_html]
+                [title, summary || null, imageUrl, slug, content_html]
             );
             res.json({ message: 'Article created successfully', id: newArticle[0].id });
         }
@@ -1627,7 +1675,7 @@ app.post('/api/admin/news', [
     }
 });
 
-app.delete('/api/admin/news/:id', async (req, res) => {
+app.delete('/api/admin/news/:id', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
         await pool.query('DELETE FROM news WHERE id = $1', [id]);
@@ -1680,7 +1728,7 @@ app.post('/api/admin/upload-image', adminUpload.single('image'), (req, res) => {
 });
 
 // ===== ADMIN USER MANAGEMENT ROUTES =====
-app.get('/api/admin/users', async (req, res) => {
+app.get('/api/admin/users', adminAuth, async (req, res) => {
     try {
         const { rows: users } = await pool.query(
             `SELECT id, email, name, profile_image, balance, total_investment, total_profit, 
@@ -1694,7 +1742,7 @@ app.get('/api/admin/users', async (req, res) => {
     }
 });
 
-app.get('/api/admin/users/:id', async (req, res) => {
+app.get('/api/admin/users/:id', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
         const { rows: users } = await pool.query(
@@ -1715,7 +1763,7 @@ app.get('/api/admin/users/:id', async (req, res) => {
     }
 });
 
-app.post('/api/admin/users/:id/update', [
+app.post('/api/admin/users/:id/update', adminAuth, [
     body('balance').optional().isFloat({ min: 0 }),
     body('total_investment').optional().isFloat({ min: 0 }),
     body('total_profit').optional().isFloat({ min: 0 }),
@@ -1837,7 +1885,7 @@ async function initializeInvestmentPlans() {
 
 // Investment plans initialization is now handled in the main pool.connect() above
 
-app.get('/api/admin/plans', async (req, res) => {
+app.get('/api/admin/plans', adminAuth, async (req, res) => {
     try {
         const { rows: plans } = await pool.query(
             'SELECT * FROM investment_plans ORDER BY min_amount ASC'
@@ -1849,7 +1897,7 @@ app.get('/api/admin/plans', async (req, res) => {
     }
 });
 
-app.post('/api/admin/plans', [
+app.post('/api/admin/plans', adminAuth, [
     body('plan_name').notEmpty(),
     body('min_amount').isFloat({ min: 0 }),
     body('daily_percent').isFloat({ min: 0, max: 1 })
@@ -1886,7 +1934,7 @@ app.post('/api/admin/plans', [
     }
 });
 
-app.delete('/api/admin/plans/:id', async (req, res) => {
+app.delete('/api/admin/plans/:id', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
         await pool.query('DELETE FROM investment_plans WHERE id = $1', [id]);

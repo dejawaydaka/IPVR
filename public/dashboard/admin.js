@@ -105,6 +105,32 @@ function logoutAdmin() {
   }
 }
 
+// Helper function to get admin auth headers
+function getAdminHeaders() {
+  return {
+    'x-admin-username': 'admin',
+    'x-admin-password': 'pass2002word',
+    'Content-Type': 'application/json'
+  };
+}
+
+// Helper function for authenticated fetch
+async function adminFetch(url, options = {}) {
+  const defaultHeaders = getAdminHeaders();
+  const headers = { ...defaultHeaders, ...(options.headers || {}) };
+  
+  // For FormData requests, don't set Content-Type (browser will set it with boundary)
+  if (options.body instanceof FormData) {
+    delete headers['Content-Type'];
+  }
+  
+  return fetch(url, {
+    ...options,
+    headers,
+    credentials: 'include'
+  });
+}
+
 // Load admin dashboard data
 async function loadAdminData() {
   if (!checkAdminAuth()) return;
@@ -113,55 +139,55 @@ async function loadAdminData() {
     showLoading(true);
     
     // Fetch admin stats
-    const statsRes = await fetch('/api/admin/stats');
+    const statsRes = await adminFetch('/api/admin/stats');
     if (statsRes.ok) {
       const stats = await statsRes.json();
       updateAdminMetrics(stats);
     }
     
     // Fetch pending deposits
-    const depositsRes = await fetch('/api/admin/deposits/pending');
+    const depositsRes = await adminFetch('/api/admin/deposits/pending');
     if (depositsRes.ok) {
       const data = await depositsRes.json();
       renderPendingDeposits(data.deposits || []);
     }
     
     // Fetch pending withdrawals
-    const withdrawalsRes = await fetch('/api/admin/withdrawals/pending');
+    const withdrawalsRes = await adminFetch('/api/admin/withdrawals/pending');
     if (withdrawalsRes.ok) {
       const data = await withdrawalsRes.json();
       renderPendingWithdrawals(data.withdrawals || []);
     }
     
     // Fetch all users
-    const usersRes = await fetch('/admin/users');
+    const usersRes = await adminFetch('/api/admin/users');
     if (usersRes.ok) {
       const data = await usersRes.json();
       renderAllUsers(data.users || []);
     }
     
-    // Fetch wallets
+    // Fetch wallets (public route, no auth needed)
     const walletsRes = await fetch('/api/wallets');
     if (walletsRes.ok) {
       const data = await walletsRes.json();
       renderWallets(data.wallets || []);
     }
     
-    // Fetch projects
+    // Fetch projects (public route, no auth needed)
     const projectsRes = await fetch('/api/projects');
     if (projectsRes.ok) {
       const data = await projectsRes.json();
       renderProjects(data.projects || []);
     }
     
-    // Fetch testimonials
+    // Fetch testimonials (public route, no auth needed)
     const testimonialsRes = await fetch('/api/testimonials');
     if (testimonialsRes.ok) {
       const data = await testimonialsRes.json();
       renderTestimonials(data.testimonials || []);
     }
     
-    // Fetch news
+    // Fetch news (public route, no auth needed)
     const newsRes = await fetch('/api/news?limit=100');
     if (newsRes.ok) {
       const data = await newsRes.json();
@@ -282,7 +308,7 @@ async function approveDeposit(depositId) {
   if (!confirm('Approve this deposit?')) return;
   
   try {
-    const res = await fetch(`/api/admin/deposits/${depositId}/approve`, {
+    const res = await adminFetch(`/api/admin/deposits/${depositId}/approve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -305,7 +331,7 @@ async function rejectDeposit(depositId) {
   if (!confirm('Reject this deposit?')) return;
   
   try {
-    const res = await fetch(`/api/admin/deposits/${depositId}/reject`, {
+    const res = await adminFetch(`/api/admin/deposits/${depositId}/reject`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -328,7 +354,7 @@ async function approveWithdrawal(withdrawalId) {
   if (!confirm('Approve this withdrawal?')) return;
   
   try {
-    const res = await fetch(`/api/admin/withdrawals/${withdrawalId}/approve`, {
+    const res = await adminFetch(`/api/admin/withdrawals/${withdrawalId}/approve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -351,7 +377,7 @@ async function rejectWithdrawal(withdrawalId) {
   if (!confirm('Reject this withdrawal?')) return;
   
   try {
-    const res = await fetch(`/api/admin/withdrawals/${withdrawalId}/reject`, {
+    const res = await adminFetch(`/api/admin/withdrawals/${withdrawalId}/reject`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -374,7 +400,7 @@ async function approveUser(email) {
   if (!confirm(`Approve user ${email}?`)) return;
   
   try {
-    const res = await fetch('/admin/approve', {
+    const res = await adminFetch('/admin/approve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
@@ -527,7 +553,7 @@ async function uploadImage(file, type = 'admin') {
   formData.append('type', type);
   
   try {
-    const res = await fetch('/api/admin/upload-image', {
+    const res = await adminFetch('/api/admin/upload-image', {
       method: 'POST',
       body: formData
     });
@@ -655,7 +681,7 @@ async function saveWallet(e) {
       }
     }
     
-    const res = await fetch('/api/admin/wallets', {
+    const res = await adminFetch('/api/admin/wallets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: id || null, coin_name: coinName, address, qr_url: qrUrl })
@@ -724,7 +750,7 @@ async function saveProject(e) {
       }
     }
     
-    const res = await fetch('/api/admin/projects', {
+    const res = await adminFetch('/api/admin/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: id || null, title, slug, description, image_url: imageUrl, content_html: content })
@@ -749,7 +775,7 @@ async function saveProject(e) {
 async function deleteProject(id) {
   if (!confirm('Delete this project?')) return;
   try {
-    const res = await fetch(`/api/admin/projects/${id}`, { method: 'DELETE' });
+    const res = await adminFetch(`/api/admin/projects/${id}`, { method: 'DELETE' });
     if (res.ok) {
       showToast('Project deleted', 'success');
       loadAdminData();
@@ -804,7 +830,7 @@ async function saveTestimonial(e) {
       }
     }
     
-    const res = await fetch('/api/admin/testimonials', {
+    const res = await adminFetch('/api/admin/testimonials', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: id || null, name, image_url: imageUrl, content })
@@ -829,7 +855,7 @@ async function saveTestimonial(e) {
 async function deleteTestimonial(id) {
   if (!confirm('Delete this testimonial?')) return;
   try {
-    const res = await fetch(`/api/admin/testimonials/${id}`, { method: 'DELETE' });
+    const res = await adminFetch(`/api/admin/testimonials/${id}`, { method: 'DELETE' });
     if (res.ok) {
       showToast('Testimonial deleted', 'success');
       loadAdminData();
@@ -888,7 +914,7 @@ async function saveNews(e) {
       }
     }
     
-    const res = await fetch('/api/admin/news', {
+    const res = await adminFetch('/api/admin/news', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: id || null, title, slug, summary, image_url: imageUrl, content_html: content })
@@ -913,7 +939,7 @@ async function saveNews(e) {
 async function deleteNews(id) {
   if (!confirm('Delete this article?')) return;
   try {
-    const res = await fetch(`/api/admin/news/${id}`, { method: 'DELETE' });
+    const res = await adminFetch(`/api/admin/news/${id}`, { method: 'DELETE' });
     if (res.ok) {
       showToast('Article deleted', 'success');
       loadAdminData();
