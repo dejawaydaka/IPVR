@@ -81,6 +81,12 @@
     </div>
   </div>
 
+  <script>
+    // Check admin auth immediately
+    if (localStorage.getItem('isAdmin') !== 'true') {
+      window.location.href = '../admin-login.html';
+    }
+  </script>
   <script src="../script.js"></script>
   <script src="../admin.js"></script>
   <script>

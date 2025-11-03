@@ -1972,6 +1972,20 @@ setInterval(async () => {
     }
 }, 24 * 60 * 60 * 1000); // every 24h
 
+// Global error handler (must be last middleware)
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  res.status(500).json({ error: 'Internal Server Error', message: err.message || 'An unexpected error occurred' });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not Found', message: 'The requested resource was not found' });
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);

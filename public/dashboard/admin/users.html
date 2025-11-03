@@ -114,6 +114,12 @@
     </div>
   </div>
 
+  <script>
+    // Check admin auth immediately
+    if (localStorage.getItem('isAdmin') !== 'true') {
+      window.location.href = '../admin-login.html';
+    }
+  </script>
   <script src="../script.js"></script>
   <script src="../admin.js"></script>
   <script>
@@ -139,16 +145,15 @@
       try {
         showLoading(true);
         const res = await adminFetch('/api/admin/users');
-        if (res.ok) {
-          const data = await res.json();
-          allUsers = data.users || [];
-          renderAllUsers(allUsers);
-        } else {
-          showToast('Failed to load users', 'error');
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: Failed to fetch users`);
         }
+        const data = await res.json();
+        allUsers = data.users || [];
+        renderAllUsers(allUsers);
       } catch (error) {
         console.error('Load users error:', error);
-        showToast('Failed to load users', 'error');
+        showToast(error.message || 'Failed to load users', 'error');
       } finally {
         showLoading(false);
       }
@@ -227,17 +232,17 @@
           })
         });
         
-        if (res.ok) {
-          showToast('User updated successfully', 'success');
-          closeModal('userEditModal');
-          loadUsers();
-        } else {
-          const data = await res.json();
-          showToast(data.message || 'Failed to update user', 'error');
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ message: 'Failed to update user' }));
+          throw new Error(errorData.message || `HTTP ${res.status}`);
         }
+        
+        showToast('User updated successfully', 'success');
+        closeModal('userEditModal');
+        loadUsers();
       } catch (error) {
         console.error('Save user error:', error);
-        showToast('Failed to update user', 'error');
+        showToast(error.message || 'Failed to update user', 'error');
       } finally {
         showLoading(false);
       }

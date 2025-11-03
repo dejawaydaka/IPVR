@@ -159,17 +159,23 @@
   </div>
 
   <script>
+    // Check if already logged in
+    if (localStorage.getItem('isAdmin') === 'true') {
+      window.location.href = 'admin/dashboard.html';
+    }
+
     document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const username = document.getElementById('adminUsername').value;
       const password = document.getElementById('adminPassword').value;
       const errorEl = document.getElementById('errorMessage');
+      errorEl.classList.remove('show');
 
       // Simple local authentication
       if (username === 'admin' && password === 'pass2002word') {
-        // Store admin session
-        sessionStorage.setItem('admin_authenticated', 'true');
-        sessionStorage.setItem('admin_username', username);
+        // Store admin session in localStorage
+        localStorage.setItem('isAdmin', 'true');
+        localStorage.setItem('admin_username', username);
         // Redirect to admin panel
         window.location.href = 'admin/dashboard.html';
       } else {

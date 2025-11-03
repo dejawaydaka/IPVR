@@ -19,21 +19,17 @@ function closeModal(modalId) {
 
 // Check if user is admin (simple check - in production use proper admin flag)
 function checkAdminAuth() {
-  // Check admin session first (from admin-login.html)
-  const adminAuthenticated = sessionStorage.getItem('admin_authenticated');
-  if (adminAuthenticated === 'true') {
-    return true;
-  }
-  
-  // Fallback to user check
-  const user = getCurrentUser();
-  if (!user) {
-    window.location.href = 'admin-login.html';
+  // Check admin session from localStorage (set in admin-login.html)
+  const isAdmin = localStorage.getItem('isAdmin') === 'true';
+  if (!isAdmin) {
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/admin/')) {
+      window.location.href = '../admin-login.html';
+    } else {
+      window.location.href = 'admin-login.html';
+    }
     return false;
   }
-  
-  // For now, allow any logged-in user. In production, check admin_approved flag
-  // You can enhance this by checking user.admin_approved === true from backend
   return true;
 }
 
@@ -93,9 +89,8 @@ function renderAdminSidebar(currentPage = '') {
 }
 
 function logoutAdmin() {
-  sessionStorage.removeItem('admin_authenticated');
-  sessionStorage.removeItem('admin_username');
-  localStorage.removeItem('rs_user');
+  localStorage.removeItem('isAdmin');
+  localStorage.removeItem('admin_username');
   // Determine correct path based on current location
   const currentPath = window.location.pathname;
   if (currentPath.includes('/admin/')) {
@@ -140,63 +135,67 @@ async function loadAdminData() {
     
     // Fetch admin stats
     const statsRes = await adminFetch('/api/admin/stats');
-    if (statsRes.ok) {
-      const stats = await statsRes.json();
-      updateAdminMetrics(stats);
+    if (!statsRes.ok) {
+      throw new Error(`HTTP ${statsRes.status}: Failed to fetch admin stats`);
     }
+    const stats = await statsRes.json();
+    updateAdminMetrics(stats);
     
     // Fetch pending deposits
     const depositsRes = await adminFetch('/api/admin/deposits/pending');
-    if (depositsRes.ok) {
-      const data = await depositsRes.json();
-      renderPendingDeposits(data.deposits || []);
+    if (!depositsRes.ok) {
+      throw new Error(`HTTP ${depositsRes.status}: Failed to fetch pending deposits`);
     }
+    const depositsData = await depositsRes.json();
+    renderPendingDeposits(depositsData.deposits || []);
     
     // Fetch pending withdrawals
     const withdrawalsRes = await adminFetch('/api/admin/withdrawals/pending');
-    if (withdrawalsRes.ok) {
-      const data = await withdrawalsRes.json();
-      renderPendingWithdrawals(data.withdrawals || []);
+    if (!withdrawalsRes.ok) {
+      throw new Error(`HTTP ${withdrawalsRes.status}: Failed to fetch pending withdrawals`);
     }
+    const withdrawalsData = await withdrawalsRes.json();
+    renderPendingWithdrawals(withdrawalsData.withdrawals || []);
     
     // Fetch all users
     const usersRes = await adminFetch('/api/admin/users');
-    if (usersRes.ok) {
-      const data = await usersRes.json();
-      renderAllUsers(data.users || []);
+    if (!usersRes.ok) {
+      throw new Error(`HTTP ${usersRes.status}: Failed to fetch users`);
     }
+    const usersData = await usersRes.json();
+    renderAllUsers(usersData.users || []);
     
     // Fetch wallets (public route, no auth needed)
     const walletsRes = await fetch('/api/wallets');
     if (walletsRes.ok) {
-      const data = await walletsRes.json();
-      renderWallets(data.wallets || []);
+      const walletsData = await walletsRes.json();
+      renderWallets(walletsData.wallets || []);
     }
     
     // Fetch projects (public route, no auth needed)
     const projectsRes = await fetch('/api/projects');
     if (projectsRes.ok) {
-      const data = await projectsRes.json();
-      renderProjects(data.projects || []);
+      const projectsData = await projectsRes.json();
+      renderProjects(projectsData.projects || []);
     }
     
     // Fetch testimonials (public route, no auth needed)
     const testimonialsRes = await fetch('/api/testimonials');
     if (testimonialsRes.ok) {
-      const data = await testimonialsRes.json();
-      renderTestimonials(data.testimonials || []);
+      const testimonialsData = await testimonialsRes.json();
+      renderTestimonials(testimonialsData.testimonials || []);
     }
     
     // Fetch news (public route, no auth needed)
     const newsRes = await fetch('/api/news?limit=100');
     if (newsRes.ok) {
-      const data = await newsRes.json();
-      renderNews(data.news || []);
+      const newsData = await newsRes.json();
+      renderNews(newsData.news || []);
     }
     
   } catch (error) {
     console.error('Admin data load error:', error);
-    showToast('Failed to load admin data', 'error');
+    showToast(error.message || 'Failed to load admin data', 'error');
   } finally {
     showLoading(false);
   }

@@ -182,15 +182,21 @@ async function fetchUserData(email) {
     
     if (!response.ok) {
       if (response.status === 404) {
-        throw new Error('User not found');
+        throw new Error('User not found. Please login again.');
       }
-      const errorText = await response.text();
-      console.error('[API] Error response:', errorText);
-      throw new Error('Failed to fetch user data');
+      const errorData = await response.json().catch(() => ({ message: 'Failed to fetch user data' }));
+      console.error('[API] Error response:', errorData);
+      throw new Error(errorData.message || `HTTP ${response.status}: Failed to fetch user data`);
     }
     
     const data = await response.json();
     console.log('[API] User data received:', data);
+    
+    // Verify we have required fields
+    if (!data || !data.email) {
+      throw new Error('Invalid data received from server');
+    }
+    
     showLoading(false);
     return data;
   } catch (error) {

@@ -120,6 +120,12 @@
     </div>
   </div>
 
+  <script>
+    // Check admin auth immediately
+    if (localStorage.getItem('isAdmin') !== 'true') {
+      window.location.href = '../admin-login.html';
+    }
+  </script>
   <script src="../script.js"></script>
   <script src="../admin.js"></script>
   <script>
@@ -131,29 +137,32 @@
         showLoading(true);
         
         // Fetch admin stats
-        const statsRes = await fetch('/api/admin/stats');
-        if (statsRes.ok) {
-          const stats = await statsRes.json();
-          updateAdminMetrics(stats);
+        const statsRes = await adminFetch('/api/admin/stats');
+        if (!statsRes.ok) {
+          throw new Error(`HTTP ${statsRes.status}: Failed to fetch admin stats`);
         }
+        const stats = await statsRes.json();
+        updateAdminMetrics(stats);
         
         // Fetch pending deposits
-        const depositsRes = await fetch('/api/admin/deposits/pending');
-        if (depositsRes.ok) {
-          const data = await depositsRes.json();
-          renderPendingDeposits(data.deposits || []);
+        const depositsRes = await adminFetch('/api/admin/deposits/pending');
+        if (!depositsRes.ok) {
+          throw new Error(`HTTP ${depositsRes.status}: Failed to fetch pending deposits`);
         }
+        const depositsData = await depositsRes.json();
+        renderPendingDeposits(depositsData.deposits || []);
         
         // Fetch pending withdrawals
-        const withdrawalsRes = await fetch('/api/admin/withdrawals/pending');
-        if (withdrawalsRes.ok) {
-          const data = await withdrawalsRes.json();
-          renderPendingWithdrawals(data.withdrawals || []);
+        const withdrawalsRes = await adminFetch('/api/admin/withdrawals/pending');
+        if (!withdrawalsRes.ok) {
+          throw new Error(`HTTP ${withdrawalsRes.status}: Failed to fetch pending withdrawals`);
         }
+        const withdrawalsData = await withdrawalsRes.json();
+        renderPendingWithdrawals(withdrawalsData.withdrawals || []);
         
       } catch (error) {
         console.error('Dashboard data load error:', error);
-        showToast('Failed to load dashboard data', 'error');
+        showToast(error.message || 'Failed to load dashboard data', 'error');
       } finally {
         showLoading(false);
       }

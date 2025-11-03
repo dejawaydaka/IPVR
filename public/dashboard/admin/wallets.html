@@ -73,6 +73,12 @@
     </div>
   </div>
 
+  <script>
+    // Check admin auth immediately
+    if (localStorage.getItem('isAdmin') !== 'true') {
+      window.location.href = '../admin-login.html';
+    }
+  </script>
   <script src="../script.js"></script>
   <script src="../admin.js"></script>
   <script>
@@ -91,12 +97,14 @@
       try {
         showLoading(true);
         const res = await fetch('/api/wallets');
-        if (res.ok) {
-          const data = await res.json();
-          renderWallets(data.wallets || []);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: Failed to fetch wallets`);
         }
+        const data = await res.json();
+        renderWallets(data.wallets || []);
       } catch (error) {
         console.error('Load wallets error:', error);
+        showToast(error.message || 'Failed to load wallets', 'error');
       } finally {
         showLoading(false);
       }
