@@ -503,14 +503,14 @@ function renderProjects(projects) {
   
   tbody.innerHTML = projects.map(project => `
     <tr>
-      <td>${project.title}</td>
-      <td><code>${project.slug}</code></td>
-      <td>${(project.description || '').substring(0, 50)}...</td>
+      <td><strong>${escape(project.title)}</strong></td>
+      <td><code>${escape(project.slug)}</code></td>
+      <td>${escape((project.description || '').substring(0, 50))}...</td>
       <td>
         <button class="btn btn-primary btn-sm" onclick="editProject(${project.id}, '${escape(project.title)}', '${escape(project.slug)}', '${escape(project.description || '')}', '${escape(project.image_url || '')}', '${escape(project.content_html || '')}')">
           <i class="fas fa-edit"></i> Edit
         </button>
-        <a href="/projects/${escape(project.slug)}.html" target="_blank" class="btn btn-outline btn-sm" style="margin-left: 0.5rem; text-decoration: none;" title="View on homepage">
+        <a href="/projects/${escape(project.slug)}.html" target="_blank" class="btn btn-outline btn-sm" style="margin-left: 0.5rem; text-decoration: none;" title="View project page live">
           <i class="fas fa-external-link-alt"></i> View Live
         </a>
         <button class="btn btn-outline btn-sm" onclick="deleteProject(${project.id})" style="margin-left: 0.5rem;">
@@ -830,12 +830,13 @@ async function saveProject(e) {
 }
 
 async function deleteProject(id) {
-  if (!confirm('Delete this project?')) return;
+  if (!confirm('Delete this project? It will be removed from the homepage.')) return;
   try {
     const res = await adminFetch(`/api/admin/projects/${id}`, { method: 'DELETE' });
     if (res.ok) {
-      showToast('Project deleted', 'success');
+      showToast('Project deleted successfully! Homepage will update automatically.', 'success');
       loadAdminData();
+      // Homepage will automatically show updated content on next visit/refresh
     } else {
       showToast('Failed to delete project', 'error');
     }
@@ -1013,12 +1014,13 @@ async function saveNews(e) {
 }
 
 async function deleteNews(id) {
-  if (!confirm('Delete this article?')) return;
+  if (!confirm('Delete this article? It will be removed from the homepage.')) return;
   try {
     const res = await adminFetch(`/api/admin/news/${id}`, { method: 'DELETE' });
     if (res.ok) {
-      showToast('Article deleted', 'success');
+      showToast('Article deleted successfully! Homepage will update automatically.', 'success');
       loadAdminData();
+      // Homepage will automatically show updated content on next visit/refresh
     } else {
       showToast('Failed to delete article', 'error');
     }
