@@ -1481,8 +1481,10 @@ app.post('/api/admin/wallets', adminAuth, adminUpload.single('qr_code'), [
 // ===== PROJECTS ROUTES =====
 app.get('/api/projects', async (req, res) => {
     try {
+        const limit = parseInt(req.query.limit) || 6;
         const { rows: projects } = await pool.query(
-            'SELECT id, title, description, image_url, slug FROM projects ORDER BY created_at DESC'
+            'SELECT id, title, description, image_url, slug, created_at FROM projects ORDER BY created_at DESC LIMIT $1',
+            [limit]
         );
         res.json({ projects });
     } catch (err) {
@@ -1629,9 +1631,9 @@ app.delete('/api/admin/testimonials/:id', adminAuth, async (req, res) => {
 // ===== NEWS ROUTES =====
 app.get('/api/news', async (req, res) => {
     try {
-        const limit = parseInt(req.query.limit) || 10;
+        const limit = parseInt(req.query.limit) || 6;
         const { rows: news } = await pool.query(
-            'SELECT id, title, summary, image_url, slug, date FROM news ORDER BY date DESC LIMIT $1',
+            'SELECT id, title, summary, image_url, slug, date, created_at FROM news ORDER BY COALESCE(date, created_at) DESC LIMIT $1',
             [limit]
         );
         res.json({ news });

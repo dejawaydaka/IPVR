@@ -698,9 +698,10 @@ body {
 
 .projects-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2rem;
     margin-bottom: 3rem;
+    padding: 1rem 0;
 }
 
 .project-card {
@@ -708,6 +709,19 @@ body {
     overflow: hidden;
     transition: all 0.3s ease;
     position: relative;
+}
+
+.project-card.glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 24px rgba(0, 255, 128, 0.1);
+}
+
+.project-card.glass:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 255, 128, 0.2);
 }
 
 .project-card:hover {
@@ -778,6 +792,28 @@ body {
 .project-info p {
     margin-bottom: 1.5rem;
     opacity: 0.9;
+}
+
+.view-btn, .read-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 25px;
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+}
+
+.view-btn:hover, .read-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .project-meta {
@@ -1095,8 +1131,9 @@ body {
 
 .news-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2rem;
+    padding: 1rem 0;
 }
 
 .news-card {
@@ -1105,6 +1142,19 @@ body {
     border-radius: 16px;
     overflow: hidden;
     transition: all 0.3s ease;
+}
+
+.news-card.glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 24px rgba(0, 255, 128, 0.1);
+}
+
+.news-card.glass:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 255, 128, 0.2);
 }
 
 .news-card:hover {
