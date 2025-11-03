@@ -32,9 +32,14 @@
         </div>
       </div>
       <div class="header-spacer"></div>
-      <button class="btn btn-primary" onclick="refreshAdminData()">
-        <i class="fas fa-sync-alt"></i> Refresh
-      </button>
+      <div style="display: flex; gap: 1rem;">
+        <button class="btn btn-outline" onclick="refreshHomepage()" title="View homepage to see latest updates">
+          <i class="fas fa-home"></i> View Homepage
+        </button>
+        <button class="btn btn-primary" onclick="refreshAdminData()">
+          <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+      </div>
     </header>
 
     <!-- Admin Metrics -->

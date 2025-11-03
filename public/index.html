@@ -565,10 +565,11 @@
                 if (projects && projects.length > 0) {
                     container.innerHTML = projects.map(project => {
                         const desc = (project.description || '').substring(0, 120);
+                        const imageUrl = project.image_url || '/uploads/admin/default-project.jpg';
                         return `
                             <div class="project-card glass" onclick="window.location.href='/projects/${project.slug}.html'" style="cursor: pointer;">
                                 <div class="project-image">
-                                    <img src="${project.image_url || '/uploads/admin/default-project.jpg'}" alt="${escapeHTML(project.title)}" onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'">
+                                    <img src="${imageUrl}" alt="${escapeHTML(project.title)}" onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'">
                                     <div class="project-overlay">
                                         <div class="project-info">
                                             <span class="project-category">Featured</span>

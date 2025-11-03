@@ -451,6 +451,11 @@ function refreshAdminData() {
   loadAdminData();
 }
 
+// Open homepage in new tab to preview updates
+function refreshHomepage() {
+  window.open('/', '_blank');
+}
+
 // Helper functions
 function formatNumber(num) {
   return Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

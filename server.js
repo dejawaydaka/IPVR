@@ -1486,10 +1486,10 @@ app.get('/api/projects', async (req, res) => {
             'SELECT id, title, description, image_url, slug, created_at FROM projects ORDER BY created_at DESC LIMIT $1',
             [limit]
         );
-        res.json({ projects });
+        res.json({ projects: projects || [] });
     } catch (err) {
         console.error('Get projects error:', err);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error', projects: [] });
     }
 });
 
@@ -1636,10 +1636,10 @@ app.get('/api/news', async (req, res) => {
             'SELECT id, title, summary, image_url, slug, date, created_at FROM news ORDER BY COALESCE(date, created_at) DESC LIMIT $1',
             [limit]
         );
-        res.json({ news });
+        res.json({ news: news || [] });
     } catch (err) {
         console.error('Get news error:', err);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error', news: [] });
     }
 });
 
