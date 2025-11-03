@@ -107,6 +107,20 @@
   <script src="../script.js"></script>
   <script src="../admin.js"></script>
   <script>
+    // Helper functions
+    function formatNumber(num) {
+      return Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    
+    function escape(str) {
+      if (!str) return '';
+      return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n');
+    }
+    
+    function unescape(str) {
+      if (!str) return '';
+      return String(str).replace(/\\'/g, "'").replace(/&quot;/g, '"').replace(/\\n/g, '\n');
+    }
     async function loadPlans() {
       if (!checkAdminAuth()) return;
       

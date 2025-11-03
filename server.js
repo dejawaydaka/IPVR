@@ -181,17 +181,29 @@ async function ensureSchema() {
   `);
 }
 
+// Initialize database connection (non-blocking)
 pool.connect()
   .then(async (client) => {
     console.log('✅ Connected to PostgreSQL');
     dbConnected = true;
     client.release();
-    try {
-      await ensureSchema();
-      console.log('🛠️  Database schema ensured');
-    } catch (schemaErr) {
-      console.error('Schema init error:', schemaErr.message);
-    }
+    
+    // Initialize schema and plans asynchronously
+    (async () => {
+      try {
+        await ensureSchema();
+        console.log('🛠️  Database schema ensured');
+        
+        // Small delay to ensure table is fully created
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Initialize investment plans after schema is ready
+        await initializeInvestmentPlans();
+      } catch (schemaErr) {
+        console.error('Schema/Plans init error:', schemaErr.message);
+        // Don't crash - server can still start
+      }
+    })();
   })
   .catch(err => {
     console.error('❌ Database connection error:', err.message);
@@ -1627,7 +1639,7 @@ app.delete('/api/admin/news/:id', async (req, res) => {
 });
 
 // ===== ADMIN IMAGE UPLOAD ROUTE =====
-const storage = multer.diskStorage({
+const adminStorage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadPath = path.join(__dirname, 'public', 'uploads', 'admin');
         if (!fs.existsSync(uploadPath)) {
@@ -1641,8 +1653,8 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({
-    storage: storage,
+const adminUpload = multer({
+    storage: adminStorage,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/')) {
@@ -1653,7 +1665,7 @@ const upload = multer({
     }
 });
 
-app.post('/api/admin/upload-image', upload.single('image'), (req, res) => {
+app.post('/api/admin/upload-image', adminUpload.single('image'), (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'No image file uploaded' });
@@ -1777,6 +1789,20 @@ app.post('/api/admin/users/:id/update', [
 // Initialize investment plans table after schema
 async function initializeInvestmentPlans() {
   try {
+    // First check if table exists, if not, wait a moment for schema to finish
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'investment_plans'
+      );
+    `);
+    
+    if (!tableCheck.rows[0].exists) {
+      console.log('⚠️  investment_plans table not found, skipping plan initialization');
+      return;
+    }
+    
     const { rows: existing } = await pool.query('SELECT COUNT(*) as count FROM investment_plans');
     if (parseInt(existing[0].count) === 0) {
       const defaultPlans = [
@@ -1789,32 +1815,27 @@ async function initializeInvestmentPlans() {
       ];
       
       for (const plan of defaultPlans) {
-        await pool.query(
-          'INSERT INTO investment_plans (plan_name, min_amount, max_amount, daily_percent, duration) VALUES ($1, $2, $3, $4, $5)',
-          plan
-        );
+        try {
+          await pool.query(
+            'INSERT INTO investment_plans (plan_name, min_amount, max_amount, daily_percent, duration) VALUES ($1, $2, $3, $4, $5)',
+            plan
+          );
+        } catch (insertErr) {
+          // Skip if plan already exists
+          if (insertErr.code !== '23505') {
+            console.error('Error inserting plan:', plan[0], insertErr.message);
+          }
+        }
       }
-      console.log('✅ Default investment plans inserted');
+      console.log('✅ Default investment plans initialized');
     }
   } catch (err) {
-    console.error('Investment plans init error:', err);
+    console.error('Investment plans init error:', err.message);
+    // Don't crash - plans can be added manually later
   }
 }
 
-// Initialize plans after schema is created
-pool.connect()
-  .then(async (client) => {
-    client.release();
-    try {
-      await ensureSchema();
-      await initializeInvestmentPlans();
-    } catch (err) {
-      console.error('Schema/Plans init error:', err);
-    }
-  })
-  .catch(() => {
-    // Connection will be retried
-  });
+// Investment plans initialization is now handled in the main pool.connect() above
 
 app.get('/api/admin/plans', async (req, res) => {
     try {
