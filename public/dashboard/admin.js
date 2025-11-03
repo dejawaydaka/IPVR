@@ -816,10 +816,6 @@ async function saveProject(e) {
     closeModal('projectModal');
     loadAdminData();
     // Note: Homepage will automatically show new project on next page load
-    } else {
-      const data = await res.json();
-      showToast(data.message || 'Failed to save project', 'error');
-    }
   } catch (error) {
     console.error('Save project error:', error);
     showToast('Failed to save project', 'error');
@@ -1003,10 +999,6 @@ async function saveNews(e) {
     closeModal('newsModal');
     loadAdminData();
     // Note: Homepage will automatically show new article on next page load
-    } else {
-      const data = await res.json();
-      showToast(data.message || 'Failed to save article', 'error');
-    }
   } catch (error) {
     console.error('Save article error:', error);
     showToast('Failed to save article', 'error');
