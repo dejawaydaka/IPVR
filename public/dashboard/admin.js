@@ -817,10 +817,10 @@ async function saveProject(e) {
       throw new Error(errorData.message || `HTTP ${res.status}`);
     }
     
-    showToast('Project saved successfully', 'success');
+    showToast('Project saved successfully! Homepage will update automatically.', 'success');
     closeModal('projectModal');
     loadAdminData();
-    // Note: Homepage will automatically show new project on next page load
+    // Homepage will automatically show new project on next visit/refresh
   } catch (error) {
     console.error('Save project error:', error);
     showToast('Failed to save project', 'error');
@@ -1001,10 +1001,10 @@ async function saveNews(e) {
       throw new Error(errorData.message || `HTTP ${res.status}`);
     }
     
-    showToast('Article saved successfully', 'success');
+    showToast('Article saved successfully! Homepage will update automatically.', 'success');
     closeModal('newsModal');
     loadAdminData();
-    // Note: Homepage will automatically show new article on next page load
+    // Homepage will automatically show new article on next visit/refresh
   } catch (error) {
     console.error('Save article error:', error);
     showToast('Failed to save article', 'error');
