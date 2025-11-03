@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Investment Plans - Admin Panel</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+  
+  <!-- Mobile Hamburger Menu -->
+  <div class="mobile-menu-toggle" id="mobileMenuToggle">
+    <i class="fas fa-bars"></i>
+  </div>
+  
+  <!-- Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <header>
+      <div class="user-info">
+        <h1>Investment Plans <i class="fas fa-coins"></i></h1>
+        <div class="user-details">
+          <span class="user-role">Administrator</span>
+        </div>
+      </div>
+      <div class="header-spacer"></div>
+      <button class="btn btn-primary" onclick="openPlanModal()">
+        <i class="fas fa-plus"></i> Add Plan
+      </button>
+    </header>
+
+    <!-- Plans Table -->
+    <div class="admin-section">
+      <h2><i class="fas fa-list"></i> Investment Plans</h2>
+      <div class="table-section">
+        <table id="plansTable">
+          <thead>
+            <tr>
+              <th>Plan Name</th>
+              <th>Min Amount</th>
+              <th>Max Amount</th>
+              <th>Daily %</th>
+              <th>Duration</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="plansBody">
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 2rem;">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plan Modal -->
+  <div id="planModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="planModalTitle">Add Investment Plan</h3>
+        <button class="modal-close" onclick="closeModal('planModal')">&times;</button>
+      </div>
+      <form id="planForm" onsubmit="savePlan(event)">
+        <input type="hidden" id="planId">
+        <div class="form-group">
+          <label>Plan Name</label>
+          <input type="text" id="planName" required>
+        </div>
+        <div class="form-group">
+          <label>Minimum Amount ($)</label>
+          <input type="number" id="planMinAmount" step="0.01" min="0" required>
+        </div>
+        <div class="form-group">
+          <label>Maximum Amount ($) - Leave empty for unlimited</label>
+          <input type="number" id="planMaxAmount" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label>Daily Return Percentage (e.g., 0.02 for 2%)</label>
+          <input type="number" id="planDailyPercent" step="0.0001" min="0" max="1" required>
+        </div>
+        <div class="form-group">
+          <label>Duration (days)</label>
+          <input type="number" id="planDuration" min="1" value="7" required>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="planIsActive" checked> Active
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('planModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../script.js"></script>
+  <script src="../admin.js"></script>
+  <script>
+    async function loadPlans() {
+      if (!checkAdminAuth()) return;
+      
+      try {
+        showLoading(true);
+        const res = await fetch('/api/admin/plans');
+        if (res.ok) {
+          const data = await res.json();
+          renderPlans(data.plans || []);
+        } else {
+          showToast('Failed to load plans', 'error');
+        }
+      } catch (error) {
+        console.error('Load plans error:', error);
+        showToast('Failed to load plans', 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function renderPlans(plans) {
+      const tbody = document.getElementById('plansBody');
+      if (!tbody) return;
+      
+      if (plans.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No plans found</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = plans.map(plan => `
+        <tr>
+          <td><strong>${plan.plan_name}</strong></td>
+          <td>$${formatNumber(plan.min_amount)}</td>
+          <td>${plan.max_amount ? '$' + formatNumber(plan.max_amount) : 'Unlimited'}</td>
+          <td>${(plan.daily_percent * 100).toFixed(2)}%</td>
+          <td>${plan.duration} days</td>
+          <td>
+            <span class="badge ${plan.is_active ? 'badge-success' : 'badge-warning'}">
+              ${plan.is_active ? 'Active' : 'Inactive'}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="editPlan(${plan.id}, '${escape(plan.plan_name)}', ${plan.min_amount}, ${plan.max_amount || 'null'}, ${plan.daily_percent}, ${plan.duration}, ${plan.is_active})">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="deletePlan(${plan.id})" style="margin-left: 0.5rem;">
+              <i class="fas fa-trash"></i> Delete
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openPlanModal(id = null, name = '', minAmount = 0, maxAmount = null, dailyPercent = 0, duration = 7, isActive = true) {
+      document.getElementById('planId').value = id || '';
+      document.getElementById('planName').value = name;
+      document.getElementById('planMinAmount').value = minAmount;
+      document.getElementById('planMaxAmount').value = maxAmount || '';
+      document.getElementById('planDailyPercent').value = dailyPercent;
+      document.getElementById('planDuration').value = duration;
+      document.getElementById('planIsActive').checked = isActive;
+      document.getElementById('planModalTitle').textContent = id ? 'Edit Investment Plan' : 'Add Investment Plan';
+      openModal('planModal');
+    }
+
+    async function savePlan(e) {
+      e.preventDefault();
+      showLoading(true);
+      
+      const id = document.getElementById('planId').value;
+      const planName = document.getElementById('planName').value;
+      const minAmount = parseFloat(document.getElementById('planMinAmount').value);
+      const maxAmountInput = document.getElementById('planMaxAmount').value;
+      const maxAmount = maxAmountInput ? parseFloat(maxAmountInput) : null;
+      const dailyPercent = parseFloat(document.getElementById('planDailyPercent').value);
+      const duration = parseInt(document.getElementById('planDuration').value);
+      const isActive = document.getElementById('planIsActive').checked;
+      
+      try {
+        const res = await fetch('/api/admin/plans', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: id || null,
+            plan_name: planName,
+            min_amount: minAmount,
+            max_amount: maxAmount,
+            daily_percent: dailyPercent,
+            duration: duration,
+            is_active: isActive
+          })
+        });
+        
+        if (res.ok) {
+          showToast('Plan saved successfully', 'success');
+          closeModal('planModal');
+          loadPlans();
+        } else {
+          const data = await res.json();
+          showToast(data.message || 'Failed to save plan', 'error');
+        }
+      } catch (error) {
+        console.error('Save plan error:', error);
+        showToast('Failed to save plan', 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    async function deletePlan(id) {
+      if (!confirm('Delete this investment plan?')) return;
+      
+      try {
+        const res = await fetch(`/api/admin/plans/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          showToast('Plan deleted successfully', 'success');
+          loadPlans();
+        } else {
+          showToast('Failed to delete plan', 'error');
+        }
+      } catch (error) {
+        console.error('Delete plan error:', error);
+        showToast('Failed to delete plan', 'error');
+      }
+    }
+
+    function editPlan(id, name, minAmount, maxAmount, dailyPercent, duration, isActive) {
+      openPlanModal(id, unescape(name), minAmount, maxAmount, dailyPercent, duration, isActive);
+    }
+
+    window.openPlanModal = openPlanModal;
+    window.savePlan = savePlan;
+    window.deletePlan = deletePlan;
+    window.editPlan = editPlan;
+    window.loadPlans = loadPlans;
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        initAdminDashboard();
+        loadPlans();
+      });
+    } else {
+      initAdminDashboard();
+      loadPlans();
+    }
+  </script>
+</body>
+</html>
+

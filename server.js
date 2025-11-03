@@ -164,6 +164,21 @@ async function ensureSchema() {
   await pool.query('CREATE INDEX IF NOT EXISTS idx_projects_slug ON projects(slug);');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_news_slug ON news(slug);');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_news_date ON news(date);');
+  
+  // Create investment_plans table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS investment_plans (
+      id SERIAL PRIMARY KEY,
+      plan_name VARCHAR(100) UNIQUE NOT NULL,
+      min_amount NUMERIC(12, 2) NOT NULL,
+      max_amount NUMERIC(12, 2),
+      daily_percent NUMERIC(5, 4) NOT NULL,
+      duration INTEGER DEFAULT 7,
+      is_active BOOLEAN DEFAULT true,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
 }
 
 pool.connect()
@@ -354,7 +369,7 @@ app.post('/register', [
         // Check database connection first
         await checkDatabase();
         
-        const { email, password, name } = req.body;
+    const { email, password, name } = req.body;
 
         // Check if user exists
         const { rows: existingUsers } = await pool.query(
@@ -363,8 +378,8 @@ app.post('/register', [
         );
 
         if (existingUsers.length > 0) {
-            return res.status(400).json({ message: 'Email already exists' });
-        }
+        return res.status(400).json({ message: 'Email already exists' });
+    }
 
         // Hash password
         const hashedPassword = bcrypt.hashSync(password, 10);
@@ -377,7 +392,7 @@ app.post('/register', [
             [sanitizeString(email), hashedPassword, sanitizeString(name || ''), 5, 5]
         );
 
-        res.json({ message: 'Registered successfully' });
+    res.json({ message: 'Registered successfully' });
     } catch (err) {
         console.error('Registration error:', err);
         if (err.message === 'Database connection failed' || err.message === 'DATABASE_URL not set') {
@@ -401,7 +416,7 @@ app.post('/login', [
         // Check database connection
         await checkDatabase();
 
-        const { email, password } = req.body;
+    const { email, password } = req.body;
 
         const { rows: users } = await pool.query(
             'SELECT * FROM users WHERE email = $1',
@@ -623,7 +638,7 @@ const PROFIT_UPDATE_INTERVAL = 60000; // 1 minute
 
 app.post('/profits/update', async (req, res) => {
     try {
-        const now = Date.now();
+    const now = Date.now();
         // Prevent too frequent updates
         if (now - lastProfitUpdate < PROFIT_UPDATE_INTERVAL) {
             return res.json({ message: 'Profits are up to date', skipped: true });
@@ -646,7 +661,7 @@ app.post('/profits/update', async (req, res) => {
         }
         
         lastProfitUpdate = now;
-        res.json({ message: 'Profits updated successfully' });
+    res.json({ message: 'Profits updated successfully' });
     } catch (err) {
         console.error('Profit update error:', err);
         res.status(500).json({ message: 'Server error' });
@@ -663,7 +678,7 @@ app.get('/user', [
     }
 
     try {
-        const { email } = req.query;
+    const { email } = req.query;
         const { rows: users } = await pool.query(
             'SELECT * FROM users WHERE email = $1',
             [email]
@@ -725,8 +740,8 @@ app.get('/dashboard', [
         }));
         
         const responseData = {
-            email: user.email,
-            name: user.name || '',
+            email: user.email, 
+            name: user.name || '', 
             profileImage: user.profile_image || '',
             investments: formattedInvestments,
             totalProfit: profits.totalProfit,
@@ -1611,6 +1626,256 @@ app.delete('/api/admin/news/:id', async (req, res) => {
     }
 });
 
+// ===== ADMIN IMAGE UPLOAD ROUTE =====
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadPath = path.join(__dirname, 'public', 'uploads', 'admin');
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'));
+        }
+    }
+});
+
+app.post('/api/admin/upload-image', upload.single('image'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No image file uploaded' });
+        }
+        
+        const imageUrl = '/uploads/admin/' + req.file.filename;
+        res.json({ url: imageUrl });
+    } catch (err) {
+        console.error('Image upload error:', err);
+        res.status(500).json({ message: 'Failed to upload image' });
+    }
+});
+
+// ===== ADMIN USER MANAGEMENT ROUTES =====
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        const { rows: users } = await pool.query(
+            `SELECT id, email, name, profile_image, balance, total_investment, total_profit, 
+             total_deposits, bonus, admin_approved, created_at 
+             FROM users ORDER BY created_at DESC`
+        );
+        res.json({ users });
+    } catch (err) {
+        console.error('Get users error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/admin/users/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rows: users } = await pool.query(
+            `SELECT id, email, name, profile_image, balance, total_investment, total_profit, 
+             total_deposits, bonus, admin_approved, created_at 
+             FROM users WHERE id = $1`,
+            [id]
+        );
+        
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        res.json({ user: users[0] });
+    } catch (err) {
+        console.error('Get user error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/admin/users/:id/update', [
+    body('balance').optional().isFloat({ min: 0 }),
+    body('total_investment').optional().isFloat({ min: 0 }),
+    body('total_profit').optional().isFloat({ min: 0 }),
+    body('name').optional().trim(),
+    body('email').optional().isEmail()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: errors.array()[0].msg });
+    }
+    
+    try {
+        const { id } = req.params;
+        const { balance, total_investment, total_profit, name, email, profile_image } = req.body;
+        
+        const updates = [];
+        const values = [];
+        let paramCount = 1;
+        
+        if (balance !== undefined) {
+            updates.push(`balance = $${paramCount}`);
+            values.push(balance);
+            paramCount++;
+        }
+        if (total_investment !== undefined) {
+            updates.push(`total_investment = $${paramCount}`);
+            values.push(total_investment);
+            paramCount++;
+        }
+        if (total_profit !== undefined) {
+            updates.push(`total_profit = $${paramCount}`);
+            values.push(total_profit);
+            paramCount++;
+        }
+        if (name !== undefined) {
+            updates.push(`name = $${paramCount}`);
+            values.push(sanitizeString(name));
+            paramCount++;
+        }
+        if (email !== undefined) {
+            updates.push(`email = $${paramCount}`);
+            values.push(sanitizeString(email));
+            paramCount++;
+        }
+        if (profile_image !== undefined) {
+            updates.push(`profile_image = $${paramCount}`);
+            values.push(profile_image);
+            paramCount++;
+        }
+        
+        if (updates.length === 0) {
+            return res.status(400).json({ message: 'No fields to update' });
+        }
+        
+        updates.push(`updated_at = CURRENT_TIMESTAMP`);
+        values.push(id);
+        
+        await pool.query(
+            `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount}`,
+            values
+        );
+        
+        res.json({ message: 'User updated successfully' });
+    } catch (err) {
+        console.error('Update user error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// ===== INVESTMENT PLANS MANAGEMENT =====
+// Initialize investment plans table after schema
+async function initializeInvestmentPlans() {
+  try {
+    const { rows: existing } = await pool.query('SELECT COUNT(*) as count FROM investment_plans');
+    if (parseInt(existing[0].count) === 0) {
+      const defaultPlans = [
+        ['Starter Plan', 50, 499, 0.02, 7],
+        ['Bronze Plan', 500, 999, 0.025, 7],
+        ['Silver Plan', 1000, 1999, 0.03, 7],
+        ['Gold Plan', 2000, 3999, 0.035, 7],
+        ['Platinum Plan', 4000, 6999, 0.04, 7],
+        ['Diamond Plan', 7000, null, 0.05, 7]
+      ];
+      
+      for (const plan of defaultPlans) {
+        await pool.query(
+          'INSERT INTO investment_plans (plan_name, min_amount, max_amount, daily_percent, duration) VALUES ($1, $2, $3, $4, $5)',
+          plan
+        );
+      }
+      console.log('✅ Default investment plans inserted');
+    }
+  } catch (err) {
+    console.error('Investment plans init error:', err);
+  }
+}
+
+// Initialize plans after schema is created
+pool.connect()
+  .then(async (client) => {
+    client.release();
+    try {
+      await ensureSchema();
+      await initializeInvestmentPlans();
+    } catch (err) {
+      console.error('Schema/Plans init error:', err);
+    }
+  })
+  .catch(() => {
+    // Connection will be retried
+  });
+
+app.get('/api/admin/plans', async (req, res) => {
+    try {
+        const { rows: plans } = await pool.query(
+            'SELECT * FROM investment_plans ORDER BY min_amount ASC'
+        );
+        res.json({ plans });
+    } catch (err) {
+        console.error('Get plans error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/admin/plans', [
+    body('plan_name').notEmpty(),
+    body('min_amount').isFloat({ min: 0 }),
+    body('daily_percent').isFloat({ min: 0, max: 1 })
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: errors.array()[0].msg });
+    }
+    
+    try {
+        const { id, plan_name, min_amount, max_amount, daily_percent, duration, is_active } = req.body;
+        
+        if (id) {
+            // Update existing
+            await pool.query(
+                'UPDATE investment_plans SET plan_name = $1, min_amount = $2, max_amount = $3, daily_percent = $4, duration = $5, is_active = $6, updated_at = CURRENT_TIMESTAMP WHERE id = $7',
+                [plan_name, min_amount, max_amount || null, daily_percent, duration || 7, is_active !== undefined ? is_active : true, id]
+            );
+            res.json({ message: 'Plan updated successfully' });
+        } else {
+            // Create new
+            const { rows: newPlan } = await pool.query(
+                'INSERT INTO investment_plans (plan_name, min_amount, max_amount, daily_percent, duration, is_active) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+                [plan_name, min_amount, max_amount || null, daily_percent, duration || 7, is_active !== undefined ? is_active : true]
+            );
+            res.json({ message: 'Plan created successfully', id: newPlan[0].id });
+        }
+    } catch (err) {
+        if (err.code === '23505') {
+            return res.status(400).json({ message: 'Plan name already exists' });
+        }
+        console.error('Plan management error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.delete('/api/admin/plans/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query('DELETE FROM investment_plans WHERE id = $1', [id]);
+        res.json({ message: 'Plan deleted successfully' });
+    } catch (err) {
+        console.error('Delete plan error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // Daily profit auto calculation (runs every 24 hours)
 setInterval(async () => {
     try {
@@ -1638,7 +1903,7 @@ setInterval(async () => {
 
 // Start the server
 app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+  console.log(`Server running at http://localhost:${port}`);
     console.log('✅ PostgreSQL database connected');
     console.log('Security features enabled: password hashing, rate limiting, input validation');
 });

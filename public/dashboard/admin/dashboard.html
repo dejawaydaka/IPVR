@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - RealSphere</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+  
+  <!-- Mobile Hamburger Menu -->
+  <div class="mobile-menu-toggle" id="mobileMenuToggle">
+    <i class="fas fa-bars"></i>
+  </div>
+  
+  <!-- Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <header>
+      <div class="user-info">
+        <h1>Admin Dashboard <i class="fas fa-shield-alt"></i></h1>
+        <div class="user-details">
+          <span class="user-role">Administrator</span>
+          <span class="user-email" id="adminUserEmail">admin@realsphere.com</span>
+        </div>
+      </div>
+      <div class="header-spacer"></div>
+      <button class="btn btn-primary" onclick="refreshAdminData()">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
+    </header>
+
+    <!-- Admin Metrics -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-icon"><i class="fas fa-users"></i></div>
+        <h3>Total Users</h3>
+        <div class="metric-value" id="adminTotalUsers">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon"><i class="fas fa-coins"></i></div>
+        <h3>Total Investments</h3>
+        <div class="metric-value" id="adminTotalInvestments">$0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon"><i class="fas fa-arrow-down"></i></div>
+        <h3>Total Deposits</h3>
+        <div class="metric-value" id="adminTotalDeposits">$0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon"><i class="fas fa-arrow-up"></i></div>
+        <h3>Total Withdrawals</h3>
+        <div class="metric-value" id="adminTotalWithdrawals">$0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon"><i class="fas fa-clock"></i></div>
+        <h3>Pending Deposits</h3>
+        <div class="metric-value" id="adminPendingDeposits">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon"><i class="fas fa-exclamation-circle"></i></div>
+        <h3>Pending Withdrawals</h3>
+        <div class="metric-value" id="adminPendingWithdrawals">0</div>
+      </div>
+    </div>
+
+    <!-- Pending Deposits Section -->
+    <div class="admin-section">
+      <h2><i class="fas fa-inbox"></i> Pending Deposits</h2>
+      <div class="table-section">
+        <table id="pendingDepositsTable">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Amount</th>
+              <th>Currency</th>
+              <th>Transaction Hash</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="pendingDepositsBody">
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 2rem;">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pending Withdrawals Section -->
+    <div class="admin-section">
+      <h2><i class="fas fa-paper-plane"></i> Pending Withdrawals</h2>
+      <div class="table-section">
+        <table id="pendingWithdrawalsTable">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Amount</th>
+              <th>Crypto Type</th>
+              <th>Wallet Address</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="pendingWithdrawalsBody">
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 2rem;">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="../script.js"></script>
+  <script src="../admin.js"></script>
+  <script>
+    // Load only dashboard-specific data
+    async function loadDashboardData() {
+      if (!checkAdminAuth()) return;
+      
+      try {
+        showLoading(true);
+        
+        // Fetch admin stats
+        const statsRes = await fetch('/api/admin/stats');
+        if (statsRes.ok) {
+          const stats = await statsRes.json();
+          updateAdminMetrics(stats);
+        }
+        
+        // Fetch pending deposits
+        const depositsRes = await fetch('/api/admin/deposits/pending');
+        if (depositsRes.ok) {
+          const data = await depositsRes.json();
+          renderPendingDeposits(data.deposits || []);
+        }
+        
+        // Fetch pending withdrawals
+        const withdrawalsRes = await fetch('/api/admin/withdrawals/pending');
+        if (withdrawalsRes.ok) {
+          const data = await withdrawalsRes.json();
+          renderPendingWithdrawals(data.withdrawals || []);
+        }
+        
+      } catch (error) {
+        console.error('Dashboard data load error:', error);
+        showToast('Failed to load dashboard data', 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        initAdminDashboard();
+        loadDashboardData();
+      });
+    } else {
+      initAdminDashboard();
+      loadDashboardData();
+    }
+
+    window.refreshAdminData = loadDashboardData;
+  </script>
+</body>
+</html>
+

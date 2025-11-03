@@ -19,15 +19,90 @@ function closeModal(modalId) {
 
 // Check if user is admin (simple check - in production use proper admin flag)
 function checkAdminAuth() {
+  // Check admin session first (from admin-login.html)
+  const adminAuthenticated = sessionStorage.getItem('admin_authenticated');
+  if (adminAuthenticated === 'true') {
+    return true;
+  }
+  
+  // Fallback to user check
   const user = getCurrentUser();
   if (!user) {
-    window.location.href = '../index.html';
+    window.location.href = 'admin-login.html';
     return false;
   }
   
   // For now, allow any logged-in user. In production, check admin_approved flag
   // You can enhance this by checking user.admin_approved === true from backend
   return true;
+}
+
+// Admin-specific sidebar renderer
+function renderAdminSidebar(currentPage = '') {
+  // Determine current page based on path
+  const currentPath = window.location.pathname;
+  let currentFile = '';
+  
+  if (currentPath.includes('/admin/dashboard.html')) currentFile = 'dashboard.html';
+  else if (currentPath.includes('/admin/users.html')) currentFile = 'users.html';
+  else if (currentPath.includes('/admin/wallets.html')) currentFile = 'wallets.html';
+  else if (currentPath.includes('/admin/projects.html')) currentFile = 'projects.html';
+  else if (currentPath.includes('/admin/testimonials.html')) currentFile = 'testimonials.html';
+  else if (currentPath.includes('/admin/news.html')) currentFile = 'news.html';
+  else if (currentPath.includes('/admin/plans.html')) currentFile = 'plans.html';
+  else if (currentPath.includes('/admin.html')) currentFile = 'admin.html';
+  
+  // Determine base path (if in /admin/ folder, use relative paths)
+  const isInAdminFolder = currentPath.includes('/admin/');
+  const basePath = isInAdminFolder ? '' : 'admin/';
+  
+  const adminPages = [
+    { path: `${basePath}dashboard.html`, name: 'Dashboard Overview', icon: 'fas fa-chart-line', file: 'dashboard.html' },
+    { path: `${basePath}users.html`, name: 'User Management', icon: 'fas fa-users', file: 'users.html' },
+    { path: `${basePath}wallets.html`, name: 'Wallet Management', icon: 'fas fa-wallet', file: 'wallets.html' },
+    { path: `${basePath}projects.html`, name: 'Projects', icon: 'fas fa-building', file: 'projects.html' },
+    { path: `${basePath}testimonials.html`, name: 'Testimonials', icon: 'fas fa-comments', file: 'testimonials.html' },
+    { path: `${basePath}news.html`, name: 'News & Insights', icon: 'fas fa-newspaper', file: 'news.html' },
+    { path: `${basePath}plans.html`, name: 'Investment Plans', icon: 'fas fa-coins', file: 'plans.html' }
+  ];
+  
+  return `
+    <aside class="sidebar">
+      <h2><i class="fas fa-shield-alt"></i> Admin Panel</h2>
+      <div class="user-display">
+        <span style="color: #4ef5a3; font-weight: 600;">Administrator</span>
+      </div>
+      <ul>
+        ${adminPages.map(page => `
+          <li>
+            <a href="${page.path}" class="${currentFile === page.file ? 'active' : ''}">
+              <i class="${page.icon}"></i>
+              <span>${page.name}</span>
+            </a>
+          </li>
+        `).join('')}
+        <li>
+          <a href="#" onclick="logoutAdmin(); return false;">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+          </a>
+        </li>
+      </ul>
+    </aside>
+  `;
+}
+
+function logoutAdmin() {
+  sessionStorage.removeItem('admin_authenticated');
+  sessionStorage.removeItem('admin_username');
+  localStorage.removeItem('rs_user');
+  // Determine correct path based on current location
+  const currentPath = window.location.pathname;
+  if (currentPath.includes('/admin/')) {
+    window.location.href = '../admin-login.html';
+  } else {
+    window.location.href = 'admin-login.html';
+  }
 }
 
 // Load admin dashboard data
@@ -443,13 +518,117 @@ function renderNews(news) {
   }).join('');
 }
 
+// Image upload helper
+async function uploadImage(file, type = 'admin') {
+  if (!file) return null;
+  
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('type', type);
+  
+  try {
+    const res = await fetch('/api/admin/upload-image', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      return data.url;
+    } else {
+      throw new Error('Upload failed');
+    }
+  } catch (error) {
+    console.error('Image upload error:', error);
+    showToast('Failed to upload image', 'error');
+    return null;
+  }
+}
+
+// Setup image preview handlers
+function setupImagePreviews() {
+  // Wallet QR
+  const walletQrFile = document.getElementById('walletQrFile');
+  if (walletQrFile) {
+    walletQrFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          document.getElementById('walletQrPreviewImg').src = event.target.result;
+          document.getElementById('walletQrPreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+  
+  // Project Image
+  const projectImageFile = document.getElementById('projectImageFile');
+  if (projectImageFile) {
+    projectImageFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          document.getElementById('projectImagePreviewImg').src = event.target.result;
+          document.getElementById('projectImagePreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+  
+  // Testimonial Image
+  const testimonialImageFile = document.getElementById('testimonialImageFile');
+  if (testimonialImageFile) {
+    testimonialImageFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          document.getElementById('testimonialImagePreviewImg').src = event.target.result;
+          document.getElementById('testimonialImagePreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+  
+  // News Image
+  const newsImageFile = document.getElementById('newsImageFile');
+  if (newsImageFile) {
+    newsImageFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          document.getElementById('newsImagePreviewImg').src = event.target.result;
+          document.getElementById('newsImagePreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+}
+
 // Wallet management
 function openWalletModal(id = null, coinName = '', address = '', qrUrl = '') {
   document.getElementById('walletId').value = id || '';
   document.getElementById('walletCoinName').value = coinName;
   document.getElementById('walletAddress').value = address;
-  document.getElementById('walletQrUrl').value = qrUrl;
+  document.getElementById('walletQrUrl').value = qrUrl || '';
+  document.getElementById('walletQrFile').value = '';
   document.getElementById('walletModalTitle').textContent = id ? 'Edit Wallet' : 'Add Wallet';
+  
+  // Show preview if URL exists
+  if (qrUrl) {
+    document.getElementById('walletQrPreviewImg').src = qrUrl;
+    document.getElementById('walletQrPreview').style.display = 'block';
+  } else {
+    document.getElementById('walletQrPreview').style.display = 'none';
+  }
+  
   openModal('walletModal');
 }
 
@@ -459,12 +638,23 @@ function editWallet(id, coinName, address, qrUrl) {
 
 async function saveWallet(e) {
   e.preventDefault();
+  showLoading(true);
+  
   const id = document.getElementById('walletId').value;
   const coinName = document.getElementById('walletCoinName').value;
   const address = document.getElementById('walletAddress').value;
-  const qrUrl = document.getElementById('walletQrUrl').value;
+  const qrFile = document.getElementById('walletQrFile').files[0];
+  let qrUrl = document.getElementById('walletQrUrl').value;
   
   try {
+    // Upload image if new file selected
+    if (qrFile) {
+      const uploadedUrl = await uploadImage(qrFile, 'wallet-qr');
+      if (uploadedUrl) {
+        qrUrl = uploadedUrl;
+      }
+    }
+    
     const res = await fetch('/api/admin/wallets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -482,6 +672,8 @@ async function saveWallet(e) {
   } catch (error) {
     console.error('Save wallet error:', error);
     showToast('Failed to save wallet', 'error');
+  } finally {
+    showLoading(false);
   }
 }
 
@@ -491,9 +683,19 @@ function openProjectModal(id = null, title = '', slug = '', description = '', im
   document.getElementById('projectTitle').value = title;
   document.getElementById('projectSlug').value = slug;
   document.getElementById('projectDescription').value = description;
-  document.getElementById('projectImageUrl').value = imageUrl;
+  document.getElementById('projectImageUrl').value = imageUrl || '';
+  document.getElementById('projectImageFile').value = '';
   document.getElementById('projectContent').value = content;
   document.getElementById('projectModalTitle').textContent = id ? 'Edit Project' : 'Add Project';
+  
+  // Show preview if URL exists
+  if (imageUrl) {
+    document.getElementById('projectImagePreviewImg').src = imageUrl;
+    document.getElementById('projectImagePreview').style.display = 'block';
+  } else {
+    document.getElementById('projectImagePreview').style.display = 'none';
+  }
+  
   openModal('projectModal');
 }
 
@@ -503,14 +705,25 @@ function editProject(id, title, slug, description, imageUrl, content) {
 
 async function saveProject(e) {
   e.preventDefault();
+  showLoading(true);
+  
   const id = document.getElementById('projectId').value;
   const title = document.getElementById('projectTitle').value;
   const slug = document.getElementById('projectSlug').value;
   const description = document.getElementById('projectDescription').value;
-  const imageUrl = document.getElementById('projectImageUrl').value;
+  const imageFile = document.getElementById('projectImageFile').files[0];
+  let imageUrl = document.getElementById('projectImageUrl').value;
   const content = document.getElementById('projectContent').value;
   
   try {
+    // Upload image if new file selected
+    if (imageFile) {
+      const uploadedUrl = await uploadImage(imageFile, 'project');
+      if (uploadedUrl) {
+        imageUrl = uploadedUrl;
+      }
+    }
+    
     const res = await fetch('/api/admin/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -528,6 +741,8 @@ async function saveProject(e) {
   } catch (error) {
     console.error('Save project error:', error);
     showToast('Failed to save project', 'error');
+  } finally {
+    showLoading(false);
   }
 }
 
@@ -550,9 +765,19 @@ async function deleteProject(id) {
 function openTestimonialModal(id = null, name = '', imageUrl = '', content = '') {
   document.getElementById('testimonialId').value = id || '';
   document.getElementById('testimonialName').value = name;
-  document.getElementById('testimonialImageUrl').value = imageUrl;
+  document.getElementById('testimonialImageUrl').value = imageUrl || '';
+  document.getElementById('testimonialImageFile').value = '';
   document.getElementById('testimonialContent').value = content;
   document.getElementById('testimonialModalTitle').textContent = id ? 'Edit Testimonial' : 'Add Testimonial';
+  
+  // Show preview if URL exists
+  if (imageUrl) {
+    document.getElementById('testimonialImagePreviewImg').src = imageUrl;
+    document.getElementById('testimonialImagePreview').style.display = 'block';
+  } else {
+    document.getElementById('testimonialImagePreview').style.display = 'none';
+  }
+  
   openModal('testimonialModal');
 }
 
@@ -562,12 +787,23 @@ function editTestimonial(id, name, imageUrl, content) {
 
 async function saveTestimonial(e) {
   e.preventDefault();
+  showLoading(true);
+  
   const id = document.getElementById('testimonialId').value;
   const name = document.getElementById('testimonialName').value;
-  const imageUrl = document.getElementById('testimonialImageUrl').value;
+  const imageFile = document.getElementById('testimonialImageFile').files[0];
+  let imageUrl = document.getElementById('testimonialImageUrl').value;
   const content = document.getElementById('testimonialContent').value;
   
   try {
+    // Upload image if new file selected
+    if (imageFile) {
+      const uploadedUrl = await uploadImage(imageFile, 'testimonial');
+      if (uploadedUrl) {
+        imageUrl = uploadedUrl;
+      }
+    }
+    
     const res = await fetch('/api/admin/testimonials', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -585,6 +821,8 @@ async function saveTestimonial(e) {
   } catch (error) {
     console.error('Save testimonial error:', error);
     showToast('Failed to save testimonial', 'error');
+  } finally {
+    showLoading(false);
   }
 }
 
@@ -609,9 +847,19 @@ function openNewsModal(id = null, title = '', slug = '', summary = '', imageUrl 
   document.getElementById('newsTitle').value = title;
   document.getElementById('newsSlug').value = slug;
   document.getElementById('newsSummary').value = summary;
-  document.getElementById('newsImageUrl').value = imageUrl;
+  document.getElementById('newsImageUrl').value = imageUrl || '';
+  document.getElementById('newsImageFile').value = '';
   document.getElementById('newsContent').value = content;
   document.getElementById('newsModalTitle').textContent = id ? 'Edit Article' : 'Add Article';
+  
+  // Show preview if URL exists
+  if (imageUrl) {
+    document.getElementById('newsImagePreviewImg').src = imageUrl;
+    document.getElementById('newsImagePreview').style.display = 'block';
+  } else {
+    document.getElementById('newsImagePreview').style.display = 'none';
+  }
+  
   openModal('newsModal');
 }
 
@@ -621,14 +869,25 @@ function editNews(id, title, slug, summary, imageUrl, content) {
 
 async function saveNews(e) {
   e.preventDefault();
+  showLoading(true);
+  
   const id = document.getElementById('newsId').value;
   const title = document.getElementById('newsTitle').value;
   const slug = document.getElementById('newsSlug').value;
   const summary = document.getElementById('newsSummary').value;
-  const imageUrl = document.getElementById('newsImageUrl').value;
+  const imageFile = document.getElementById('newsImageFile').files[0];
+  let imageUrl = document.getElementById('newsImageUrl').value;
   const content = document.getElementById('newsContent').value;
   
   try {
+    // Upload image if new file selected
+    if (imageFile) {
+      const uploadedUrl = await uploadImage(imageFile, 'news');
+      if (uploadedUrl) {
+        imageUrl = uploadedUrl;
+      }
+    }
+    
     const res = await fetch('/api/admin/news', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -646,6 +905,8 @@ async function saveNews(e) {
   } catch (error) {
     console.error('Save article error:', error);
     showToast('Failed to save article', 'error');
+  } finally {
+    showLoading(false);
   }
 }
 
@@ -695,18 +956,36 @@ window.saveNews = saveNews;
 window.editNews = editNews;
 window.deleteNews = deleteNews;
 
+// Initialize admin sidebar
+function initAdminDashboard() {
+  if (!checkAdminAuth()) return;
+  
+  // Render admin-specific sidebar
+  const sidebarContainer = document.getElementById('sidebar-container');
+  if (sidebarContainer) {
+    sidebarContainer.innerHTML = renderAdminSidebar();
+  }
+  
+  // Setup modals
+  setupModalClose();
+  
+  // Setup image previews
+  setupImagePreviews();
+  
+  // Setup mobile menu
+  setupMobileMenu();
+}
+
 // Initialize on page load
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    checkAdminAuth();
-    initDashboard();
-    setupMobileMenu();
+    initAdminDashboard();
     loadAdminData();
   });
 } else {
-  checkAdminAuth();
-  initDashboard();
-  setupMobileMenu();
+  initAdminDashboard();
   loadAdminData();
 }
+
+window.logoutAdmin = logoutAdmin;
 

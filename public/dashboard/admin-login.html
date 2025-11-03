@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login - RealSphere</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .admin-login-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #0f2e23;
+      background-image: url('/dashboard-background.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      position: relative;
+    }
+
+    .admin-login-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 46, 35, 0.7);
+      z-index: 0;
+    }
+
+    .admin-login-box {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 3rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      max-width: 450px;
+      width: 90%;
+      position: relative;
+      z-index: 1;
+    }
+
+    .admin-login-box h2 {
+      color: #4ef5a3;
+      text-align: center;
+      margin-bottom: 0.5rem;
+      font-size: 2rem;
+      text-shadow: 0 0 15px rgba(78, 245, 163, 0.5);
+    }
+
+    .admin-login-box p {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 2rem;
+    }
+
+    .admin-login-box .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .admin-login-box .form-group label {
+      display: block;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    .admin-login-box .form-group input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      color: #fff;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .admin-login-box .form-group input:focus {
+      outline: none;
+      border-color: #4ef5a3;
+      box-shadow: 0 0 15px rgba(78, 245, 163, 0.3);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .admin-login-box .form-group input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .admin-login-box .btn {
+      width: 100%;
+      padding: 1rem;
+      font-size: 1.1rem;
+    }
+
+    .error-message {
+      background: rgba(255, 68, 68, 0.2);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 68, 68, 0.5);
+      color: #ff6b6b;
+      padding: 1rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .back-link {
+      text-align: center;
+      margin-top: 1.5rem;
+    }
+
+    .back-link a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .back-link a:hover {
+      color: #4ef5a3;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-login-container">
+    <div class="admin-login-box">
+      <h2><i class="fas fa-shield-alt"></i> Admin Login</h2>
+      <p>Access the admin panel</p>
+      
+      <div class="error-message" id="errorMessage"></div>
+      
+      <form id="adminLoginForm">
+        <div class="form-group">
+          <label for="adminUsername">Username</label>
+          <input type="text" id="adminUsername" placeholder="Enter username" required>
+        </div>
+        <div class="form-group">
+          <label for="adminPassword">Password</label>
+          <input type="password" id="adminPassword" placeholder="Enter password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-sign-in-alt"></i> Login
+        </button>
+      </form>
+      
+      <div class="back-link">
+        <a href="../index.html"><i class="fas fa-arrow-left"></i> Back to Home</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('adminUsername').value;
+      const password = document.getElementById('adminPassword').value;
+      const errorEl = document.getElementById('errorMessage');
+
+      // Simple local authentication
+      if (username === 'admin' && password === 'pass2002word') {
+        // Store admin session
+        sessionStorage.setItem('admin_authenticated', 'true');
+        sessionStorage.setItem('admin_username', username);
+        // Redirect to admin panel
+        window.location.href = 'admin/dashboard.html';
+      } else {
+        errorEl.textContent = 'Invalid username or password';
+        errorEl.classList.add('show');
+        setTimeout(() => {
+          errorEl.classList.remove('show');
+        }, 5000);
+      }
+    });
+  </script>
+</body>
+</html>
+

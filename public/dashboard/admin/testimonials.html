@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Testimonials Management - Admin Panel</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+  <div class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></div>
+  <div id="sidebar-container"></div>
+
+  <div class="main-content">
+    <header>
+      <div class="user-info">
+        <h1>Testimonials Management <i class="fas fa-comments"></i></h1>
+        <div class="user-details"><span class="user-role">Administrator</span></div>
+      </div>
+      <div class="header-spacer"></div>
+      <button class="btn btn-primary" onclick="openTestimonialModal()">
+        <i class="fas fa-plus"></i> Add Testimonial
+      </button>
+    </header>
+
+    <div class="admin-section">
+      <h2><i class="fas fa-comments"></i> Testimonials</h2>
+      <div class="table-section">
+        <table id="testimonialsTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Content</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="testimonialsBody">
+            <tr><td colspan="4" style="text-align: center; padding: 2rem;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="testimonialModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="testimonialModalTitle">Add Testimonial</h3>
+        <button class="modal-close" onclick="closeModal('testimonialModal')">&times;</button>
+      </div>
+      <form id="testimonialForm" onsubmit="saveTestimonial(event)">
+        <input type="hidden" id="testimonialId">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" id="testimonialName" required>
+        </div>
+        <div class="form-group">
+          <label>Testimonial Image</label>
+          <input type="file" id="testimonialImageFile" accept="image/*">
+          <div id="testimonialImagePreview" style="margin-top: 1rem; display: none;">
+            <img id="testimonialImagePreviewImg" src="" alt="Preview" style="max-width: 150px; height: 150px; object-fit: cover; border-radius: 50%; border: 2px solid #4ef5a3;">
+          </div>
+          <input type="hidden" id="testimonialImageUrl">
+        </div>
+        <div class="form-group">
+          <label>Content</label>
+          <textarea id="testimonialContent" rows="4" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="../script.js"></script>
+  <script src="../admin.js"></script>
+  <script>
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        initAdminDashboard();
+        loadTestimonialData();
+      });
+    } else {
+      initAdminDashboard();
+      loadTestimonialData();
+    }
+
+    async function loadTestimonialData() {
+      if (!checkAdminAuth()) return;
+      try {
+        showLoading(true);
+        const res = await fetch('/api/testimonials');
+        if (res.ok) {
+          const data = await res.json();
+          renderTestimonials(data.testimonials || []);
+        }
+      } catch (error) {
+        console.error('Load testimonials error:', error);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    window.loadTestimonialData = loadTestimonialData;
+  </script>
+</body>
+</html>
+

@@ -24,12 +24,17 @@
   <!-- Main Content -->
   <div class="main-content">
     <header>
-      <h1>Admin Panel <i class="fas fa-shield-alt"></i></h1>
       <div class="user-info">
-        <button class="btn btn-primary" onclick="refreshAdminData()">
-          <i class="fas fa-sync-alt"></i> Refresh
-        </button>
+        <h1>Admin Panel <i class="fas fa-shield-alt"></i></h1>
+        <div class="user-details">
+          <span class="user-role">Administrator</span>
+          <span class="user-email" id="adminUserEmail">admin@realsphere.com</span>
+        </div>
       </div>
+      <div class="header-spacer"></div>
+      <button class="btn btn-primary" onclick="refreshAdminData()">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
     </header>
 
     <!-- Admin Metrics -->
@@ -251,8 +256,12 @@
           <input type="text" id="walletAddress" required>
         </div>
         <div class="form-group">
-          <label>QR Code URL (optional)</label>
-          <input type="text" id="walletQrUrl">
+          <label>QR Code Image</label>
+          <input type="file" id="walletQrFile" accept="image/*">
+          <div id="walletQrPreview" style="margin-top: 1rem; display: none;">
+            <img id="walletQrPreviewImg" src="" alt="QR Preview" style="max-width: 200px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);">
+          </div>
+          <input type="hidden" id="walletQrUrl">
         </div>
         <button type="submit" class="btn btn-primary">Save</button>
       </form>
@@ -280,8 +289,12 @@
           <textarea id="projectDescription" rows="3"></textarea>
         </div>
         <div class="form-group">
-          <label>Image URL</label>
-          <input type="text" id="projectImageUrl">
+          <label>Project Image</label>
+          <input type="file" id="projectImageFile" accept="image/*">
+          <div id="projectImagePreview" style="margin-top: 1rem; display: none;">
+            <img id="projectImagePreviewImg" src="" alt="Preview" style="max-width: 300px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);">
+          </div>
+          <input type="hidden" id="projectImageUrl">
         </div>
         <div class="form-group">
           <label>Content (HTML)</label>
@@ -305,8 +318,12 @@
           <input type="text" id="testimonialName" required>
         </div>
         <div class="form-group">
-          <label>Image URL</label>
-          <input type="text" id="testimonialImageUrl">
+          <label>Testimonial Image</label>
+          <input type="file" id="testimonialImageFile" accept="image/*">
+          <div id="testimonialImagePreview" style="margin-top: 1rem; display: none;">
+            <img id="testimonialImagePreviewImg" src="" alt="Preview" style="max-width: 150px; height: 150px; object-fit: cover; border-radius: 50%; border: 2px solid #4ef5a3;">
+          </div>
+          <input type="hidden" id="testimonialImageUrl">
         </div>
         <div class="form-group">
           <label>Content</label>
@@ -338,8 +355,12 @@
           <textarea id="newsSummary" rows="2"></textarea>
         </div>
         <div class="form-group">
-          <label>Image URL</label>
-          <input type="text" id="newsImageUrl">
+          <label>News Cover Image</label>
+          <input type="file" id="newsImageFile" accept="image/*">
+          <div id="newsImagePreview" style="margin-top: 1rem; display: none;">
+            <img id="newsImagePreviewImg" src="" alt="Preview" style="max-width: 300px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);">
+          </div>
+          <input type="hidden" id="newsImageUrl">
         </div>
         <div class="form-group">
           <label>Content (HTML)</label>
@@ -352,6 +373,10 @@
 
   <script src="script.js"></script>
   <script src="admin.js"></script>
+  <script>
+    // Redirect to new dashboard location
+    window.location.href = 'admin/dashboard.html';
+  </script>
 </body>
 </html>
 

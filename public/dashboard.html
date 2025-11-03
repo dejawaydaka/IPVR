@@ -976,18 +976,18 @@
           `;
         } else {
           body.innerHTML = investments.map(inv => {
-            const rate = profitRates[inv.plan] || 0;
-            const start = new Date(inv.startDate);
-            const status = Math.floor((Date.now() - inv.startDate) / (1000*60*60*24)) < (inv.days||7) ? 'Active' : 'Completed';
-            return `<tr>
+          const rate = profitRates[inv.plan] || 0;
+          const start = new Date(inv.startDate);
+          const status = Math.floor((Date.now() - inv.startDate) / (1000*60*60*24)) < (inv.days||7) ? 'Active' : 'Completed';
+          return `<tr>
               <td>${sanitizeHTML(inv.plan)}</td>
-              <td>$${Number(inv.amount).toLocaleString()}</td>
-              <td>${(rate*100).toFixed(1)}% Daily</td>
+            <td>$${Number(inv.amount).toLocaleString()}</td>
+            <td>${(rate*100).toFixed(1)}% Daily</td>
               <td><span style="color: ${status === 'Active' ? '#4ef5a3' : '#888'}">${status}</span></td>
-              <td>${start.toISOString().split('T')[0]}</td>
-              <td>$${(Number(inv.profit||0)).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-            </tr>`;
-          }).join('');
+            <td>${start.toISOString().split('T')[0]}</td>
+            <td>$${(Number(inv.profit||0)).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+          </tr>`;
+        }).join('');
         }
       }
 

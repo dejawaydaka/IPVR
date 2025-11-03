@@ -25,11 +25,14 @@
   <!-- Main Content -->
   <div class="main-content">
     <header>
-      <h1>Welcome Back, <span id="dashUserName">Investor</span> 👋</h1>
       <div class="user-info">
-        <img id="dashAvatar" src="https://i.pravatar.cc/45" alt="User" />
-        <span id="dashUserEmail">-</span>
+        <h1>Welcome Back, <span id="dashUserName">Investor</span> 👋</h1>
+        <div class="user-details">
+          <span class="user-role" id="dashUserRole">User</span>
+          <span class="user-email" id="dashUserEmail">-</span>
+        </div>
       </div>
+      <div class="header-spacer"></div>
     </header>
 
     <!-- Metrics Cards -->
@@ -262,10 +265,8 @@
         if (document.getElementById('dashUserEmail')) {
           document.getElementById('dashUserEmail').textContent = email;
         }
-        const profileImg = data.profileImage || data.profile_image;
-        if (document.getElementById('dashAvatar')) {
-          document.getElementById('dashAvatar').src = profileImg || '/uploads/user.png';
-          document.getElementById('dashAvatar').onerror = function() { this.src = '/uploads/user.png'; };
+        if (document.getElementById('dashUserRole')) {
+          document.getElementById('dashUserRole').textContent = data.admin_approved ? 'Admin' : 'User';
         }
 
         // Update investments table

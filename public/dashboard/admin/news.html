@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>News & Insights - Admin Panel</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+  <div class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></div>
+  <div id="sidebar-container"></div>
+
+  <div class="main-content">
+    <header>
+      <div class="user-info">
+        <h1>News & Insights <i class="fas fa-newspaper"></i></h1>
+        <div class="user-details"><span class="user-role">Administrator</span></div>
+      </div>
+      <div class="header-spacer"></div>
+      <button class="btn btn-primary" onclick="openNewsModal()">
+        <i class="fas fa-plus"></i> Add Article
+      </button>
+    </header>
+
+    <div class="admin-section">
+      <h2><i class="fas fa-newspaper"></i> News Articles</h2>
+      <div class="table-section">
+        <table id="newsTable">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Slug</th>
+              <th>Summary</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="newsBody">
+            <tr><td colspan="5" style="text-align: center; padding: 2rem;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="newsModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="newsModalTitle">Add Article</h3>
+        <button class="modal-close" onclick="closeModal('newsModal')">&times;</button>
+      </div>
+      <form id="newsForm" onsubmit="saveNews(event)">
+        <input type="hidden" id="newsId">
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="newsTitle" required>
+        </div>
+        <div class="form-group">
+          <label>Slug (URL-friendly)</label>
+          <input type="text" id="newsSlug" required>
+        </div>
+        <div class="form-group">
+          <label>Summary</label>
+          <textarea id="newsSummary" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label>News Cover Image</label>
+          <input type="file" id="newsImageFile" accept="image/*">
+          <div id="newsImagePreview" style="margin-top: 1rem; display: none;">
+            <img id="newsImagePreviewImg" src="" alt="Preview" style="max-width: 300px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);">
+          </div>
+          <input type="hidden" id="newsImageUrl">
+        </div>
+        <div class="form-group">
+          <label>Content (HTML)</label>
+          <textarea id="newsContent" rows="8" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="../script.js"></script>
+  <script src="../admin.js"></script>
+  <script>
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        initAdminDashboard();
+        loadNewsData();
+      });
+    } else {
+      initAdminDashboard();
+      loadNewsData();
+    }
+
+    async function loadNewsData() {
+      if (!checkAdminAuth()) return;
+      try {
+        showLoading(true);
+        const res = await fetch('/api/news?limit=100');
+        if (res.ok) {
+          const data = await res.json();
+          renderNews(data.news || []);
+        }
+      } catch (error) {
+        console.error('Load news error:', error);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    window.loadNewsData = loadNewsData;
+  </script>
+</body>
+</html>
+
