@@ -14,6 +14,11 @@ let loadingTimeout = null;
 
 // ===== AUTHENTICATION =====
 function checkAuth() {
+  // If user is an admin, allow access without redirecting
+  if (localStorage.getItem('isAdmin') === 'true') {
+    return null; // Return null but don't redirect
+  }
+  
   const userRaw = localStorage.getItem('rs_user');
   if (!userRaw) {
     window.location.href = '../index.html';
@@ -518,14 +523,26 @@ function setupMobileMenu() {
   }
 }
 
-// Initialize on DOM ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
+// Initialize on DOM ready (only if not on admin pages)
+const isAdminPage = window.location.pathname.includes('/admin/') || localStorage.getItem('isAdmin') === 'true';
+if (!isAdminPage) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      initDashboard();
+      setupMobileMenu();
+    });
+  } else {
     initDashboard();
     setupMobileMenu();
-  });
+  }
 } else {
-  initDashboard();
-  setupMobileMenu();
+  // Only setup mobile menu on admin pages (admin.js handles the rest)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      setupMobileMenu();
+    });
+  } else {
+    setupMobileMenu();
+  }
 }
 
