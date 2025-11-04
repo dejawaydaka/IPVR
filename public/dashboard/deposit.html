@@ -222,8 +222,8 @@
       }
 
       try {
-        await makeDeposit(currentUser.email, amount, selectedCrypto.symbol, transactionHash, proofFile);
-        showSuccess('Deposit request submitted! Your balance will be updated after confirmation.');
+        const result = await makeDeposit(currentUser.email, amount, selectedCrypto.symbol, transactionHash, proofFile);
+        showSuccess(result.message || 'Deposit request submitted! Your balance will be updated after admin approval.');
         closeModal('depositModal');
         document.getElementById('depositForm').reset();
         proofFile = null;

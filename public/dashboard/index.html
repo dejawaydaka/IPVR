@@ -109,10 +109,45 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Transaction History Section -->
+    <div class="table-section">
+      <h2><i class="fas fa-history"></i> Transaction History</h2>
+      <table id="transactionsTable">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Currency</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody id="transactionsBody">
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>Loading transactions...</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <script src="script.js"></script>
   <script>
+    // Helper function to sanitize HTML
+    function sanitizeHTML(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
     let earningsChart = null;
     let portfolioChart = null;
 
@@ -296,6 +331,57 @@
                 <td><span style="color: ${status === 'Active' ? '#4ef5a3' : '#888'}">${status}</span></td>
                 <td>${start.toISOString().split('T')[0]}</td>
                 <td>$${(Number(inv.profit||0)).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+              </tr>`;
+            }).join('');
+          }
+        }
+
+        // Update transaction history table
+        const transactionsBody = document.getElementById('transactionsBody');
+        if (transactionsBody) {
+          const deposits = data.deposits || [];
+          
+          if (deposits.length === 0) {
+            transactionsBody.innerHTML = `
+              <tr>
+                <td colspan="6">
+                  <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No transactions yet. Your deposit history will appear here.</p>
+                  </div>
+                </td>
+              </tr>
+            `;
+          } else {
+            transactionsBody.innerHTML = deposits.map(dep => {
+              const date = new Date(dep.createdAt || dep.timestamp);
+              let statusColor = '#888';
+              let statusText = dep.status || 'pending';
+              
+              if (statusText === 'approved') {
+                statusColor = '#4ef5a3';
+                statusText = 'Approved';
+              } else if (statusText === 'pending') {
+                statusColor = '#ffc107';
+                statusText = 'Pending';
+              } else if (statusText === 'rejected') {
+                statusColor = '#ff4444';
+                statusText = 'Rejected';
+              }
+              
+              const details = dep.transactionHash 
+                ? `<span style="font-family: monospace; font-size: 0.85rem;" title="${sanitizeHTML(dep.transactionHash)}">${sanitizeHTML(dep.transactionHash.substring(0, 20))}...</span>`
+                : dep.proof 
+                  ? `<a href="${sanitizeHTML(dep.proof)}" target="_blank" style="color: #4ef5a3;">View Proof</a>`
+                  : 'N/A';
+              
+              return `<tr>
+                <td><i class="fas fa-arrow-down" style="color: #4ef5a3;"></i> Deposit</td>
+                <td>$${Number(dep.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td>${sanitizeHTML(dep.currency || 'USD')}</td>
+                <td><span style="color: ${statusColor}; font-weight: 500;">${statusText}</span></td>
+                <td>${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                <td>${details}</td>
               </tr>`;
             }).join('');
           }

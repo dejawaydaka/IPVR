@@ -525,17 +525,18 @@ app.post('/deposit', [
         }
 
         const user = users[0];
-        const newBalance = Number(user.balance) + numericAmount;
-        const newDeposits = Number(user.total_deposits || 0) + numericAmount;
-
+        
+        // Create pending deposit (DO NOT update balance immediately)
         await pool.query(
-            'UPDATE users SET balance = $1, total_deposits = $2 WHERE id = $3',
-            [newBalance, newDeposits, user.id]
+            `INSERT INTO deposits (user_id, amount, currency, status)
+             VALUES ($1, $2, $3, $4)`,
+            [user.id, numericAmount, 'USD', 'pending']
         );
 
         res.json({ 
-            message: 'Deposit recorded successfully', 
-            newBalance: newBalance
+            message: 'Deposit request submitted. Your balance will be updated after admin approval.', 
+            balance: Number(user.balance || 0),
+            status: 'pending'
         });
     } catch (err) {
         console.error('Deposit error:', err);
@@ -777,6 +778,19 @@ app.get('/dashboard', [
             [user.id]
         );
         
+        // Get deposits (all statuses for transaction history)
+        const { rows: deposits } = await pool.query(
+            'SELECT * FROM deposits WHERE user_id = $1 ORDER BY created_at DESC',
+            [user.id]
+        );
+        
+        // Calculate total_deposits from approved deposits only
+        const { rows: approvedDeposits } = await pool.query(
+            'SELECT COALESCE(SUM(amount), 0) as total FROM deposits WHERE user_id = $1 AND status = $2',
+            [user.id, 'approved']
+        );
+        const calculatedTotalDeposits = Number(approvedDeposits[0]?.total || 0);
+        
         // Calculate metrics
         const profits = await calculateUserProfits(user.id);
         const totalInvestment = Number(user.total_investment || 0);
@@ -792,16 +806,29 @@ app.get('/dashboard', [
             profit: Number(inv.profit || 0)
         }));
         
+        // Format deposits for frontend
+        const formattedDeposits = deposits.map(dep => ({
+            id: dep.id,
+            amount: Number(dep.amount),
+            currency: dep.currency || 'USD',
+            transactionHash: dep.transaction_hash || '',
+            proof: dep.proof || '',
+            status: dep.status || 'pending',
+            createdAt: dep.created_at.getTime(),
+            timestamp: dep.created_at.getTime()
+        }));
+        
         const responseData = {
             email: user.email, 
             name: user.name || '', 
             profileImage: user.profile_image || '',
             investments: formattedInvestments,
+            deposits: formattedDeposits,
             totalProfit: profits.totalProfit,
             totalBalance: balance + profits.totalProfit,
             totalInvestment: totalInvestment,
             bonus: bonus,
-            totalDeposits: Number(user.total_deposits || 0),
+            totalDeposits: calculatedTotalDeposits,
             dailyEarnings: profits.dailyEarnings,
             balance: balance,
             adminApproved: user.admin_approved || false
@@ -842,6 +869,19 @@ app.get('/api/user/:email', async (req, res) => {
             [user.id]
         );
         
+        // Get deposits (all statuses for transaction history)
+        const { rows: deposits } = await pool.query(
+            'SELECT * FROM deposits WHERE user_id = $1 ORDER BY created_at DESC',
+            [user.id]
+        );
+        
+        // Calculate total_deposits from approved deposits only
+        const { rows: approvedDeposits } = await pool.query(
+            'SELECT COALESCE(SUM(amount), 0) as total FROM deposits WHERE user_id = $1 AND status = $2',
+            [user.id, 'approved']
+        );
+        const calculatedTotalDeposits = Number(approvedDeposits[0]?.total || 0);
+        
         // Calculate metrics
         const profits = await calculateUserProfits(user.id);
         const totalInvestment = Number(user.total_investment || 0);
@@ -866,6 +906,17 @@ app.get('/api/user/:email', async (req, res) => {
             timestamp: wd.created_at.getTime()
         }));
         
+        const formattedDeposits = deposits.map(dep => ({
+            id: dep.id,
+            amount: Number(dep.amount),
+            currency: dep.currency || 'USD',
+            transactionHash: dep.transaction_hash || '',
+            proof: dep.proof || '',
+            status: dep.status || 'pending',
+            createdAt: dep.created_at.getTime(),
+            timestamp: dep.created_at.getTime()
+        }));
+        
         const { password: _, ...userData } = {
             ...user,
             email: user.email,
@@ -874,11 +925,12 @@ app.get('/api/user/:email', async (req, res) => {
             balance: balance,
             investments: formattedInvestments,
             withdrawals: formattedWithdrawals,
+            deposits: formattedDeposits,
             totalProfit: profits.totalProfit,
             totalBalance: balance + profits.totalProfit,
             totalInvestment: totalInvestment,
             bonus: bonus,
-            totalDeposits: Number(user.total_deposits || 0),
+            totalDeposits: calculatedTotalDeposits,
             dailyEarnings: profits.dailyEarnings,
             adminApproved: user.admin_approved || false
         };
@@ -1033,43 +1085,21 @@ app.post('/api/deposit', upload.single('proof'), async (req, res) => {
 
         const user = users[0];
 
-        // Update user balance
-        const newBalance = Number(user.balance || 0) + numericAmount;
-        const newDeposits = Number(user.total_deposits || 0) + numericAmount;
-        
-        await pool.query(
-            'UPDATE users SET balance = $1, total_deposits = $2 WHERE id = $3',
-            [newBalance, newDeposits, user.id]
-        );
-        
-        // Track deposit
+        // Track deposit as pending (DO NOT update balance yet)
         const proofPath = req.file ? `/uploads/proofs/${req.file.filename}` : null;
-        await pool.query(
+        const { rows: depositRows } = await pool.query(
             `INSERT INTO deposits (user_id, amount, currency, transaction_hash, proof, status)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING *`,
             [user.id, numericAmount, currency || 'USD', transactionHash || '', proofPath, 'pending']
         );
 
-        // Auto-add $5 bonus for first deposit
-        const { rows: deposits } = await pool.query(
-            'SELECT COUNT(*) as count FROM deposits WHERE user_id = $1',
-            [user.id]
-        );
-        
-        if (deposits[0].count === '1' && Number(user.bonus || 0) === 0) {
-            await pool.query(
-                'UPDATE users SET bonus = 5, balance = balance + 5 WHERE id = $1',
-                [user.id]
-            );
-        }
-
-        // Get updated user
-        const { rows: updatedUsers } = await pool.query(
-            'SELECT * FROM users WHERE id = $1',
-            [user.id]
-        );
-
-        res.json({ message: 'Deposit confirmed', user: updatedUsers[0] });
+        // Return success message indicating deposit is pending approval
+        res.json({ 
+            message: 'Deposit request submitted successfully. Your balance will be updated after admin approval.', 
+            deposit: depositRows[0],
+            status: 'pending'
+        });
     } catch (err) {
         console.error('API Deposit error:', err);
         res.status(500).json({ message: err.message || 'Server error' });
@@ -1310,17 +1340,50 @@ app.post('/api/admin/deposits/:id/approve', adminAuth, async (req, res) => {
         
         const deposit = deposits[0];
         
-        // Update deposit status
-        await pool.query(
-            'UPDATE deposits SET status = $1 WHERE id = $2',
-            ['approved', id]
-        );
+        // Check if deposit is already approved
+        if (deposit.status === 'approved') {
+            return res.status(400).json({ message: 'Deposit is already approved' });
+        }
         
-        // Update user balance if not already done
+        // Only process if deposit was pending
         if (deposit.status === 'pending') {
+            // Update deposit status to approved
+            await pool.query(
+                'UPDATE deposits SET status = $1 WHERE id = $2',
+                ['approved', id]
+            );
+            
+            // Update user balance and total_deposits
             await pool.query(
                 'UPDATE users SET balance = balance + $1, total_deposits = total_deposits + $1 WHERE id = $2',
                 [deposit.amount, deposit.user_id]
+            );
+            
+            // Auto-add $5 bonus for first approved deposit
+            const { rows: userData } = await pool.query(
+                'SELECT bonus FROM users WHERE id = $1',
+                [deposit.user_id]
+            );
+            
+            if (userData.length > 0 && Number(userData[0].bonus || 0) === 0) {
+                // Check if this is the first approved deposit
+                const { rows: approvedCount } = await pool.query(
+                    'SELECT COUNT(*) as count FROM deposits WHERE user_id = $1 AND status = $2',
+                    [deposit.user_id, 'approved']
+                );
+                
+                if (approvedCount[0].count === '1') {
+                    await pool.query(
+                        'UPDATE users SET bonus = 5, balance = balance + 5 WHERE id = $1',
+                        [deposit.user_id]
+                    );
+                }
+            }
+        } else {
+            // If deposit was rejected, just update status
+            await pool.query(
+                'UPDATE deposits SET status = $1 WHERE id = $2',
+                ['approved', id]
             );
         }
         
