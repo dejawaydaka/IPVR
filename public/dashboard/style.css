@@ -957,14 +957,14 @@ tr:hover {
   top: 1rem;
   left: 1rem;
   z-index: 1000;
-  height: 45px;
+  height: 65px;
   width: auto;
 }
 
 .dashboard-logo img {
-  height: 45px;
+  height: 65px;
   width: auto;
-  max-width: 150px;
+  max-width: 216px;
 }
 
 /* ===== MOBILE HAMBURGER MENU ===== */

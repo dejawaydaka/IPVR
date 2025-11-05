@@ -65,11 +65,11 @@ function showLoading(show = true) {
     
     if (show) {
       overlay.classList.remove('hidden');
-      // Safety timeout: hide loader after 3 seconds maximum
+      // Safety timeout: hide loader after 1.2 seconds maximum
       loadingTimeout = setTimeout(() => {
         overlay.classList.add('hidden');
         loadingTimeout = null;
-      }, 3000);
+      }, 1200);
     } else {
       overlay.classList.add('hidden');
       if (loadingTimeout) {
@@ -82,13 +82,13 @@ function showLoading(show = true) {
 
 // Auto-hide loading overlay on page load (for pages that don't fetch data)
 function autoHideLoading() {
-  // Hide after page is fully loaded, max 2 seconds
+  // Hide after page is fully loaded, max 1.2 seconds
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => showLoading(false), 2000);
+      setTimeout(() => showLoading(false), 1200);
     });
   } else {
-    setTimeout(() => showLoading(false), 2000);
+    setTimeout(() => showLoading(false), 1200);
   }
   
   window.addEventListener('load', () => {
@@ -388,7 +388,7 @@ function renderSidebar(currentPage = '') {
   return `
     <aside class="sidebar">
       <div style="text-align: center; margin-bottom: 1rem;">
-        <img src="../Rswhite.png" alt="RealSphere" style="height: 50px; width: auto; max-width: 100%;">
+        <img src="../Rswhite.png" alt="RealSphere" style="height: 72px; width: auto; max-width: 100%;">
       </div>
       <div class="user-display">
         <img src="${profileImg}" alt="User" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Ccircle cx=%2220%22 cy=%2220%22 r=%2218%22 fill=%22%234ef5a3%22/%3E%3Ctext x=%2220%22 y=%2225%22 font-size=%2214%22 fill=%22white%22 text-anchor=%22middle%22%3E${encodeURIComponent(displayName.charAt(0).toUpperCase())}%3C/text%3E%3C/svg%3E';" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" />
