@@ -129,8 +129,25 @@ body {
 
 /* Mobile header: logo and menu parallel, reduced container, large logo */
 @media (max-width: 768px) {
+    /* Eliminate whitespace at top for mobile - header at edge */
+    body {
+        margin: 0;
+        padding: 0;
+    }
+    
+    html {
+        margin: 0;
+        padding: 0;
+    }
+    
+    .header {
+        margin-top: 0;
+        padding-top: 0;
+    }
+    
     .header .container {
         padding: 0.14rem 6px;
+        margin: 0;
         align-items: center;
         justify-content: space-between;
     }
