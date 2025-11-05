@@ -42,8 +42,6 @@ body {
     color: var(--text-primary);
     line-height: 1.6;
     overflow-x: hidden;
-    /* Prevent content from going under fixed header */
-    padding-top: 84px;
 }
 
 .container {
@@ -54,7 +52,7 @@ body {
 
 /* Header Styles */
 .header {
-    position: fixed;
+    position: relative;
     top: 0;
     left: 0;
     right: 0;
