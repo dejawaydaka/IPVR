@@ -1714,16 +1714,24 @@ app.post('/api/invest', [
         );
         await sendEmail(user.email, 'Investment Created Successfully', investmentHtml);
         
+        console.log(`[API] Investment created successfully for user ${user.id}: $${numericAmount} in ${plan}`);
+        
         // Get updated user data
         const { rows: updatedUsers } = await pool.query(
             'SELECT * FROM users WHERE id = $1',
             [user.id]
         );
         
+        if (updatedUsers.length === 0) {
+            console.error(`[API] User ${user.id} not found after investment creation`);
+            return res.status(500).json({ message: 'Error retrieving updated user data' });
+        }
+        
         return res.json({ message: 'Investment successful', user: updatedUsers[0] });
     } catch (err) {
-        console.error('API Investment error:', err);
-        return res.status(500).json({ message: 'Server error' });
+        console.error('[API] Investment error:', err);
+        console.error('[API] Investment error stack:', err.stack);
+        return res.status(500).json({ message: 'Server error: ' + (err.message || 'Unknown error') });
     }
 });
 

@@ -268,6 +268,190 @@
     // Store last successful data to preserve on errors
     let lastSuccessfulData = null;
 
+    // Helper function to render investments table
+    function renderInvestmentsTable(investments) {
+      const body = document.getElementById('investmentsBody');
+      if (!body) return;
+      
+      if (!Array.isArray(investments)) {
+        investments = [];
+      }
+      
+      if (investments.length === 0) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No investments yet. Start investing to see your portfolio here.</p>
+              </div>
+            </td>
+          </tr>
+        `;
+      } else {
+        body.innerHTML = investments.map(inv => {
+          if (!inv) return '';
+          const rate = profitRates[inv.plan] || 0;
+          let start;
+          try {
+            start = new Date(inv.startDate);
+            if (isNaN(start.getTime())) {
+              start = new Date();
+            }
+          } catch (e) {
+            start = new Date();
+          }
+          const status = Math.floor((Date.now() - (inv.startDate || Date.now())) / (1000*60*60*24)) < (inv.days||7) ? 'Active' : 'Completed';
+          return `<tr>
+            <td>${sanitizeHTML(inv.plan || 'N/A')}</td>
+            <td>$${Number(inv.amount || 0).toLocaleString()}</td>
+            <td>${(rate*100).toFixed(1)}% Daily</td>
+            <td><span style="color: ${status === 'Active' ? '#4ef5a3' : '#888'}">${status}</span></td>
+            <td>${start.toISOString().split('T')[0]}</td>
+            <td>$${(Number(inv.profit||0)).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+          </tr>`;
+        }).join('');
+      }
+    }
+
+    // Helper function to render transactions table
+    function renderTransactionsTable(data) {
+      const transactionsBody = document.getElementById('transactionsBody');
+      if (!transactionsBody) {
+        console.error('[Dashboard] transactionsBody element not found!');
+        return;
+      }
+      
+      const deposits = data?.deposits || [];
+      const transactions = data?.transactions || [];
+      
+      console.log('[Dashboard] Rendering transactions - Deposits:', deposits.length, 'Transactions:', transactions.length);
+      
+      // Combine all transactions (deposits, bonuses, etc.)
+      const allTransactions = [];
+      
+      // Add deposits as transactions
+      if (Array.isArray(deposits)) {
+        deposits.forEach((dep) => {
+          if (dep) {
+            allTransactions.push({
+              type: 'deposit',
+              amount: dep.amount || 0,
+              currency: dep.currency || 'USD',
+              status: dep.status || 'pending',
+              createdAt: dep.createdAt || dep.timestamp || Date.now(),
+              transactionHash: dep.transactionHash,
+              id: dep.id
+            });
+          }
+        });
+      }
+      
+      // Add other transactions (bonuses, etc.)
+      if (Array.isArray(transactions)) {
+        transactions.forEach((txn) => {
+          if (txn) {
+            allTransactions.push({
+              type: txn.type || 'transaction',
+              amount: txn.amount || 0,
+              currency: txn.currency || 'USD',
+              status: txn.status || 'completed',
+              createdAt: txn.createdAt || txn.timestamp || Date.now(),
+              description: txn.description,
+              id: txn.id
+            });
+          }
+        });
+      }
+      
+      // Sort by date (newest first)
+      allTransactions.sort((a, b) => {
+        const aTime = Number(a.createdAt || 0);
+        const bTime = Number(b.createdAt || 0);
+        return bTime - aTime;
+      });
+      
+      console.log('[Dashboard] Combined transactions count:', allTransactions.length);
+      
+      // Always render transactions, even if empty
+      if (allTransactions.length === 0) {
+        transactionsBody.innerHTML = `
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No transactions yet. Your transaction history will appear here.</p>
+              </div>
+            </td>
+          </tr>
+        `;
+      } else {
+        transactionsBody.innerHTML = allTransactions.map((txn) => {
+          if (!txn) return '';
+          
+          // Handle date conversion more robustly
+          let date;
+          try {
+            const timestamp = Number(txn.createdAt || txn.timestamp || Date.now());
+            date = new Date(timestamp);
+            if (isNaN(date.getTime())) {
+              date = new Date();
+            }
+          } catch (e) {
+            console.error('[Dashboard] Error parsing date for transaction:', txn, e);
+            date = new Date();
+          }
+          
+          let statusColor = '#888';
+          let statusText = txn.status || 'pending';
+          let icon = 'fas fa-circle';
+          let typeText = 'Transaction';
+          
+          // Determine icon and type text based on transaction type
+          if (txn.type === 'deposit') {
+            icon = 'fas fa-arrow-down';
+            typeText = 'Deposit';
+          } else if (txn.type === 'withdrawal') {
+            icon = 'fas fa-arrow-up';
+            typeText = 'Withdrawal';
+          } else if (txn.type === 'registration_bonus') {
+            icon = 'fas fa-gift';
+            typeText = 'Registration Bonus';
+          } else if (txn.type === 'investment') {
+            icon = 'fas fa-chart-line';
+            typeText = 'Investment';
+          } else if (txn.type === 'profit') {
+            icon = 'fas fa-coins';
+            typeText = 'Profit';
+          }
+          
+          if (statusText === 'approved' || statusText === 'completed') {
+            statusColor = '#4ef5a3';
+            statusText = statusText === 'completed' ? 'Completed' : 'Approved';
+          } else if (statusText === 'pending') {
+            statusColor = '#ffc107';
+            statusText = 'Pending';
+          } else if (statusText === 'rejected') {
+            statusColor = '#ff4444';
+            statusText = 'Rejected';
+          }
+          
+          const details = txn.transactionHash 
+            ? `<span style="font-family: monospace; font-size: 0.85rem;" title="${sanitizeHTML(txn.transactionHash)}">${sanitizeHTML((txn.transactionHash || '').substring(0, 20))}...</span>`
+            : (txn.description || 'N/A');
+          
+          return `<tr>
+            <td><i class="${icon}" style="color: #4ef5a3;"></i> ${sanitizeHTML(typeText)}</td>
+            <td>$${Number(txn.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            <td>${sanitizeHTML(txn.currency || 'USD')}</td>
+            <td><span style="color: ${statusColor}; font-weight: 500;">${statusText}</span></td>
+            <td>${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+            <td>${details}</td>
+          </tr>`;
+        }).join('');
+      }
+    }
+
     async function refreshDashboard() {
       const user = getCurrentUser();
       if (!user) return;
@@ -282,7 +466,7 @@
       }
       
       try {
-        // Update profits first
+        // Update profits first (non-blocking)
         try {
           await fetch('/profits/update', { method: 'POST', cache: 'no-store' });
         } catch (e) {
@@ -292,8 +476,18 @@
         // Fetch user data
         const data = await fetchUserData(email);
         
-        // Store successful data for fallback
-        lastSuccessfulData = data;
+        // Validate data structure
+        if (!data || typeof data !== 'object') {
+          throw new Error('Invalid data structure received from server');
+        }
+        
+        // Ensure arrays exist
+        if (!Array.isArray(data.investments)) data.investments = [];
+        if (!Array.isArray(data.deposits)) data.deposits = [];
+        if (!Array.isArray(data.transactions)) data.transactions = [];
+        
+        // Store successful data for fallback BEFORE any rendering operations
+        lastSuccessfulData = JSON.parse(JSON.stringify(data)); // Deep copy to prevent reference issues
         
         // Update metrics
         const totalBalance = Number(data.totalBalance || 0);
@@ -322,187 +516,11 @@
           document.getElementById('dashUserRole').textContent = data.admin_approved ? 'Admin' : 'User';
         }
 
-        // Update investments table - always update, even if empty
-        const body = document.getElementById('investmentsBody');
-        if (body) {
-          const investments = data.investments || [];
-          if (investments.length === 0) {
-            body.innerHTML = `
-              <tr>
-                <td colspan="6">
-                  <div class="empty-state">
-                    <i class="fas fa-inbox"></i>
-                    <p>No investments yet. Start investing to see your portfolio here.</p>
-                  </div>
-                </td>
-              </tr>
-            `;
-          } else {
-            body.innerHTML = investments.map(inv => {
-              if (!inv) return '';
-              const rate = profitRates[inv.plan] || 0;
-              const start = new Date(inv.startDate);
-              const status = Math.floor((Date.now() - inv.startDate) / (1000*60*60*24)) < (inv.days||7) ? 'Active' : 'Completed';
-              return `<tr>
-                <td>${sanitizeHTML(inv.plan || 'N/A')}</td>
-                <td>$${Number(inv.amount || 0).toLocaleString()}</td>
-                <td>${(rate*100).toFixed(1)}% Daily</td>
-                <td><span style="color: ${status === 'Active' ? '#4ef5a3' : '#888'}">${status}</span></td>
-                <td>${start.toISOString().split('T')[0]}</td>
-                <td>$${(Number(inv.profit||0)).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-              </tr>`;
-            }).join('');
-          }
-        }
+        // Update investments table using helper function
+        renderInvestmentsTable(data.investments);
 
-        // Update transaction history table - always update, preserve data
-        const transactionsBody = document.getElementById('transactionsBody');
-        if (transactionsBody) {
-          const deposits = data.deposits || [];
-          const transactions = data.transactions || [];
-          
-          console.log('[Dashboard] Full data object:', data);
-          console.log('[Dashboard] Deposits array:', deposits, 'Length:', deposits.length);
-          console.log('[Dashboard] Transactions array:', transactions, 'Length:', transactions.length);
-          
-          // Combine all transactions (deposits, bonuses, etc.)
-          const allTransactions = [];
-          
-          // Add deposits as transactions
-          if (Array.isArray(deposits)) {
-            deposits.forEach((dep, idx) => {
-              if (dep) {
-                console.log(`[Dashboard] Processing deposit ${idx}:`, dep);
-                allTransactions.push({
-                  type: 'deposit',
-                  amount: dep.amount || 0,
-                  currency: dep.currency || 'USD',
-                  status: dep.status || 'pending',
-                  createdAt: dep.createdAt || dep.timestamp || Date.now(),
-                  transactionHash: dep.transactionHash,
-                  id: dep.id
-                });
-              }
-            });
-          } else {
-            console.warn('[Dashboard] Deposits is not an array:', deposits);
-          }
-          
-          // Add other transactions (bonuses, etc.)
-          if (Array.isArray(transactions)) {
-            transactions.forEach((txn, idx) => {
-              if (txn) {
-                console.log(`[Dashboard] Processing transaction ${idx}:`, txn);
-                allTransactions.push({
-                  type: txn.type || 'transaction',
-                  amount: txn.amount || 0,
-                  currency: txn.currency || 'USD',
-                  status: txn.status || 'completed',
-                  createdAt: txn.createdAt || txn.timestamp || Date.now(),
-                  description: txn.description,
-                  id: txn.id
-                });
-              }
-            });
-          } else {
-            console.warn('[Dashboard] Transactions is not an array:', transactions);
-          }
-          
-          // Sort by date (newest first)
-          allTransactions.sort((a, b) => {
-            const aTime = Number(a.createdAt || 0);
-            const bTime = Number(b.createdAt || 0);
-            return bTime - aTime;
-          });
-          
-          console.log('[Dashboard] Combined transactions count:', allTransactions.length);
-          console.log('[Dashboard] Combined transactions:', JSON.stringify(allTransactions, null, 2));
-          
-          // Always render transactions, even if empty
-          if (allTransactions.length === 0) {
-            console.log('[Dashboard] No transactions to display, showing empty state');
-            transactionsBody.innerHTML = `
-              <tr>
-                <td colspan="6">
-                  <div class="empty-state">
-                    <i class="fas fa-inbox"></i>
-                    <p>No transactions yet. Your transaction history will appear here.</p>
-                  </div>
-                </td>
-              </tr>
-            `;
-          } else {
-            console.log('[Dashboard] Rendering', allTransactions.length, 'transactions');
-            transactionsBody.innerHTML = allTransactions.map((txn, idx) => {
-              if (!txn) {
-                console.warn(`[Dashboard] Transaction ${idx} is null or undefined`);
-                return '';
-              }
-              
-              // Handle date conversion more robustly
-              let date;
-              try {
-                const timestamp = Number(txn.createdAt || txn.timestamp || Date.now());
-                date = new Date(timestamp);
-                if (isNaN(date.getTime())) {
-                  date = new Date();
-                }
-              } catch (e) {
-                console.error('[Dashboard] Error parsing date for transaction:', txn, e);
-                date = new Date();
-              }
-              
-              let statusColor = '#888';
-              let statusText = txn.status || 'pending';
-              let icon = 'fas fa-circle';
-              let typeText = 'Transaction';
-              
-              // Determine icon and type text based on transaction type
-              if (txn.type === 'deposit') {
-                icon = 'fas fa-arrow-down';
-                typeText = 'Deposit';
-              } else if (txn.type === 'withdrawal') {
-                icon = 'fas fa-arrow-up';
-                typeText = 'Withdrawal';
-              } else if (txn.type === 'registration_bonus') {
-                icon = 'fas fa-gift';
-                typeText = 'Registration Bonus';
-              } else if (txn.type === 'investment') {
-                icon = 'fas fa-chart-line';
-                typeText = 'Investment';
-              } else if (txn.type === 'profit') {
-                icon = 'fas fa-coins';
-                typeText = 'Profit';
-              }
-              
-              if (statusText === 'approved' || statusText === 'completed') {
-                statusColor = '#4ef5a3';
-                statusText = statusText === 'completed' ? 'Completed' : 'Approved';
-              } else if (statusText === 'pending') {
-                statusColor = '#ffc107';
-                statusText = 'Pending';
-              } else if (statusText === 'rejected') {
-                statusColor = '#ff4444';
-                statusText = 'Rejected';
-              }
-              
-              const details = txn.transactionHash 
-                ? `<span style="font-family: monospace; font-size: 0.85rem;" title="${sanitizeHTML(txn.transactionHash)}">${sanitizeHTML((txn.transactionHash || '').substring(0, 20))}...</span>`
-                : (txn.description || 'N/A');
-              
-              return `<tr>
-                <td><i class="${icon}" style="color: #4ef5a3;"></i> ${sanitizeHTML(typeText)}</td>
-                <td>$${Number(txn.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                <td>${sanitizeHTML(txn.currency || 'USD')}</td>
-                <td><span style="color: ${statusColor}; font-weight: 500;">${statusText}</span></td>
-                <td>${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                <td>${details}</td>
-              </tr>`;
-            }).join('');
-          }
-        } else {
-          console.error('[Dashboard] transactionsBody element not found!');
-        }
+        // Update transaction history table using helper function
+        renderTransactionsTable(data);
 
         // Update charts - always update with current data
         updateCharts(data);
@@ -514,18 +532,41 @@
           errorEl.style.display = 'none';
         }
       } catch (error) {
-        console.error('Dashboard refresh failed:', error);
+        console.error('[Dashboard] Refresh failed:', error);
+        console.error('[Dashboard] Error details:', error.message, error.stack);
         
         // Use last successful data if available to preserve display
         if (lastSuccessfulData) {
-          console.log('[Dashboard] Using cached data due to error');
-          updateCharts(lastSuccessfulData);
-          
-          // Preserve transaction history from last successful fetch
-          const transactionsBody = document.getElementById('transactionsBody');
-          if (transactionsBody && transactionsBody.children.length > 0) {
-            // Keep existing transaction history if it exists
-            console.log('[Dashboard] Preserving existing transaction history');
+          console.log('[Dashboard] Using cached data due to error - re-rendering from cache');
+          try {
+            // Re-render everything from cached data
+            const cachedData = lastSuccessfulData;
+            
+            // Update metrics from cached data
+            const totalBalance = Number(cachedData.totalBalance || 0);
+            const totalInvestment = Number(cachedData.totalInvestment || 0);
+            const dailyEarnings = Number(cachedData.dailyEarnings || 0);
+            const bonus = Number(cachedData.bonus || 0);
+            const totalDeposits = Number(cachedData.totalDeposits || 0);
+            const totalProfit = Number(cachedData.totalProfit || 0);
+
+            if (document.getElementById('dashTotalBalance')) animateCounter(document.getElementById('dashTotalBalance'), 0, totalBalance, 1000);
+            if (document.getElementById('dashTotalInvestment')) animateCounter(document.getElementById('dashTotalInvestment'), 0, totalInvestment, 1000);
+            if (document.getElementById('dashDailyEarnings')) animateCounter(document.getElementById('dashDailyEarnings'), 0, dailyEarnings, 1000);
+            if (document.getElementById('dashBonus')) animateCounter(document.getElementById('dashBonus'), 0, bonus, 1000);
+            if (document.getElementById('dashTotalDeposits')) animateCounter(document.getElementById('dashTotalDeposits'), 0, totalDeposits, 1000);
+            if (document.getElementById('dashTotalProfit')) animateCounter(document.getElementById('dashTotalProfit'), 0, totalProfit, 1000);
+            
+            // Re-render investments and transactions from cached data
+            renderInvestmentsTable(cachedData.investments || []);
+            renderTransactionsTable(cachedData);
+            
+            // Update charts from cached data
+            updateCharts(cachedData);
+            
+            console.log('[Dashboard] Successfully restored dashboard from cached data');
+          } catch (renderError) {
+            console.error('[Dashboard] Error rendering cached data:', renderError);
           }
         } else {
           // Only show error if we have no data at all
@@ -534,8 +575,13 @@
           
           if (!hasData) {
             showError('Could not load dashboard data. Please try refreshing the page.');
+          } else {
+            console.warn('[Dashboard] Error occurred but data is already displayed');
           }
         }
+      } finally {
+        // Always hide loading overlay
+        showLoading(false);
       }
     }
 
@@ -551,13 +597,34 @@
       console.log('[Dashboard] User found:', user);
       showLoading(true);
       
-      // Small delay to ensure DOM is ready
+      // Small delay to ensure DOM is ready, then refresh
       setTimeout(() => {
-        refreshDashboard();
+        refreshDashboard().catch(err => {
+          console.error('[Dashboard] Initial refresh failed:', err);
+          // If initial refresh fails, try again after a short delay
+          setTimeout(() => {
+            console.log('[Dashboard] Retrying dashboard refresh...');
+            refreshDashboard();
+          }, 2000);
+        });
       }, 100);
       
       // Refresh every 30 seconds
-      setInterval(refreshDashboard, 30000);
+      setInterval(() => {
+        refreshDashboard().catch(err => {
+          console.error('[Dashboard] Scheduled refresh failed:', err);
+        });
+      }, 30000);
+    });
+    
+    // Also refresh when page becomes visible (user returns to tab)
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        console.log('[Dashboard] Page became visible, refreshing...');
+        refreshDashboard().catch(err => {
+          console.error('[Dashboard] Visibility refresh failed:', err);
+        });
+      }
     });
   </script>
 </body>
