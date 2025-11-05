@@ -361,16 +361,18 @@
           const deposits = data.deposits || [];
           const transactions = data.transactions || [];
           
-          console.log('[Dashboard] Deposits:', deposits);
-          console.log('[Dashboard] Transactions:', transactions);
+          console.log('[Dashboard] Full data object:', data);
+          console.log('[Dashboard] Deposits array:', deposits, 'Length:', deposits.length);
+          console.log('[Dashboard] Transactions array:', transactions, 'Length:', transactions.length);
           
           // Combine all transactions (deposits, bonuses, etc.)
           const allTransactions = [];
           
           // Add deposits as transactions
           if (Array.isArray(deposits)) {
-            deposits.forEach(dep => {
+            deposits.forEach((dep, idx) => {
               if (dep) {
+                console.log(`[Dashboard] Processing deposit ${idx}:`, dep);
                 allTransactions.push({
                   type: 'deposit',
                   amount: dep.amount || 0,
@@ -382,12 +384,15 @@
                 });
               }
             });
+          } else {
+            console.warn('[Dashboard] Deposits is not an array:', deposits);
           }
           
           // Add other transactions (bonuses, etc.)
           if (Array.isArray(transactions)) {
-            transactions.forEach(txn => {
+            transactions.forEach((txn, idx) => {
               if (txn) {
+                console.log(`[Dashboard] Processing transaction ${idx}:`, txn);
                 allTransactions.push({
                   type: txn.type || 'transaction',
                   amount: txn.amount || 0,
@@ -399,15 +404,23 @@
                 });
               }
             });
+          } else {
+            console.warn('[Dashboard] Transactions is not an array:', transactions);
           }
           
           // Sort by date (newest first)
-          allTransactions.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          allTransactions.sort((a, b) => {
+            const aTime = Number(a.createdAt || 0);
+            const bTime = Number(b.createdAt || 0);
+            return bTime - aTime;
+          });
           
-          console.log('[Dashboard] Combined transactions:', allTransactions.length, allTransactions);
+          console.log('[Dashboard] Combined transactions count:', allTransactions.length);
+          console.log('[Dashboard] Combined transactions:', JSON.stringify(allTransactions, null, 2));
           
           // Always render transactions, even if empty
           if (allTransactions.length === 0) {
+            console.log('[Dashboard] No transactions to display, showing empty state');
             transactionsBody.innerHTML = `
               <tr>
                 <td colspan="6">
@@ -419,9 +432,26 @@
               </tr>
             `;
           } else {
-            transactionsBody.innerHTML = allTransactions.map(txn => {
-              if (!txn) return '';
-              const date = new Date(txn.createdAt || txn.timestamp || Date.now());
+            console.log('[Dashboard] Rendering', allTransactions.length, 'transactions');
+            transactionsBody.innerHTML = allTransactions.map((txn, idx) => {
+              if (!txn) {
+                console.warn(`[Dashboard] Transaction ${idx} is null or undefined`);
+                return '';
+              }
+              
+              // Handle date conversion more robustly
+              let date;
+              try {
+                const timestamp = Number(txn.createdAt || txn.timestamp || Date.now());
+                date = new Date(timestamp);
+                if (isNaN(date.getTime())) {
+                  date = new Date();
+                }
+              } catch (e) {
+                console.error('[Dashboard] Error parsing date for transaction:', txn, e);
+                date = new Date();
+              }
+              
               let statusColor = '#888';
               let statusText = txn.status || 'pending';
               let icon = 'fas fa-circle';
@@ -470,6 +500,8 @@
               </tr>`;
             }).join('');
           }
+        } else {
+          console.error('[Dashboard] transactionsBody element not found!');
         }
 
         // Update charts - always update with current data

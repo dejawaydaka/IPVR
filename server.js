@@ -1491,6 +1491,11 @@ app.get('/api/user/:email', async (req, res) => {
             [user.id]
         );
         
+        console.log(`[API] User ${user.id} (${user.email}) - Found ${transactions.length} transactions`);
+        if (transactions.length > 0) {
+            console.log('[API] Sample transaction:', transactions[0]);
+        }
+        
         // Calculate total_deposits from approved deposits only
         const { rows: approvedDeposits } = await pool.query(
             'SELECT COALESCE(SUM(amount), 0) as total FROM deposits WHERE user_id = $1 AND status = $2',
@@ -1514,36 +1519,75 @@ app.get('/api/user/:email', async (req, res) => {
             dailyPercent: Number(inv.daily_percent)
         }));
         
-        const formattedWithdrawals = withdrawals.map(wd => ({
-            amount: Number(wd.amount),
-            cryptoType: wd.crypto_type,
-            walletAddress: wd.wallet_address,
-            status: wd.status,
-            timestamp: wd.created_at.getTime()
-        }));
+        const formattedWithdrawals = withdrawals.map(wd => {
+            let timestamp;
+            try {
+                timestamp = wd.created_at instanceof Date ? wd.created_at.getTime() : new Date(wd.created_at).getTime();
+            } catch (e) {
+                timestamp = Date.now();
+            }
+            return {
+                amount: Number(wd.amount),
+                cryptoType: wd.crypto_type,
+                walletAddress: wd.wallet_address,
+                status: wd.status,
+                timestamp: timestamp
+            };
+        });
         
-        const formattedDeposits = deposits.map(dep => ({
-            id: dep.id,
-            amount: Number(dep.amount),
-            currency: dep.currency || 'USD',
-            transactionHash: dep.transaction_hash || '',
-            proof: dep.proof || '',
-            status: dep.status || 'pending',
-            createdAt: dep.created_at.getTime(),
-            timestamp: dep.created_at.getTime()
-        }));
+        const formattedDeposits = deposits.map(dep => {
+            let timestamp;
+            try {
+                timestamp = dep.created_at instanceof Date ? dep.created_at.getTime() : new Date(dep.created_at).getTime();
+            } catch (e) {
+                timestamp = Date.now();
+            }
+            return {
+                id: dep.id,
+                amount: Number(dep.amount),
+                currency: dep.currency || 'USD',
+                transactionHash: dep.transaction_hash || '',
+                proof: dep.proof || '',
+                status: dep.status || 'pending',
+                createdAt: timestamp,
+                timestamp: timestamp
+            };
+        });
         
-        // Format transactions for frontend
-        const formattedTransactions = transactions.map(txn => ({
-            id: txn.id,
-            type: txn.type,
-            amount: Number(txn.amount),
-            currency: txn.currency || 'USD',
-            status: txn.status || 'completed',
-            description: txn.description || '',
-            createdAt: txn.created_at.getTime(),
-            timestamp: txn.created_at.getTime()
-        }));
+        // Format transactions for frontend with better error handling
+        const formattedTransactions = transactions.map(txn => {
+            let timestamp;
+            try {
+                if (txn.created_at instanceof Date) {
+                    timestamp = txn.created_at.getTime();
+                } else if (typeof txn.created_at === 'string') {
+                    timestamp = new Date(txn.created_at).getTime();
+                } else if (typeof txn.created_at === 'number') {
+                    timestamp = txn.created_at;
+                } else {
+                    timestamp = Date.now();
+                }
+                if (isNaN(timestamp)) {
+                    timestamp = Date.now();
+                }
+            } catch (e) {
+                console.error('[API] Error parsing transaction date:', e, txn);
+                timestamp = Date.now();
+            }
+            
+            return {
+                id: txn.id,
+                type: txn.type,
+                amount: Number(txn.amount),
+                currency: txn.currency || 'USD',
+                status: txn.status || 'completed',
+                description: txn.description || '',
+                createdAt: timestamp,
+                timestamp: timestamp
+            };
+        });
+        
+        console.log(`[API] Formatted ${formattedTransactions.length} transactions for user ${user.id}`);
         
         const { password: _, ...userData } = {
             ...user,
@@ -1993,6 +2037,8 @@ app.post('/admin/approve', [
         const registrationBonus = 5;
         
         if (currentBonus === 0) {
+            console.log(`[Admin] Giving registration bonus of $${registrationBonus} to user ${user.id} (${email})`);
+            
             // Add bonus to balance and record it
             await pool.query(
                 'UPDATE users SET balance = balance + $1, bonus = $1 WHERE id = $2',
@@ -2000,11 +2046,16 @@ app.post('/admin/approve', [
             );
             
             // Record registration bonus transaction
-            await pool.query(
+            const insertResult = await pool.query(
                 `INSERT INTO transactions (user_id, type, amount, currency, status, description, created_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+                 VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                 RETURNING id, created_at`,
                 [user.id, 'registration_bonus', registrationBonus, 'USD', 'completed', 'Registration Bonus - Welcome to RealSphere']
             );
+            
+            console.log(`[Admin] Registration bonus transaction created:`, insertResult.rows[0]);
+        } else {
+            console.log(`[Admin] User ${user.id} already has bonus of $${currentBonus}, skipping registration bonus`);
         }
         
         res.json({ message: 'User approved successfully. Registration bonus credited.' });
@@ -2051,6 +2102,8 @@ app.post('/api/admin/users/:id/approve', adminAuth, async (req, res) => {
         const registrationBonus = 5;
         
         if (currentBonus === 0) {
+            console.log(`[Admin] Giving registration bonus of $${registrationBonus} to user ${user.id} (${user.email})`);
+            
             // Add bonus to balance and record it
             await pool.query(
                 'UPDATE users SET balance = balance + $1, bonus = $1 WHERE id = $2',
@@ -2058,11 +2111,16 @@ app.post('/api/admin/users/:id/approve', adminAuth, async (req, res) => {
             );
             
             // Record registration bonus transaction
-            await pool.query(
+            const insertResult = await pool.query(
                 `INSERT INTO transactions (user_id, type, amount, currency, status, description, created_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+                 VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                 RETURNING id, created_at`,
                 [user.id, 'registration_bonus', registrationBonus, 'USD', 'completed', 'Registration Bonus - Welcome to RealSphere']
             );
+            
+            console.log(`[Admin] Registration bonus transaction created:`, insertResult.rows[0]);
+        } else {
+            console.log(`[Admin] User ${user.id} already has bonus of $${currentBonus}, skipping registration bonus`);
         }
         
         res.json({ 
