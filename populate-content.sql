@@ -159,7 +159,7 @@ ON CONFLICT DO NOTHING;
 -- NEWS ARTICLES (5 items)
 -- ============================================
 
-INSERT INTO news (title, summary, image_url, slug, content_html, date, created_at)
+INSERT INTO news (title, summary, content_html, image_url, slug, date, created_at)
 VALUES 
 (
   'Real Estate Market Shows Strong Growth in Q1 2025',
@@ -177,14 +177,14 @@ ON CONFLICT (slug) DO UPDATE SET
   image_url = EXCLUDED.image_url,
   updated_at = NOW();
 
-INSERT INTO news (title, summary, image_url, slug, content_html, date, created_at)
+INSERT INTO news (title, summary, content_html, image_url, slug, date, created_at)
 VALUES 
 (
   'Sustainable Building Practices Transform Real Estate Investment',
   'Green building initiatives are becoming a major factor in property investment decisions, with eco-friendly developments commanding premium prices and higher rental yields.',
+  '<p>Sustainability is no longer just a trend—it''s a critical factor in real estate investment. Properties with green certifications and energy-efficient features are seeing increased demand and can command premium prices of 10-15% above comparable properties.</p><p><strong>Benefits of Sustainable Properties:</strong></p><ul><li>Lower operating costs for tenants</li><li>Higher property values</li><li>Increased tenant satisfaction</li><li>Future-proof investments</li><li>Tax incentives and rebates</li></ul><p>Investors are increasingly prioritizing LEED-certified buildings and properties with renewable energy systems. This shift reflects growing environmental awareness and the economic benefits of sustainable construction.</p>',
   'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
   'sustainable-building-practices-transform-real-estate-investment',
-  '<p>Sustainability is no longer just a trend—it''s a critical factor in real estate investment. Properties with green certifications and energy-efficient features are seeing increased demand and can command premium prices of 10-15% above comparable properties.</p><p><strong>Benefits of Sustainable Properties:</strong></p><ul><li>Lower operating costs for tenants</li><li>Higher property values</li><li>Increased tenant satisfaction</li><li>Future-proof investments</li><li>Tax incentives and rebates</li></ul><p>Investors are increasingly prioritizing LEED-certified buildings and properties with renewable energy systems. This shift reflects growing environmental awareness and the economic benefits of sustainable construction.</p>',
   NOW(),
   NOW()
 )
@@ -195,14 +195,14 @@ ON CONFLICT (slug) DO UPDATE SET
   image_url = EXCLUDED.image_url,
   updated_at = NOW();
 
-INSERT INTO news (title, summary, image_url, slug, content_html, date, created_at)
+INSERT INTO news (title, summary, content_html, image_url, slug, date, created_at)
 VALUES 
 (
   'Technology Integration Reshapes Commercial Real Estate',
   'Smart building technology and IoT integration are revolutionizing commercial properties, creating new opportunities for investors and improving tenant experiences.',
+  '<p>The integration of smart building technology is transforming commercial real estate, making properties more efficient, secure, and attractive to tenants. IoT sensors, automated systems, and AI-powered management platforms are becoming standard features in modern commercial developments.</p><p><strong>Technology Trends:</strong></p><ul><li>Automated HVAC and lighting systems</li><li>Smart security and access control</li><li>Energy monitoring and optimization</li><li>Tenant mobile apps</li><li>Predictive maintenance systems</li></ul><p>Properties with advanced technology integration are experiencing higher occupancy rates and can charge premium rents. Investors are recognizing the value of these features in attracting and retaining quality tenants.</p>',
   'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
   'technology-integration-reshapes-commercial-real-estate',
-  '<p>The integration of smart building technology is transforming commercial real estate, making properties more efficient, secure, and attractive to tenants. IoT sensors, automated systems, and AI-powered management platforms are becoming standard features in modern commercial developments.</p><p><strong>Technology Trends:</strong></p><ul><li>Automated HVAC and lighting systems</li><li>Smart security and access control</li><li>Energy monitoring and optimization</li><li>Tenant mobile apps</li><li>Predictive maintenance systems</li></ul><p>Properties with advanced technology integration are experiencing higher occupancy rates and can charge premium rents. Investors are recognizing the value of these features in attracting and retaining quality tenants.</p>',
   NOW(),
   NOW()
 )
@@ -213,14 +213,14 @@ ON CONFLICT (slug) DO UPDATE SET
   image_url = EXCLUDED.image_url,
   updated_at = NOW();
 
-INSERT INTO news (title, summary, image_url, slug, content_html, date, created_at)
+INSERT INTO news (title, summary, content_html, image_url, slug, date, created_at)
 VALUES 
 (
   'Urban Redevelopment Projects Drive Economic Growth',
   'Major urban redevelopment initiatives are creating new investment opportunities in downtown areas, with mixed-use projects leading the way in revitalizing city centers.',
+  '<p>Urban redevelopment projects are reshaping city centers across the country, creating vibrant mixed-use communities that combine residential, commercial, and entertainment spaces. These projects are generating significant economic activity and attracting investment capital.</p><p><strong>Redevelopment Benefits:</strong></p><ul><li>Job creation and economic stimulus</li><li>Improved infrastructure</li><li>Increased property values</li><li>Enhanced quality of life</li><li>Tourism and visitor attraction</li></ul><p>Investors are finding strong opportunities in these redevelopment zones, with early participants seeing substantial returns as projects mature and neighborhoods transform. The trend toward walkable, mixed-use communities is expected to continue.</p>',
   'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
   'urban-redevelopment-projects-drive-economic-growth',
-  '<p>Urban redevelopment projects are reshaping city centers across the country, creating vibrant mixed-use communities that combine residential, commercial, and entertainment spaces. These projects are generating significant economic activity and attracting investment capital.</p><p><strong>Redevelopment Benefits:</strong></p><ul><li>Job creation and economic stimulus</li><li>Improved infrastructure</li><li>Increased property values</li><li>Enhanced quality of life</li><li>Tourism and visitor attraction</li></ul><p>Investors are finding strong opportunities in these redevelopment zones, with early participants seeing substantial returns as projects mature and neighborhoods transform. The trend toward walkable, mixed-use communities is expected to continue.</p>',
   NOW(),
   NOW()
 )
@@ -231,14 +231,14 @@ ON CONFLICT (slug) DO UPDATE SET
   image_url = EXCLUDED.image_url,
   updated_at = NOW();
 
-INSERT INTO news (title, summary, image_url, slug, content_html, date, created_at)
+INSERT INTO news (title, summary, content_html, image_url, slug, date, created_at)
 VALUES 
 (
   'Rental Market Stability Signals Strong Investment Climate',
   'The rental market remains stable with strong demand and steady rent growth, providing reliable income streams for real estate investors.',
+  '<p>The rental market continues to demonstrate remarkable stability, with occupancy rates remaining high and rental income providing consistent returns for investors. Despite economic uncertainties, demand for quality rental properties remains strong.</p><p><strong>Market Indicators:</strong></p><ul><li>Average occupancy rates above 95%</li><li>Rent growth of 4-6% annually</li><li>Low vacancy rates in prime locations</li><li>Strong tenant demand</li><li>Stable rental yields</li></ul><p>This stability makes rental properties an attractive investment option for those seeking steady income streams. Property management companies are reporting strong tenant retention and minimal collection issues, indicating a healthy rental market.</p>',
   'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
   'rental-market-stability-signals-strong-investment-climate',
-  '<p>The rental market continues to demonstrate remarkable stability, with occupancy rates remaining high and rental income providing consistent returns for investors. Despite economic uncertainties, demand for quality rental properties remains strong.</p><p><strong>Market Indicators:</strong></p><ul><li>Average occupancy rates above 95%</li><li>Rent growth of 4-6% annually</li><li>Low vacancy rates in prime locations</li><li>Strong tenant demand</li><li>Stable rental yields</li></ul><p>This stability makes rental properties an attractive investment option for those seeking steady income streams. Property management companies are reporting strong tenant retention and minimal collection issues, indicating a healthy rental market.</p>',
   NOW(),
   NOW()
 )
