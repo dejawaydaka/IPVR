@@ -129,15 +129,37 @@ body {
     padding: 0.7rem 20px;
 }
 
-/* Reduce header container size on mobile by 50% - keep small and sleek */
+/* Mobile header: logo and menu parallel, reduced container, large logo */
 @media (max-width: 768px) {
     .header .container {
-        padding: 0.35rem 10px;
+        padding: 0.2rem 8px;
+        align-items: center;
+        justify-content: space-between;
     }
     
     /* Increase logo size on mobile header by 100% (double) while keeping container small */
     .header .nav-brand .logo img {
         height: 87px !important;
+    }
+    
+    /* Ensure logo and menu are on same line and properly aligned */
+    .header .nav-brand {
+        display: flex;
+        align-items: center;
+        flex: 0 0 auto;
+    }
+    
+    .mobile-menu-toggle {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        margin-left: auto;
+    }
+    
+    /* Hide nav and nav-actions on mobile to keep header minimal */
+    .header .nav {
+        display: none;
     }
 }
 
