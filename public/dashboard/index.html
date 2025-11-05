@@ -361,6 +361,9 @@
           const deposits = data.deposits || [];
           const transactions = data.transactions || [];
           
+          console.log('[Dashboard] Deposits:', deposits);
+          console.log('[Dashboard] Transactions:', transactions);
+          
           // Combine all transactions (deposits, bonuses, etc.)
           const allTransactions = [];
           
@@ -400,6 +403,8 @@
           
           // Sort by date (newest first)
           allTransactions.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          
+          console.log('[Dashboard] Combined transactions:', allTransactions.length, allTransactions);
           
           // Always render transactions, even if empty
           if (allTransactions.length === 0) {

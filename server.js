@@ -1485,6 +1485,12 @@ app.get('/api/user/:email', async (req, res) => {
             [user.id]
         );
         
+        // Get transactions (bonuses, etc.)
+        const { rows: transactions } = await pool.query(
+            'SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC',
+            [user.id]
+        );
+        
         // Calculate total_deposits from approved deposits only
         const { rows: approvedDeposits } = await pool.query(
             'SELECT COALESCE(SUM(amount), 0) as total FROM deposits WHERE user_id = $1 AND status = $2',
@@ -1527,6 +1533,18 @@ app.get('/api/user/:email', async (req, res) => {
             timestamp: dep.created_at.getTime()
         }));
         
+        // Format transactions for frontend
+        const formattedTransactions = transactions.map(txn => ({
+            id: txn.id,
+            type: txn.type,
+            amount: Number(txn.amount),
+            currency: txn.currency || 'USD',
+            status: txn.status || 'completed',
+            description: txn.description || '',
+            createdAt: txn.created_at.getTime(),
+            timestamp: txn.created_at.getTime()
+        }));
+        
         const { password: _, ...userData } = {
             ...user,
             email: user.email,
@@ -1536,6 +1554,7 @@ app.get('/api/user/:email', async (req, res) => {
             investments: formattedInvestments,
             withdrawals: formattedWithdrawals,
             deposits: formattedDeposits,
+            transactions: formattedTransactions,
             totalProfit: profits.totalProfit,
             totalBalance: balance + profits.totalProfit,
             totalInvestment: totalInvestment,
