@@ -388,7 +388,9 @@ function renderSidebar(currentPage = '') {
   return `
     <aside class="sidebar">
       <div style="text-align: center; margin-bottom: 1rem;">
-        <img src="../Rswhite.png" alt="RealSphere" style="height: 72px; width: auto; max-width: 100%;">
+        <a href="../index.html" style="display: inline-block; cursor: pointer;">
+          <img src="../Rswhite.png" alt="RealSphere" style="height: 72px; width: auto; max-width: 100%;">
+        </a>
       </div>
       <div class="user-display">
         <img src="${profileImg}" alt="User" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Ccircle cx=%2220%22 cy=%2220%22 r=%2218%22 fill=%22%234ef5a3%22/%3E%3Ctext x=%2220%22 y=%2225%22 font-size=%2214%22 fill=%22white%22 text-anchor=%22middle%22%3E${encodeURIComponent(displayName.charAt(0).toUpperCase())}%3C/text%3E%3C/svg%3E';" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" />
