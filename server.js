@@ -2219,6 +2219,41 @@ app.get('/api/admin/users/:id', adminAuth, async (req, res) => {
     }
 });
 
+// Delete user endpoint
+app.delete('/api/admin/users/:id', adminAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Check if user exists
+        const { rows: users } = await pool.query(
+            'SELECT id, email FROM users WHERE id = $1',
+            [id]
+        );
+        
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        const user = users[0];
+        
+        // Delete user (cascade will delete related investments, deposits, withdrawals)
+        await pool.query('DELETE FROM users WHERE id = $1', [id]);
+        
+        // Send admin alert about user deletion
+        await sendAdminEmail(
+            'User Deleted',
+            `User ${user.email} has been deleted from the system`,
+            'warning',
+            { userId: id, email: user.email }
+        );
+        
+        res.json({ message: 'User deleted successfully' });
+    } catch (err) {
+        console.error('Delete user error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 app.post('/api/admin/users/:id/update', adminAuth, [
     body('balance').optional().isFloat({ min: 0 }),
     body('total_investment').optional().isFloat({ min: 0 }),

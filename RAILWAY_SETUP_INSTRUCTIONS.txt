@@ -1,0 +1,53 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║                    RAILWAY ENVIRONMENT VARIABLE SETUP                   ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+STEP 1: Go to Railway Dashboard
+─────────────────────────────────
+👉 https://railway.app
+   → Log in
+   → Select your "RealSphere" project
+   → Click on your service (Node.js app)
+
+STEP 2: Add Environment Variable
+─────────────────────────────────
+1. Click on the "Variables" tab
+2. Click "New Variable" or use "Raw Editor"
+3. Add this EXACT variable:
+
+   Variable Name:  ZOHO_APP_PASSWORD
+   Variable Value: khKp hW68 JRqU
+
+4. Click "Save"
+
+STEP 3: Verify
+──────────────
+After saving, Railway will automatically redeploy.
+
+Check your service logs - you should see:
+✅ Email service ready (Zoho SMTP)
+
+If you see:
+⚠️ Email service not configured
+→ Double-check the password was entered correctly (no extra spaces)
+
+═══════════════════════════════════════════════════════════════════════════
+
+OPTIONAL VARIABLES (Recommended):
+─────────────────────────────────
+
+BASE_URL=https://your-app-name.railway.app
+   (Replace with your actual Railway domain)
+
+ADMIN_EMAIL=support@realsphereltd.com
+   (For admin alerts - defaults to support@realsphereltd.com)
+
+═══════════════════════════════════════════════════════════════════════════
+
+⚠️  SECURITY NOTE:
+───────────────────
+This password is now visible in this file. 
+After setting it in Railway, you can delete this file for security.
+
+═══════════════════════════════════════════════════════════════════════════
+

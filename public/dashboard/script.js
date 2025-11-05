@@ -63,13 +63,18 @@ function showLoading(show = true) {
       loadingTimeout = null;
     }
     
+    // Check if this is an admin page - reduce timeout to 1 second
+    const isAdminPage = window.location.pathname.includes('/admin/') || 
+                        localStorage.getItem('isAdmin') === 'true';
+    const timeout = isAdminPage ? 1000 : 1200;
+    
     if (show) {
       overlay.classList.remove('hidden');
-      // Safety timeout: hide loader after 1.2 seconds maximum
+      // Safety timeout: hide loader after timeout (1s for admin, 1.2s for regular)
       loadingTimeout = setTimeout(() => {
         overlay.classList.add('hidden');
         loadingTimeout = null;
-      }, 1200);
+      }, timeout);
     } else {
       overlay.classList.add('hidden');
       if (loadingTimeout) {
@@ -82,13 +87,17 @@ function showLoading(show = true) {
 
 // Auto-hide loading overlay on page load (for pages that don't fetch data)
 function autoHideLoading() {
-  // Hide after page is fully loaded, max 1.2 seconds
+  // Check if this is an admin page - reduce timeout to 1 second
+  const isAdminPage = window.location.pathname.includes('/admin/') || 
+                      localStorage.getItem('isAdmin') === 'true';
+  const timeout = isAdminPage ? 1000 : 1200;
+  
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => showLoading(false), 1200);
+      setTimeout(() => showLoading(false), timeout);
     });
   } else {
-    setTimeout(() => showLoading(false), 1200);
+    setTimeout(() => showLoading(false), timeout);
   }
   
   window.addEventListener('load', () => {

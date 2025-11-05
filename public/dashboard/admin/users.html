@@ -189,8 +189,11 @@
             </span>
           </td>
           <td>
-            <button class="btn btn-primary btn-sm" onclick="editUser(${user.id})">
+            <button class="btn btn-primary btn-sm" onclick="editUser(${user.id})" style="margin-right: 0.5rem;">
               <i class="fas fa-edit"></i> Edit
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id}, '${escape(user.email)}')">
+              <i class="fas fa-trash"></i> Delete
             </button>
           </td>
         </tr>
@@ -269,9 +272,55 @@
       }
     });
 
+    async function deleteUser(userId, userEmail) {
+      if (!checkAdminAuth()) return;
+      
+      // Confirmation dialog
+      const confirmed = confirm(
+        `⚠️ WARNING: This will permanently delete the user "${userEmail}" and all associated data!\n\n` +
+        `This action cannot be undone. The following will be deleted:\n` +
+        `- User account\n` +
+        `- All investments\n` +
+        `- All deposits\n` +
+        `- All withdrawals\n\n` +
+        `Are you sure you want to delete this user?`
+      );
+      
+      if (!confirmed) return;
+      
+      // Double confirmation
+      const doubleConfirm = confirm(
+        `Final confirmation: Delete user "${userEmail}"?\n\nThis action is irreversible!`
+      );
+      
+      if (!doubleConfirm) return;
+      
+      try {
+        showLoading(true);
+        
+        const res = await adminFetch(`/api/admin/users/${userId}`, {
+          method: 'DELETE'
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ message: 'Failed to delete user' }));
+          throw new Error(errorData.message || `HTTP ${res.status}`);
+        }
+        
+        showToast('User deleted successfully', 'success');
+        loadUsers(); // Refresh the list
+      } catch (error) {
+        console.error('Delete user error:', error);
+        showToast(error.message || 'Failed to delete user', 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
     window.editUser = editUser;
     window.saveUser = saveUser;
     window.loadUsers = loadUsers;
+    window.deleteUser = deleteUser;
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
