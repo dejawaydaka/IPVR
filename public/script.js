@@ -644,7 +644,7 @@ const serviceData = {
         title: 'Property Acquisition',
         icon: 'fas fa-building',
         content: `
-            <div style="color: rgba(255,255,255,0.9); line-height: 1.8;">
+            <div style="color: #000000; line-height: 1.8;">
                 <h4 style="color: #4ef5a3; margin-bottom: 1rem; font-size: 1.3rem;">Strategic Property Identification & Acquisition</h4>
                 <p>Our Property Acquisition service is designed to help investors identify, evaluate, and acquire high-value real estate assets with precision and confidence. We combine market intelligence, financial analysis, and strategic negotiation to secure the best deals.</p>
                 
@@ -666,7 +666,7 @@ const serviceData = {
         title: 'Portfolio Management',
         icon: 'fas fa-chart-line',
         content: `
-            <div style="color: rgba(255,255,255,0.9); line-height: 1.8;">
+            <div style="color: #000000; line-height: 1.8;">
                 <h4 style="color: #4ef5a3; margin-bottom: 1rem; font-size: 1.3rem;">Professional Portfolio Optimization</h4>
                 <p>Our Portfolio Management service provides comprehensive oversight and optimization of your real estate investments. We use AI-driven insights and data analytics to maximize returns while minimizing risk across your entire property portfolio.</p>
                 
@@ -688,7 +688,7 @@ const serviceData = {
         title: 'Investment Advisory',
         icon: 'fas fa-handshake',
         content: `
-            <div style="color: rgba(255,255,255,0.9); line-height: 1.8;">
+            <div style="color: #000000; line-height: 1.8;">
                 <h4 style="color: #4ef5a3; margin-bottom: 1rem; font-size: 1.3rem;">Expert Investment Guidance</h4>
                 <p>Our Investment Advisory service offers personalized guidance tailored to your financial goals, risk tolerance, and investment timeline. We provide expert recommendations backed by comprehensive market research and financial analysis.</p>
                 
@@ -710,7 +710,7 @@ const serviceData = {
         title: 'Risk Management',
         icon: 'fas fa-shield-alt',
         content: `
-            <div style="color: rgba(255,255,255,0.9); line-height: 1.8;">
+            <div style="color: #000000; line-height: 1.8;">
                 <h4 style="color: #4ef5a3; margin-bottom: 1rem; font-size: 1.3rem;">Comprehensive Risk Protection</h4>
                 <p>Our Risk Management service provides comprehensive assessment and mitigation strategies to protect your real estate investments from various risks including market fluctuations, property damage, legal issues, and economic downturns.</p>
                 
@@ -732,7 +732,7 @@ const serviceData = {
         title: 'Property Development',
         icon: 'fas fa-cogs',
         content: `
-            <div style="color: rgba(255,255,255,0.9); line-height: 1.8;">
+            <div style="color: #000000; line-height: 1.8;">
                 <h4 style="color: #4ef5a3; margin-bottom: 1rem; font-size: 1.3rem;">End-to-End Development Services</h4>
                 <p>Our Property Development service manages the complete lifecycle of real estate development projects, from initial planning and design through construction, marketing, and final delivery. We handle every aspect to ensure successful project completion.</p>
                 
@@ -754,7 +754,7 @@ const serviceData = {
         title: 'Tenant Management',
         icon: 'fas fa-users',
         content: `
-            <div style="color: rgba(255,255,255,0.9); line-height: 1.8;">
+            <div style="color: #000000; line-height: 1.8;">
                 <h4 style="color: #4ef5a3; margin-bottom: 1rem; font-size: 1.3rem;">Professional Tenant Services</h4>
                 <p>Our Tenant Management service handles all aspects of tenant relations, from initial screening and lease negotiation to ongoing maintenance and lease renewal. We ensure your properties remain occupied by quality tenants while maintaining positive landlord-tenant relationships.</p>
                 
