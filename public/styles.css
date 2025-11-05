@@ -1578,7 +1578,7 @@ body {
 }
 
 @media (max-width: 992px) {
-    body { padding-top: 70px; }
+    body { padding-top: 0; }
     .mobile-menu-toggle { display: block; }
     .nav-actions { display: none; }
     .hero-title { font-size: 2.75rem; }
