@@ -465,6 +465,20 @@ async function ensureSchema() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );`;
 
+  const createTransactions = `
+    CREATE TABLE IF NOT EXISTS transactions (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      type VARCHAR(50) NOT NULL,
+      amount NUMERIC(12, 2) NOT NULL,
+      currency VARCHAR(10) DEFAULT 'USD',
+      status VARCHAR(20) DEFAULT 'completed',
+      description TEXT,
+      reference_id INTEGER,
+      reference_type VARCHAR(50),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`;
+
   await pool.query(createUsers);
   await pool.query(createInvestments);
   await pool.query(createDeposits);
@@ -474,6 +488,7 @@ async function ensureSchema() {
   await pool.query(createTestimonials);
   await pool.query(createNews);
   await pool.query(createContacts);
+  await pool.query(createTransactions);
   await pool.query('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_investments_user_id ON investments(user_id);');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_deposits_user_id ON deposits(user_id);');
@@ -481,6 +496,9 @@ async function ensureSchema() {
   await pool.query('CREATE INDEX IF NOT EXISTS idx_projects_slug ON projects(slug);');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_news_slug ON news(slug);');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_news_date ON news(date);');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at);');
   
   // Create investment_plans table
   await pool.query(`
@@ -1357,6 +1375,12 @@ app.get('/dashboard', [
             [user.id]
         );
         
+        // Get transactions (bonuses, etc.)
+        const { rows: transactions } = await pool.query(
+            'SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC',
+            [user.id]
+        );
+        
         // Calculate total_deposits from approved deposits only
         const { rows: approvedDeposits } = await pool.query(
             'SELECT COALESCE(SUM(amount), 0) as total FROM deposits WHERE user_id = $1 AND status = $2',
@@ -1391,12 +1415,25 @@ app.get('/dashboard', [
             timestamp: dep.created_at.getTime()
         }));
         
+        // Format transactions for frontend
+        const formattedTransactions = transactions.map(txn => ({
+            id: txn.id,
+            type: txn.type,
+            amount: Number(txn.amount),
+            currency: txn.currency || 'USD',
+            status: txn.status || 'completed',
+            description: txn.description || '',
+            createdAt: txn.created_at.getTime(),
+            timestamp: txn.created_at.getTime()
+        }));
+        
         const responseData = {
             email: user.email, 
             name: user.name || '', 
             profileImage: user.profile_image || '',
             investments: formattedInvestments,
             deposits: formattedDeposits,
+            transactions: formattedTransactions,
             totalProfit: profits.totalProfit,
             totalBalance: balance + profits.totalProfit,
             totalInvestment: totalInvestment,
@@ -1911,7 +1948,7 @@ app.post('/admin/approve', [
     try {
         const { email } = req.body;
         const { rows: users } = await pool.query(
-            'SELECT id FROM users WHERE email = $1',
+            'SELECT id, balance, bonus, admin_approved FROM users WHERE email = $1',
             [email]
         );
         
@@ -1919,14 +1956,102 @@ app.post('/admin/approve', [
             return res.status(404).json({ message: 'User not found' });
         }
         
+        const user = users[0];
+        
+        // If already approved, just return success
+        if (user.admin_approved) {
+            return res.json({ message: 'User is already approved' });
+        }
+        
+        // Update user to approved
         await pool.query(
             'UPDATE users SET admin_approved = true WHERE id = $1',
-            [users[0].id]
+            [user.id]
         );
         
-        res.json({ message: 'User approved successfully' });
+        // Give registration bonus if not already given
+        const currentBonus = Number(user.bonus || 0);
+        const registrationBonus = 5;
+        
+        if (currentBonus === 0) {
+            // Add bonus to balance and record it
+            await pool.query(
+                'UPDATE users SET balance = balance + $1, bonus = $1 WHERE id = $2',
+                [registrationBonus, user.id]
+            );
+            
+            // Record registration bonus transaction
+            await pool.query(
+                `INSERT INTO transactions (user_id, type, amount, currency, status, description, created_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+                [user.id, 'registration_bonus', registrationBonus, 'USD', 'completed', 'Registration Bonus - Welcome to RealSphere']
+            );
+        }
+        
+        res.json({ message: 'User approved successfully. Registration bonus credited.' });
     } catch (err) {
         console.error('Admin approve error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// New API endpoint for approving users by ID
+app.post('/api/admin/users/:id/approve', adminAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = parseInt(id);
+        
+        if (!userId || isNaN(userId)) {
+            return res.status(400).json({ message: 'Invalid user ID' });
+        }
+        
+        const { rows: users } = await pool.query(
+            'SELECT id, email, balance, bonus, admin_approved FROM users WHERE id = $1',
+            [userId]
+        );
+        
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        const user = users[0];
+        
+        // If already approved, just return success
+        if (user.admin_approved) {
+            return res.json({ message: 'User is already approved', alreadyApproved: true });
+        }
+        
+        // Update user to approved
+        await pool.query(
+            'UPDATE users SET admin_approved = true WHERE id = $1',
+            [user.id]
+        );
+        
+        // Give registration bonus if not already given
+        const currentBonus = Number(user.bonus || 0);
+        const registrationBonus = 5;
+        
+        if (currentBonus === 0) {
+            // Add bonus to balance and record it
+            await pool.query(
+                'UPDATE users SET balance = balance + $1, bonus = $1 WHERE id = $2',
+                [registrationBonus, user.id]
+            );
+            
+            // Record registration bonus transaction
+            await pool.query(
+                `INSERT INTO transactions (user_id, type, amount, currency, status, description, created_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+                [user.id, 'registration_bonus', registrationBonus, 'USD', 'completed', 'Registration Bonus - Welcome to RealSphere']
+            );
+        }
+        
+        res.json({ 
+            message: 'User approved successfully. Registration bonus credited.',
+            bonusCredited: currentBonus === 0
+        });
+    } catch (err) {
+        console.error('Admin approve user error:', err);
         res.status(500).json({ message: 'Server error' });
     }
 });

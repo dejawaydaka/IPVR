@@ -347,30 +347,80 @@
         const transactionsBody = document.getElementById('transactionsBody');
         if (transactionsBody) {
           const deposits = data.deposits || [];
+          const transactions = data.transactions || [];
           
-          if (deposits.length === 0) {
+          // Combine all transactions (deposits, bonuses, etc.)
+          const allTransactions = [];
+          
+          // Add deposits as transactions
+          deposits.forEach(dep => {
+            allTransactions.push({
+              type: 'deposit',
+              amount: dep.amount,
+              currency: dep.currency || 'USD',
+              status: dep.status || 'pending',
+              createdAt: dep.createdAt || dep.timestamp,
+              transactionHash: dep.transactionHash,
+              id: dep.id
+            });
+          });
+          
+          // Add other transactions (bonuses, etc.)
+          transactions.forEach(txn => {
+            allTransactions.push({
+              type: txn.type,
+              amount: txn.amount,
+              currency: txn.currency || 'USD',
+              status: txn.status || 'completed',
+              createdAt: txn.createdAt || txn.timestamp,
+              description: txn.description,
+              id: txn.id
+            });
+          });
+          
+          // Sort by date (newest first)
+          allTransactions.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          
+          if (allTransactions.length === 0) {
             transactionsBody.innerHTML = `
               <tr>
                 <td colspan="6">
                   <div class="empty-state">
                     <i class="fas fa-inbox"></i>
-                    <p>No transactions yet. Your deposit history will appear here.</p>
+                    <p>No transactions yet. Your transaction history will appear here.</p>
                   </div>
                 </td>
               </tr>
             `;
           } else {
-            // Separate deposits by status for bonus detection
-            const approvedDeposits = deposits.filter(d => d.status === 'approved').sort((a, b) => (a.createdAt || a.timestamp) - (b.createdAt || b.timestamp));
-            
-            transactionsBody.innerHTML = deposits.map(dep => {
-              const date = new Date(dep.createdAt || dep.timestamp);
+            transactionsBody.innerHTML = allTransactions.map(txn => {
+              const date = new Date(txn.createdAt || txn.timestamp);
               let statusColor = '#888';
-              let statusText = dep.status || 'pending';
+              let statusText = txn.status || 'pending';
+              let icon = 'fas fa-circle';
+              let typeText = 'Transaction';
               
-              if (statusText === 'approved') {
+              // Determine icon and type text based on transaction type
+              if (txn.type === 'deposit') {
+                icon = 'fas fa-arrow-down';
+                typeText = 'Deposit';
+              } else if (txn.type === 'withdrawal') {
+                icon = 'fas fa-arrow-up';
+                typeText = 'Withdrawal';
+              } else if (txn.type === 'registration_bonus') {
+                icon = 'fas fa-gift';
+                typeText = 'Registration Bonus';
+              } else if (txn.type === 'investment') {
+                icon = 'fas fa-chart-line';
+                typeText = 'Investment';
+              } else if (txn.type === 'profit') {
+                icon = 'fas fa-coins';
+                typeText = 'Profit';
+              }
+              
+              if (statusText === 'approved' || statusText === 'completed') {
                 statusColor = '#4ef5a3';
-                statusText = 'Approved';
+                statusText = statusText === 'completed' ? 'Completed' : 'Approved';
               } else if (statusText === 'pending') {
                 statusColor = '#ffc107';
                 statusText = 'Pending';
@@ -379,39 +429,19 @@
                 statusText = 'Rejected';
               }
               
-              // Check if this is the first approved deposit (registration bonus indicator)
-              const isFirstApproved = dep.status === 'approved' && approvedDeposits.length > 0 && approvedDeposits[0].id === dep.id;
-              const bonusNote = isFirstApproved ? '<br><small style="color: #4ef5a3; font-size: 0.75rem;">+ $5 Registration Bonus Applied</small>' : '';
-              
-              const details = dep.transactionHash 
-                ? `<span style="font-family: monospace; font-size: 0.85rem;" title="${sanitizeHTML(dep.transactionHash)}">${sanitizeHTML(dep.transactionHash.substring(0, 20))}...</span>`
-                : 'N/A';
+              const details = txn.transactionHash 
+                ? `<span style="font-family: monospace; font-size: 0.85rem;" title="${sanitizeHTML(txn.transactionHash)}">${sanitizeHTML(txn.transactionHash.substring(0, 20))}...</span>`
+                : (txn.description || 'N/A');
               
               return `<tr>
-                <td><i class="fas fa-arrow-down" style="color: #4ef5a3;"></i> Deposit${bonusNote}</td>
-                <td>$${Number(dep.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                <td>${sanitizeHTML(dep.currency || 'USD')}</td>
+                <td><i class="${icon}" style="color: #4ef5a3;"></i> ${sanitizeHTML(typeText)}</td>
+                <td>$${Number(txn.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td>${sanitizeHTML(txn.currency || 'USD')}</td>
                 <td><span style="color: ${statusColor}; font-weight: 500;">${statusText}</span></td>
                 <td>${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
                 <td>${details}</td>
               </tr>`;
             }).join('');
-            
-            // Add registration bonus as separate transaction if user has bonus
-            const userBonus = Number(data.bonus || 0);
-            if (userBonus > 0) {
-              // Find the first approved deposit date to use as bonus date
-              const firstApproved = approvedDeposits[0];
-              const bonusDate = firstApproved ? new Date(firstApproved.createdAt || firstApproved.timestamp) : new Date();
-              transactionsBody.innerHTML += `<tr>
-                <td><i class="fas fa-gift" style="color: #4ef5a3;"></i> Registration Bonus</td>
-                <td>$${userBonus.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                <td>USD</td>
-                <td><span style="color: #4ef5a3; font-weight: 500;">Approved</span></td>
-                <td>${bonusDate.toLocaleDateString()} ${bonusDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                <td>N/A</td>
-              </tr>`;
-            }
           }
         }
 

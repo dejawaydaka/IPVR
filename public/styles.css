@@ -145,11 +145,15 @@ body {
         padding-top: 0;
     }
     
+    /* Reduce container box by 45% - calculate: 0.14rem * 0.55 = 0.077rem, 6px * 0.55 = 3.3px */
     .header .container {
-        padding: 0.14rem 6px;
+        padding: 0.077rem 3.3px;
         margin: 0;
         align-items: center;
         justify-content: space-between;
+        display: flex;
+        flex-direction: row;
+        height: auto;
     }
     
     /* Increase logo size on mobile header by 100% (double) while keeping container small */
@@ -157,11 +161,24 @@ body {
         height: 87px !important;
     }
     
-    /* Ensure logo and menu are on same line and properly aligned */
+    /* Ensure logo and menu are on same line and properly aligned - parallel to each other */
     .header .nav-brand {
         display: flex;
         align-items: center;
         flex: 0 0 auto;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .header .nav-brand .logo {
+        margin-top: 0 !important;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Remove default margin-top from logo on mobile */
+    .nav-brand .logo {
+        margin-top: 0 !important;
     }
     
     .mobile-menu-toggle {
@@ -170,10 +187,20 @@ body {
         justify-content: center;
         flex: 0 0 auto;
         margin-left: auto;
+        font-size: 1.5rem;
+        color: var(--text-primary);
+        cursor: pointer;
+        padding: 0.5rem;
+        z-index: 1001;
     }
     
-    /* Hide nav and nav-actions on mobile to keep header minimal */
+    /* Don't hide nav on mobile - it should be toggleable */
     .header .nav {
+        display: block;
+    }
+    
+    /* Hide nav-actions on mobile */
+    .header .nav-actions {
         display: none;
     }
 }
@@ -257,6 +284,13 @@ body {
     z-index: 10;
 }
 
+/* Show mobile menu toggle on mobile */
+@media (max-width: 992px) {
+    .mobile-menu-toggle {
+        display: flex !important;
+    }
+}
+
 /* Mobile nav drawer */
 .nav {
     transition: transform 0.3s ease;
@@ -279,8 +313,12 @@ body {
         border-bottom: 1px solid rgba(0,0,0,0.06);
         transform: translateY(-120%);
         z-index: 900;
+        display: block !important; /* Ensure nav is visible for toggle */
     }
-    .nav.open { transform: translateY(0); }
+    .nav.open { 
+        transform: translateY(0);
+        display: block !important;
+    }
     .nav-list {
         flex-direction: column;
         padding: 1rem 1.25rem 1.25rem;

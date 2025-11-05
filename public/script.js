@@ -33,14 +33,25 @@ class RealSphere {
         const mobileToggle = document.querySelector('.mobile-menu-toggle');
         const nav = document.querySelector('.nav');
         if (mobileToggle && nav) {
-            mobileToggle.addEventListener('click', () => {
+            mobileToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 nav.classList.toggle('open');
+                console.log('Menu toggle clicked, nav open:', nav.classList.contains('open'));
             });
             // Close on link click (mobile)
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.addEventListener('click', () => {
                     nav.classList.remove('open');
                 });
+            });
+            // Close on outside click
+            document.addEventListener('click', (e) => {
+                if (nav.classList.contains('open') && 
+                    !nav.contains(e.target) && 
+                    !mobileToggle.contains(e.target)) {
+                    nav.classList.remove('open');
+                }
             });
         }
 

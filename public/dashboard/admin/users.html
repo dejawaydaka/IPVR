@@ -189,6 +189,11 @@
             </span>
           </td>
           <td>
+            ${!user.admin_approved ? `
+              <button class="btn btn-success btn-sm" onclick="approveUser(${user.id}, '${escape(user.email)}')" style="margin-right: 0.5rem;">
+                <i class="fas fa-check"></i> Approve
+              </button>
+            ` : ''}
             <button class="btn btn-primary btn-sm" onclick="editUser(${user.id})" style="margin-right: 0.5rem;">
               <i class="fas fa-edit"></i> Edit
             </button>
@@ -317,10 +322,48 @@
       }
     }
 
+    async function approveUser(userId, userEmail) {
+      if (!checkAdminAuth()) return;
+      
+      const confirmed = confirm(
+        `Approve user "${userEmail}"?\n\n` +
+        `This will:\n` +
+        `- Mark the user as approved\n` +
+        `- Credit $5 registration bonus to their account\n` +
+        `- Add the bonus to their transaction history\n\n` +
+        `Continue?`
+      );
+      
+      if (!confirmed) return;
+      
+      try {
+        showLoading(true);
+        
+        const res = await adminFetch(`/api/admin/users/${userId}/approve`, {
+          method: 'POST'
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ message: 'Failed to approve user' }));
+          throw new Error(errorData.message || `HTTP ${res.status}`);
+        }
+        
+        const data = await res.json();
+        showToast(data.message || 'User approved successfully', 'success');
+        loadUsers(); // Refresh the list
+      } catch (error) {
+        console.error('Approve user error:', error);
+        showToast(error.message || 'Failed to approve user', 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
     window.editUser = editUser;
     window.saveUser = saveUser;
     window.loadUsers = loadUsers;
     window.deleteUser = deleteUser;
+    window.approveUser = approveUser;
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {

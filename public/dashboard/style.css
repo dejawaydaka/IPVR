@@ -464,6 +464,31 @@ header h1 {
   background: rgba(255, 255, 255, 0.2);
 }
 
+.btn-success {
+  background: linear-gradient(135deg, #4ef5a3 0%, #008f3d 100%);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(78, 245, 163, 0.4);
+}
+
+.btn-success.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
 .btn-danger {
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: #fff;
