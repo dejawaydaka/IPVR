@@ -780,7 +780,7 @@ app.post('/forgot-password', [
 
         // Send reset email
         const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-        const resetLink = `${baseUrl}/reset?token=${resetToken}`;
+        const resetLink = `${baseUrl}/reset.html?token=${resetToken}`;
         const resetHtml = emailTemplates.passwordReset.passwordReset(email, resetLink);
         await sendEmail(email, 'Reset Your RealSphere Password', resetHtml);
 
@@ -788,6 +788,108 @@ app.post('/forgot-password', [
     } catch (err) {
         console.error('Forgot password error:', err);
         res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// API Auth routes for password reset
+app.post('/api/auth/forgot-password', [
+    body('email').isEmail().normalizeEmail()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: 'Invalid email format', message: 'Invalid email format' });
+    }
+
+    try {
+        const { email } = req.body;
+
+        const { rows: users } = await pool.query(
+            'SELECT * FROM users WHERE email = $1',
+            [email]
+        );
+
+        if (users.length === 0) {
+            // Don't reveal if email exists for security
+            return res.json({ message: 'If that email exists, a password reset link has been sent. Check your inbox.' });
+        }
+
+        const user = users[0];
+
+        // Generate reset token (expires in 1 hour)
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 3600000); // 1 hour from now
+
+        await pool.query(
+            'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE email = $3',
+            [resetToken, expiresAt, email]
+        );
+
+        // Send reset email
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const resetLink = `${baseUrl}/reset.html?token=${resetToken}`;
+        const resetHtml = emailTemplates.passwordReset.passwordReset(email, resetLink);
+        await sendEmail(email, 'Reset Your RealSphere Password', resetHtml);
+
+        res.json({ message: 'Password reset link sent successfully. Check your inbox.' });
+    } catch (err) {
+        console.error('Forgot password error:', err);
+        res.status(500).json({ error: 'Internal server error', message: 'Internal server error' });
+    }
+});
+
+app.post('/api/auth/reset-password', [
+    body('token').notEmpty(),
+    body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg, message: errors.array()[0].msg });
+    }
+
+    try {
+        const { token, newPassword } = req.body;
+
+        const { rows: users } = await pool.query(
+            'SELECT * FROM users WHERE reset_token = $1',
+            [token]
+        );
+
+        if (users.length === 0) {
+            return res.status(400).json({ error: 'Invalid or expired token', message: 'Invalid or expired token' });
+        }
+
+        const user = users[0];
+
+        // Check if token is expired
+        const now = new Date();
+        if (user.reset_token_expires && now > new Date(user.reset_token_expires)) {
+            return res.status(400).json({ error: 'Token expired', message: 'Token expired' });
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password and clear reset token
+        await pool.query(
+            'UPDATE users SET password = $1, reset_token = NULL, reset_token_expires = NULL WHERE reset_token = $2',
+            [hashedPassword, token]
+        );
+
+        // Send confirmation email
+        const confirmHtml = `
+            <div style="font-family: Inter, sans-serif; color:#222;">
+                <h2>Password Reset Successful</h2>
+                <p>Hi ${user.email},</p>
+                <p>Your RealSphere password has been updated successfully.</p>
+                <p>If this wasn't you, please contact support immediately.</p>
+            </div>
+        `;
+        await sendEmail(user.email, 'Password Reset Successful', confirmHtml);
+
+        res.json({ message: 'Password reset successful.' });
+    } catch (err) {
+        console.error('Reset password error:', err);
+        res.status(500).json({ error: 'Internal server error', message: 'Internal server error' });
     }
 });
 
