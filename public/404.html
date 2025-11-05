@@ -3,27 +3,78 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contact Us - RealSphere</title>
+  <title>404 - Page Not Found | RealSphere</title>
   <link rel="stylesheet" href="styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    .error-page {
+      min-height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+    }
+    .error-content {
+      max-width: 600px;
+    }
+    .error-code {
+      font-size: 8rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #4ef5a3 0%, #22c55e 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1rem;
+      line-height: 1;
+    }
+    .error-title {
+      font-size: 2rem;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 1rem;
+    }
+    .error-message {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+    .error-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    @media (max-width: 768px) {
+      .error-code {
+        font-size: 5rem;
+      }
+      .error-title {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
 </head>
 <body>
   <header class="header">
     <div class="container">
       <div class="nav-brand">
         <div class="logo">
-          <a href="index.html" style="display: inline-block; cursor: pointer;"><img src="Rsblack.png" alt="RealSphere" style="height: 58px; width: auto;"></a>
+          <a href="index.html" style="display: inline-block; cursor: pointer;">
+            <img src="Rsblack.png" alt="RealSphere" style="height: 58px; width: auto;">
+          </a>
         </div>
       </div>
-      <nav class="nav open">
+      <nav class="nav">
         <ul class="nav-list">
           <li><a href="index.html" class="nav-link">Home</a></li>
           <li><a href="services.html" class="nav-link">Services</a></li>
           <li><a href="projects.html" class="nav-link">Projects</a></li>
           <li><a href="about.html" class="nav-link">About</a></li>
           <li><a href="team.html" class="nav-link">Team</a></li>
-          <li><a href="contact.html" class="nav-link active">Contact</a></li>
+          <li><a href="contact.html" class="nav-link">Contact</a></li>
         </ul>
       </nav>
       <div class="nav-actions">
@@ -34,25 +85,20 @@
     </div>
   </header>
 
-  <main class="contact-section">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Contact Us</h2>
-        <p class="section-description">We’d love to hear from you</p>
-      </div>
-      <div class="contact-content">
-        <div class="contact-info">
-          <div class="contact-item"><i class="fas fa-envelope"></i><span>support@realsphere.com</span></div>
-          <div class="contact-item"><i class="fas fa-phone"></i><span>+1 (555) 123-4567</span></div>
-          <div class="contact-item"><i class="fas fa-map-marker-alt"></i><span>New York, NY</span></div>
-        </div>
-        <form class="contact-form" id="contactForm">
-          <div class="form-group"><input type="text" name="name" placeholder="Your Name" required></div>
-          <div class="form-group"><input type="email" name="email" placeholder="Your Email" required></div>
-          <div class="form-group"><input type="text" name="subject" placeholder="Subject" required></div>
-          <div class="form-group"><textarea name="message" rows="5" placeholder="Your message..." required></textarea></div>
-          <button type="submit" class="btn btn-primary">Send Message</button>
-        </form>
+  <main class="error-page">
+    <div class="error-content">
+      <div class="error-code">404</div>
+      <h1 class="error-title">Page Not Found</h1>
+      <p class="error-message">
+        Oops! The page you're looking for doesn't exist. It might have been moved, deleted, or the URL might be incorrect.
+      </p>
+      <div class="error-actions">
+        <a href="index.html" class="btn btn-primary">
+          <i class="fas fa-home"></i> Go Home
+        </a>
+        <a href="contact.html" class="btn btn-outline">
+          <i class="fas fa-envelope"></i> Contact Support
+        </a>
       </div>
     </div>
   </main>
@@ -111,5 +157,4 @@
   <script src="script.js"></script>
 </body>
 </html>
-
 

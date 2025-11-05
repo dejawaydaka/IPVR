@@ -76,7 +76,7 @@
                         </div>
                         <div class="hero-stats">
                             <div class="stat">
-                                <span class="stat-number">$2.5M+</span>
+                                <span class="stat-number">2.5 Million Plus</span>
                                 <span class="stat-label">Assets Managed</span>
                             </div>
                             <div class="stat">
@@ -136,53 +136,53 @@
                     </p>
                 </div>
                 <div class="services-grid">
-                    <div class="service-card">
+                    <div class="service-card" onclick="openServiceModal('property-acquisition')">
                         <div class="service-icon">
                             <i class="fas fa-building"></i>
                         </div>
                         <h3>Property Acquisition</h3>
                         <p>Strategic property identification and acquisition with comprehensive due diligence and market analysis.</p>
-                        <a href="#" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                        <a href="#" class="service-link" onclick="event.preventDefault(); openServiceModal('property-acquisition');">Learn More <i class="fas fa-arrow-right"></i></a>
                     </div>
-                    <div class="service-card">
+                    <div class="service-card" onclick="openServiceModal('portfolio-management')">
                         <div class="service-icon">
                             <i class="fas fa-chart-line"></i>
                         </div>
                         <h3>Portfolio Management</h3>
                         <p>Professional portfolio optimization with AI-driven insights and automated rebalancing strategies.</p>
-                        <a href="#" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                        <a href="#" class="service-link" onclick="event.preventDefault(); openServiceModal('portfolio-management');">Learn More <i class="fas fa-arrow-right"></i></a>
                     </div>
-                    <div class="service-card">
+                    <div class="service-card" onclick="openServiceModal('investment-advisory')">
                         <div class="service-icon">
                             <i class="fas fa-handshake"></i>
                         </div>
                         <h3>Investment Advisory</h3>
                         <p>Expert guidance on real estate investment strategies tailored to your financial goals and risk tolerance.</p>
-                        <a href="#" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                        <a href="#" class="service-link" onclick="event.preventDefault(); openServiceModal('investment-advisory');">Learn More <i class="fas fa-arrow-right"></i></a>
                     </div>
-                    <div class="service-card">
+                    <div class="service-card" onclick="openServiceModal('risk-management')">
                         <div class="service-icon">
                             <i class="fas fa-shield-alt"></i>
                         </div>
                         <h3>Risk Management</h3>
                         <p>Comprehensive risk assessment and mitigation strategies to protect your investment portfolio.</p>
-                        <a href="#" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                        <a href="#" class="service-link" onclick="event.preventDefault(); openServiceModal('risk-management');">Learn More <i class="fas fa-arrow-right"></i></a>
                     </div>
-                    <div class="service-card">
+                    <div class="service-card" onclick="openServiceModal('property-development')">
                         <div class="service-icon">
                             <i class="fas fa-cogs"></i>
                         </div>
                         <h3>Property Development</h3>
                         <p>End-to-end property development services from planning to construction and final delivery.</p>
-                        <a href="#" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                        <a href="#" class="service-link" onclick="event.preventDefault(); openServiceModal('property-development');">Learn More <i class="fas fa-arrow-right"></i></a>
                     </div>
-                    <div class="service-card">
+                    <div class="service-card" onclick="openServiceModal('tenant-management')">
                         <div class="service-icon">
                             <i class="fas fa-users"></i>
                         </div>
                         <h3>Tenant Management</h3>
                         <p>Professional tenant screening, lease management, and property maintenance services.</p>
-                        <a href="#" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                        <a href="#" class="service-link" onclick="event.preventDefault(); openServiceModal('tenant-management');">Learn More <i class="fas fa-arrow-right"></i></a>
                     </div>
                 </div>
             </div>
@@ -426,13 +426,16 @@
                     </div>
                     <form class="contact-form" id="contactForm">
                         <div class="form-group">
-                            <input type="text" placeholder="Your Name" required>
+                            <input type="text" name="name" placeholder="Your Name" required>
                         </div>
                         <div class="form-group">
-                            <input type="email" placeholder="Your Email" required>
+                            <input type="email" name="email" placeholder="Your Email" required>
                         </div>
                         <div class="form-group">
-                            <textarea placeholder="Your Message" rows="5" required></textarea>
+                            <input type="text" name="subject" placeholder="Subject" required>
+                        </div>
+                        <div class="form-group">
+                            <textarea name="message" placeholder="Your Message" rows="5" required></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary">Send Message</button>
                     </form>
@@ -454,27 +457,27 @@
                 </div>
                 <div class="footer-links">
                     <div class="footer-column">
-                        <h4>Company</h4>
+                        <h4>Quick Links</h4>
                         <ul>
-                            <li><a href="#about">About</a></li>
-                            <li><a href="#careers">Careers</a></li>
-                            <li><a href="#press">Press</a></li>
-                        </ul>
-                    </div>
-                    <div class="footer-column">
-                        <h4>Investors</h4>
-                        <ul>
-                            <li><a href="#plans">Plans</a></li>
-                            <li><a href="#dashboard">Dashboard</a></li>
-                            <li><a href="#support">Support</a></li>
+                            <li><a href="about.html">About</a></li>
+                            <li><a href="services.html">Services</a></li>
+                            <li><a href="projects.html">Projects</a></li>
+                            <li><a href="team.html">Team</a></li>
+                            <li><a href="contact.html">Contact</a></li>
                         </ul>
                     </div>
                     <div class="footer-column">
                         <h4>Legal</h4>
                         <ul>
-                            <li><a href="#privacy">Privacy</a></li>
-                            <li><a href="#terms">Terms</a></li>
-                            <li><a href="#compliance">Compliance</a></li>
+                            <li><a href="privacy.html">Privacy</a></li>
+                            <li><a href="terms.html">Terms</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Support</h4>
+                        <ul>
+                            <li><a href="mailto:support@realsphereltd.com">support@realsphereltd.com</a></li>
+                            <li><a href="dashboard/admin-login.html">Admin Panel</a></li>
                         </ul>
                     </div>
                 </div>
@@ -482,13 +485,10 @@
             <div class="footer-bottom">
                 <p>&copy; 2025 RealSphere. All rights reserved.</p>
                 <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
-                    <a href="https://realsphereltd.com/dashboard/admin-login.html" style="color: var(--text-secondary); text-decoration: none; transition: color 0.3s ease; display: flex; align-items: center; gap: 0.5rem;">
-                        <i class="fas fa-shield-alt"></i> <span>Admin Panel</span>
-                    </a>
-                <div class="social-links">
-                    <a href="#"><i class="fab fa-twitter"></i></a>
-                    <a href="#"><i class="fab fa-linkedin"></i></a>
-                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-linkedin"></i></a>
+                        <a href="#"><i class="fab fa-facebook"></i></a>
                     </div>
                 </div>
             </div>
@@ -508,6 +508,9 @@
                 </div>
                 <div class="form-group">
                     <input type="password" placeholder="Password" required>
+                </div>
+                <div style="text-align: right; margin-bottom: 1rem;">
+                    <a href="/forgot.html" class="forgot-link" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9rem; transition: color 0.3s ease;">Forgot Password?</a>
                 </div>
                 <button type="submit" class="btn btn-primary">Login</button>
             </form>
@@ -551,6 +554,19 @@
                 </div>
                 <button type="submit" class="btn btn-primary">Confirm Investment</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Service Modals -->
+    <div class="modal" id="serviceModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 id="serviceModalTitle">Service Details</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="serviceModalBody" style="padding: 2rem; max-height: 70vh; overflow-y: auto;">
+                <!-- Service content will be injected here -->
+            </div>
         </div>
     </div>
 

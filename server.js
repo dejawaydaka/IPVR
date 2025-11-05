@@ -335,6 +335,16 @@ async function ensureSchema() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );`;
 
+  const createContacts = `
+    CREATE TABLE IF NOT EXISTS contacts (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      subject VARCHAR(255),
+      message TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`;
+
   await pool.query(createUsers);
   await pool.query(createInvestments);
   await pool.query(createDeposits);
@@ -343,6 +353,7 @@ async function ensureSchema() {
   await pool.query(createProjects);
   await pool.query(createTestimonials);
   await pool.query(createNews);
+  await pool.query(createContacts);
   await pool.query('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_investments_user_id ON investments(user_id);');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_deposits_user_id ON deposits(user_id);');
@@ -1575,6 +1586,70 @@ app.post('/api/deposit', upload.single('proof'), async (req, res) => {
 });
 
 // POST withdraw
+// Contact form endpoint
+app.post('/api/contact', [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email').trim().isEmail().withMessage('Valid email is required'),
+  body('subject').trim().notEmpty().withMessage('Subject is required'),
+  body('message').trim().notEmpty().withMessage('Message is required')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ 
+      error: 'Validation failed', 
+      message: errors.array()[0].msg,
+      code: 'INVALID_INPUT'
+    });
+  }
+
+  try {
+    const { name, email, subject, message } = req.body;
+
+    // Save to database
+    await pool.query(
+      'INSERT INTO contacts(name, email, subject, message, created_at) VALUES($1, $2, $3, $4, NOW())',
+      [name, email, subject, message]
+    );
+
+    // Send notification email to support
+    const emailHtml = `
+      <div style="font-family: Inter, sans-serif; color: #222; padding: 20px; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #008f3d; border-bottom: 2px solid #008f3d; padding-bottom: 10px;">New Contact Form Submission</h2>
+        <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Subject:</strong> ${subject}</p>
+          <p><strong>Message:</strong></p>
+          <p style="background: #fff; padding: 15px; border-radius: 4px; border-left: 4px solid #008f3d; margin-top: 10px;">
+            ${message.replace(/\n/g, '<br>')}
+          </p>
+        </div>
+        <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+          This message was submitted through the RealSphere contact form.
+        </p>
+      </div>
+    `;
+
+    await sendEmail(
+      'support@realsphereltd.com',
+      `New Contact: ${subject}`,
+      emailHtml
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Contact message received. We\'ll get back to you within 24 hours.'
+    });
+  } catch (err) {
+    console.error('Contact form error:', err);
+    res.status(500).json({ 
+      error: 'Internal server error', 
+      message: 'Failed to process contact form. Please try again later.',
+      code: 'SERVER_ERROR'
+    });
+  }
+});
+
 app.post('/api/withdraw', [
     body('email').isEmail().normalizeEmail(),
     body('amount').isFloat({ min: 1 }),
@@ -2757,9 +2832,14 @@ app.post('/api/admin/broadcast-email', adminAuth, [
     }
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not Found', message: 'The requested resource was not found' });
+// 404 handler - must be after all routes
+app.get('*', (req, res) => {
+  // Only handle HTML requests with 404.html, let API calls return JSON 404
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'Not found', message: 'API endpoint not found', code: 'NOT_FOUND' });
+  }
+  // For non-API routes, serve 404.html
+  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
 });
 
 // Start the server

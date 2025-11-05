@@ -140,7 +140,13 @@ class RealSphere {
 
         if (explorePlansBtn) {
             explorePlansBtn.addEventListener('click', () => {
-                window.location.href = 'services.html';
+                // Scroll to investment plans section
+                const plansSection = document.getElementById('plans');
+                if (plansSection) {
+                    plansSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    window.location.href = 'services.html#plans';
+                }
             });
         }
 
@@ -506,21 +512,56 @@ class RealSphere {
 
     async handleContact(e) {
         e.preventDefault();
-        const formData = new FormData(e.target);
+        const form = e.target;
+        const formData = new FormData(form);
+        const nameInput = form.querySelector('input[type="text"]');
+        const emailInput = form.querySelector('input[type="email"]');
+        const messageInput = form.querySelector('textarea');
+        const subjectInput = form.querySelector('input[name="subject"]');
+        
         const contactData = {
-            name: formData.get('name') || e.target.querySelector('input[type="text"]').value,
-            email: formData.get('email') || e.target.querySelector('input[type="email"]').value,
-            message: formData.get('message') || e.target.querySelector('textarea').value
+            name: formData.get('name') || nameInput?.value || '',
+            email: formData.get('email') || emailInput?.value || '',
+            subject: formData.get('subject') || subjectInput?.value || 'Contact Form Inquiry',
+            message: formData.get('message') || messageInput?.value || ''
         };
 
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn?.textContent;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        }
+
         try {
-            // Simulate contact form submission
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            this.showNotification('Message sent successfully!', 'success');
-            e.target.reset();
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(contactData),
+                cache: 'no-store'
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                this.showNotification(data.message || 'Thanks — we\'ll get back to you within 24 hours.', 'success');
+                form.reset();
+            } else {
+                const errorMsg = data.message || data.error || 'Failed to send message. Please try again.';
+                this.showNotification(errorMsg, 'error');
+            }
         } catch (error) {
             console.error('Contact form error:', error);
-            this.showNotification('Failed to send message. Please try again.', 'error');
+            this.showNotification('Network error. Please check your connection and try again.', 'error');
+        } finally {
+            // Restore button state
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText || 'Send Message';
+            }
         }
     }
 
@@ -596,6 +637,183 @@ class RealSphere {
         requestAnimationFrame(animate);
     }
 }
+
+// Service modal data
+const serviceData = {
+    'property-acquisition': {
+        title: 'Property Acquisition',
+        icon: 'fas fa-building',
+        content: `
+            <div style="color: rgba(255,255,255,0.9); line-height: 1.8;">
+                <h4 style="color: #4ef5a3; margin-bottom: 1rem; font-size: 1.3rem;">Strategic Property Identification & Acquisition</h4>
+                <p>Our Property Acquisition service is designed to help investors identify, evaluate, and acquire high-value real estate assets with precision and confidence. We combine market intelligence, financial analysis, and strategic negotiation to secure the best deals.</p>
+                
+                <h5 style="color: #4ef5a3; margin-top: 2rem; margin-bottom: 1rem;">Key Features:</h5>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Market Research & Analysis:</strong> Comprehensive evaluation of local market trends, property values, and growth potential</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Due Diligence:</strong> Thorough property inspections, title verification, zoning compliance, and environmental assessments</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Financial Analysis:</strong> ROI calculations, cash flow projections, and investment feasibility studies</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Negotiation:</strong> Expert negotiation to secure favorable terms and pricing</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Transaction Management:</strong> End-to-end handling of purchase agreements, financing, and closing processes</li>
+                </ul>
+                
+                <h5 style="color: #4ef5a3; margin-top: 2rem; margin-bottom: 1rem;">Why Choose Our Service?</h5>
+                <p>With years of experience in the real estate market, our team has successfully acquired over $500M in properties across residential, commercial, and mixed-use developments. We leverage advanced analytics and industry connections to identify off-market opportunities and emerging markets with high growth potential.</p>
+            </div>
+        `
+    },
+    'portfolio-management': {
+        title: 'Portfolio Management',
+        icon: 'fas fa-chart-line',
+        content: `
+            <div style="color: rgba(255,255,255,0.9); line-height: 1.8;">
+                <h4 style="color: #4ef5a3; margin-bottom: 1rem; font-size: 1.3rem;">Professional Portfolio Optimization</h4>
+                <p>Our Portfolio Management service provides comprehensive oversight and optimization of your real estate investments. We use AI-driven insights and data analytics to maximize returns while minimizing risk across your entire property portfolio.</p>
+                
+                <h5 style="color: #4ef5a3; margin-top: 2rem; margin-bottom: 1rem;">Key Features:</h5>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Performance Monitoring:</strong> Real-time tracking of property values, rental income, and overall portfolio performance</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Automated Rebalancing:</strong> AI-powered recommendations for portfolio diversification and risk management</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Strategic Planning:</strong> Long-term investment strategies aligned with your financial goals</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Market Intelligence:</strong> Continuous monitoring of market trends and opportunities</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Reporting:</strong> Comprehensive monthly and annual reports with detailed analytics</li>
+                </ul>
+                
+                <h5 style="color: #4ef5a3; margin-top: 2rem; margin-bottom: 1rem;">Benefits:</h5>
+                <p>Our portfolio management approach has helped clients achieve average returns of 15-25% annually while maintaining balanced risk profiles. We provide transparent reporting and proactive recommendations to ensure your investments continue to grow and perform optimally.</p>
+            </div>
+        `
+    },
+    'investment-advisory': {
+        title: 'Investment Advisory',
+        icon: 'fas fa-handshake',
+        content: `
+            <div style="color: rgba(255,255,255,0.9); line-height: 1.8;">
+                <h4 style="color: #4ef5a3; margin-bottom: 1rem; font-size: 1.3rem;">Expert Investment Guidance</h4>
+                <p>Our Investment Advisory service offers personalized guidance tailored to your financial goals, risk tolerance, and investment timeline. We provide expert recommendations backed by comprehensive market research and financial analysis.</p>
+                
+                <h5 style="color: #4ef5a3; margin-top: 2rem; margin-bottom: 1rem;">Services Include:</h5>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Investment Strategy Development:</strong> Customized investment plans based on your objectives</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Market Analysis:</strong> In-depth analysis of property markets, trends, and opportunities</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Risk Assessment:</strong> Evaluation of investment risks and mitigation strategies</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Financial Planning:</strong> Integration of real estate investments into your overall financial plan</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Ongoing Consultation:</strong> Regular reviews and strategic adjustments</li>
+                </ul>
+                
+                <h5 style="color: #4ef5a3; margin-top: 2rem; margin-bottom: 1rem;">Why Work With Us?</h5>
+                <p>Our advisory team consists of certified financial planners and real estate experts with decades of combined experience. We've guided thousands of investors through successful real estate investments, from first-time buyers to sophisticated portfolio builders.</p>
+            </div>
+        `
+    },
+    'risk-management': {
+        title: 'Risk Management',
+        icon: 'fas fa-shield-alt',
+        content: `
+            <div style="color: rgba(255,255,255,0.9); line-height: 1.8;">
+                <h4 style="color: #4ef5a3; margin-bottom: 1rem; font-size: 1.3rem;">Comprehensive Risk Protection</h4>
+                <p>Our Risk Management service provides comprehensive assessment and mitigation strategies to protect your real estate investments from various risks including market fluctuations, property damage, legal issues, and economic downturns.</p>
+                
+                <h5 style="color: #4ef5a3; margin-top: 2rem; margin-bottom: 1rem;">Risk Assessment Areas:</h5>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Market Risk:</strong> Analysis of market volatility and property value fluctuations</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Property Risk:</strong> Physical damage, maintenance issues, and property condition assessments</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Legal & Compliance:</strong> Zoning issues, title problems, and regulatory compliance</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Financial Risk:</strong> Cash flow analysis, debt management, and liquidity planning</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Tenant Risk:</strong> Credit checks, lease enforcement, and vacancy management</li>
+                </ul>
+                
+                <h5 style="color: #4ef5a3; margin-top: 2rem; margin-bottom: 1rem;">Mitigation Strategies:</h5>
+                <p>We develop comprehensive risk mitigation plans including insurance recommendations, diversification strategies, emergency fund planning, and contingency protocols. Our proactive approach helps minimize potential losses and ensures your investments remain protected.</p>
+            </div>
+        `
+    },
+    'property-development': {
+        title: 'Property Development',
+        icon: 'fas fa-cogs',
+        content: `
+            <div style="color: rgba(255,255,255,0.9); line-height: 1.8;">
+                <h4 style="color: #4ef5a3; margin-bottom: 1rem; font-size: 1.3rem;">End-to-End Development Services</h4>
+                <p>Our Property Development service manages the complete lifecycle of real estate development projects, from initial planning and design through construction, marketing, and final delivery. We handle every aspect to ensure successful project completion.</p>
+                
+                <h5 style="color: #4ef5a3; margin-top: 2rem; margin-bottom: 1rem;">Development Phases:</h5>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Planning & Design:</strong> Site analysis, feasibility studies, architectural design, and permit acquisition</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Pre-Construction:</strong> Financing, contractor selection, material procurement, and project scheduling</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Construction Management:</strong> On-site supervision, quality control, timeline management, and budget oversight</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Marketing & Sales:</strong> Property marketing, sales strategy, and buyer acquisition</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Project Delivery:</strong> Final inspections, handover, and post-completion support</li>
+                </ul>
+                
+                <h5 style="color: #4ef5a3; margin-top: 2rem; margin-bottom: 1rem;">Our Track Record:</h5>
+                <p>We've successfully completed over 50 development projects worth more than $200M, including residential communities, commercial buildings, and mixed-use developments. Our expertise spans various property types and market segments.</p>
+            </div>
+        `
+    },
+    'tenant-management': {
+        title: 'Tenant Management',
+        icon: 'fas fa-users',
+        content: `
+            <div style="color: rgba(255,255,255,0.9); line-height: 1.8;">
+                <h4 style="color: #4ef5a3; margin-bottom: 1rem; font-size: 1.3rem;">Professional Tenant Services</h4>
+                <p>Our Tenant Management service handles all aspects of tenant relations, from initial screening and lease negotiation to ongoing maintenance and lease renewal. We ensure your properties remain occupied by quality tenants while maintaining positive landlord-tenant relationships.</p>
+                
+                <h5 style="color: #4ef5a3; margin-top: 2rem; margin-bottom: 1rem;">Key Services:</h5>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Tenant Screening:</strong> Comprehensive background checks, credit verification, employment verification, and rental history</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Lease Management:</strong> Lease preparation, negotiation, execution, and renewal processes</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Rent Collection:</strong> Automated rent collection, payment tracking, and late fee management</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Maintenance Coordination:</strong> 24/7 maintenance request handling, vendor management, and property upkeep</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fas fa-check-circle" style="color: #4ef5a3; margin-right: 0.5rem;"></i> <strong>Legal Compliance:</strong> Fair housing compliance, eviction procedures, and legal documentation</li>
+                </ul>
+                
+                <h5 style="color: #4ef5a3; margin-top: 2rem; margin-bottom: 1rem;">Benefits:</h5>
+                <p>Our tenant management services have helped property owners maintain 95%+ occupancy rates with average rent collection rates above 98%. We handle all tenant-related issues professionally and efficiently, allowing you to focus on growing your portfolio.</p>
+            </div>
+        `
+    }
+};
+
+// Service modal function
+function openServiceModal(serviceId) {
+    const service = serviceData[serviceId];
+    if (!service) return;
+    
+    const modal = document.getElementById('serviceModal');
+    const title = document.getElementById('serviceModalTitle');
+    const body = document.getElementById('serviceModalBody');
+    
+    if (modal && title && body) {
+        title.textContent = service.title;
+        body.innerHTML = service.content;
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// Close modal on backdrop click
+document.addEventListener('DOMContentLoaded', () => {
+    const serviceModal = document.getElementById('serviceModal');
+    if (serviceModal) {
+        serviceModal.addEventListener('click', (e) => {
+            if (e.target === serviceModal) {
+                serviceModal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        });
+        
+        const closeBtn = serviceModal.querySelector('.modal-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                serviceModal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            });
+        }
+    }
+});
+
+// Make function globally available
+window.openServiceModal = openServiceModal;
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
