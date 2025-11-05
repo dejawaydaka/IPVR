@@ -1283,13 +1283,15 @@ const PROFIT_UPDATE_INTERVAL = 60000; // 1 minute
 
 app.post('/profits/update', async (req, res) => {
     try {
-    const now = Date.now();
+        const now = Date.now();
         // Prevent too frequent updates
         if (now - lastProfitUpdate < PROFIT_UPDATE_INTERVAL) {
             return res.json({ message: 'Profits are up to date', skipped: true });
         }
 
         const { rows: investments } = await pool.query('SELECT * FROM investments');
+        let maturedInvestments = 0;
+        let transactionsCreated = 0;
         
         for (const inv of investments) {
             const elapsed = Math.floor((now - inv.start_date) / (1000 * 60 * 60 * 24));
@@ -1298,15 +1300,126 @@ app.post('/profits/update', async (req, res) => {
             const base = Number(inv.amount) || 0;
             const effectiveDays = elapsed < days ? elapsed : days;
             const profit = base * rate * effectiveDays;
+            const previousProfit = Number(inv.profit || 0);
+            const profitDifference = profit - previousProfit;
             
+            // Check if investment just matured (completed all days)
+            const wasMature = previousProfit >= (base * rate * days);
+            const isNowMature = elapsed >= days;
+            
+            // Update investment profit
             await pool.query(
                 'UPDATE investments SET profit = $1 WHERE id = $2',
                 [profit.toFixed(2), inv.id]
             );
+            
+            // If investment just matured, create a transaction entry for the final profit
+            if (!wasMature && isNowMature && profit > 0) {
+                maturedInvestments++;
+                
+                // Check if matured profit transaction already exists for this investment
+                const { rows: existingTransactions } = await pool.query(
+                    `SELECT id FROM transactions 
+                     WHERE user_id = $1 AND type = $2 AND reference_id = $3 
+                     AND description LIKE $4`,
+                    [inv.user_id, 'profit', inv.id, `Investment Profit - ${inv.plan}%`]
+                );
+                
+                if (existingTransactions.length === 0) {
+                    // Check if daily profit transactions exist for this investment
+                    const { rows: dailyProfitTransactions } = await pool.query(
+                        `SELECT SUM(amount::numeric) as total FROM transactions 
+                         WHERE user_id = $1 AND type = $2 AND reference_id = $3 
+                         AND description LIKE $4`,
+                        [inv.user_id, 'profit', inv.id, `Daily Profit - ${inv.plan}%`]
+                    );
+                    
+                    const dailyProfitTotal = Number(dailyProfitTransactions[0]?.total || 0);
+                    const remainingProfit = profit - dailyProfitTotal;
+                    
+                    // Create transaction entry for matured investment profit
+                    await pool.query(
+                        `INSERT INTO transactions (user_id, type, amount, currency, status, description, reference_id, reference_type, created_at)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+                        [
+                            inv.user_id,
+                            'profit',
+                            profit.toFixed(2),
+                            'USD',
+                            'completed',
+                            `Investment Profit - ${inv.plan} (${days} days)`,
+                            inv.id,
+                            'investment'
+                        ]
+                    );
+                    
+                    // Only add remaining profit to balance if daily profits were less than total profit
+                    // This handles cases where daily profits weren't fully tracked
+                    if (remainingProfit > 0.01) {
+                        await pool.query(
+                            'UPDATE users SET balance = balance + $1 WHERE id = $2',
+                            [remainingProfit.toFixed(2), inv.user_id]
+                        );
+                        console.log(`[Profits] Added remaining profit ${remainingProfit.toFixed(2)} to balance for investment ${inv.id}`);
+                    }
+                    
+                    transactionsCreated++;
+                    console.log(`[Profits] Created matured profit transaction for investment ${inv.id}: $${profit.toFixed(2)}`);
+                }
+            } else if (profitDifference > 0.01 && !isNowMature && elapsed > 0) {
+                // For ongoing investments, create daily profit transactions
+                // Only create if profit increased and investment is still active
+                const dailyProfit = base * rate;
+                
+                // Check if we already created a transaction for today for this investment
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const todayStart = today.getTime() / 1000; // Convert to seconds for PostgreSQL
+                
+                const { rows: todayTransactions } = await pool.query(
+                    `SELECT id FROM transactions 
+                     WHERE user_id = $1 AND type = $2 AND reference_id = $3 
+                     AND description LIKE $4
+                     AND created_at >= to_timestamp($5)`,
+                    [inv.user_id, 'profit', inv.id, `Daily Profit - ${inv.plan}%`, todayStart]
+                );
+                
+                if (todayTransactions.length === 0 && dailyProfit > 0.01) {
+                    // Create daily profit transaction
+                    await pool.query(
+                        `INSERT INTO transactions (user_id, type, amount, currency, status, description, reference_id, reference_type, created_at)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+                        [
+                            inv.user_id,
+                            'profit',
+                            dailyProfit.toFixed(2),
+                            'USD',
+                            'completed',
+                            `Daily Profit - ${inv.plan}`,
+                            inv.id,
+                            'investment'
+                        ]
+                    );
+                    
+                    // Update user balance with daily profit
+                    await pool.query(
+                        'UPDATE users SET balance = balance + $1 WHERE id = $2',
+                        [dailyProfit.toFixed(2), inv.user_id]
+                    );
+                    
+                    transactionsCreated++;
+                    console.log(`[Profits] Created daily profit transaction for investment ${inv.id}: $${dailyProfit.toFixed(2)}`);
+                }
+            }
         }
         
         lastProfitUpdate = now;
-    res.json({ message: 'Profits updated successfully' });
+        console.log(`[Profits] Updated ${investments.length} investments. ${maturedInvestments} matured, ${transactionsCreated} transactions created.`);
+        res.json({ 
+            message: 'Profits updated successfully', 
+            matured: maturedInvestments,
+            transactionsCreated: transactionsCreated 
+        });
     } catch (err) {
         console.error('Profit update error:', err);
         res.status(500).json({ message: 'Server error' });
@@ -2137,6 +2250,59 @@ app.post('/api/admin/users/:id/approve', adminAuth, async (req, res) => {
         });
     } catch (err) {
         console.error('Admin approve user error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Backfill registration bonuses for already approved users
+app.post('/api/admin/backfill-bonuses', adminAuth, async (req, res) => {
+    try {
+        // Get all approved users who don't have a registration bonus transaction
+        const { rows: approvedUsers } = await pool.query(
+            `SELECT u.id, u.email, u.bonus, u.admin_approved
+             FROM users u
+             WHERE u.admin_approved = true
+             AND NOT EXISTS (
+                 SELECT 1 FROM transactions t 
+                 WHERE t.user_id = u.id 
+                 AND t.type = 'registration_bonus'
+             )
+             ORDER BY u.id`
+        );
+        
+        let bonusesCreated = 0;
+        const registrationBonus = 5;
+        
+        for (const user of approvedUsers) {
+            const currentBonus = Number(user.bonus || 0);
+            
+            // Only create bonus if user doesn't have it yet
+            if (currentBonus === 0) {
+                // Add bonus to balance and record it
+                await pool.query(
+                    'UPDATE users SET balance = balance + $1, bonus = $1 WHERE id = $2',
+                    [registrationBonus, user.id]
+                );
+                
+                // Record registration bonus transaction
+                await pool.query(
+                    `INSERT INTO transactions (user_id, type, amount, currency, status, description, created_at)
+                     VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+                    [user.id, 'registration_bonus', registrationBonus, 'USD', 'completed', 'Registration Bonus - Welcome to RealSphere']
+                );
+                
+                bonusesCreated++;
+                console.log(`[Backfill] Created registration bonus for user ${user.id} (${user.email})`);
+            }
+        }
+        
+        res.json({ 
+            message: `Backfill completed. ${bonusesCreated} bonuses created for ${approvedUsers.length} approved users.`,
+            bonusesCreated: bonusesCreated,
+            usersProcessed: approvedUsers.length
+        });
+    } catch (err) {
+        console.error('Backfill bonuses error:', err);
         res.status(500).json({ message: 'Server error' });
     }
 });

@@ -161,19 +161,56 @@
     function updateCharts(data) {
       // Ensure data exists, use empty object if not
       if (!data) {
-        data = { dailyEarnings: 0, investments: [] };
+        data = { dailyEarnings: 0, investments: [], transactions: [] };
       }
       
-      // Daily Earnings Trend Chart (Line)
+      // Daily Earnings Trend Chart (Line) - Dynamic based on historical profit transactions
       const ctx1 = document.getElementById('earningsChart');
       if (ctx1) {
         const days = [];
         const earnings = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Get all profit transactions from the last 7 days
+        const transactions = data.transactions || [];
+        const profitTransactions = transactions.filter(txn => 
+          txn.type === 'profit' && txn.status === 'completed'
+        );
+        
+        // Calculate daily earnings for the last 7 days
         for (let i = 6; i >= 0; i--) {
-          const date = new Date();
+          const date = new Date(today);
           date.setDate(date.getDate() - i);
-          days.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-          earnings.push(data.dailyEarnings || 0);
+          const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          days.push(dateStr);
+          
+          // Calculate earnings for this specific day
+          const dayStart = new Date(date);
+          dayStart.setHours(0, 0, 0, 0);
+          const dayEnd = new Date(date);
+          dayEnd.setHours(23, 59, 59, 999);
+          
+          let dayEarnings = 0;
+          profitTransactions.forEach(txn => {
+            const txnDate = new Date(txn.createdAt || txn.timestamp || 0);
+            if (txnDate >= dayStart && txnDate <= dayEnd) {
+              dayEarnings += Number(txn.amount || 0);
+            }
+          });
+          
+          // If no transactions for this day, use current daily earnings rate for today
+          if (i === 0 && dayEarnings === 0) {
+            dayEarnings = data.dailyEarnings || 0;
+          }
+          
+          earnings.push(parseFloat(dayEarnings.toFixed(2)));
+        }
+        
+        // Ensure we have at least some data
+        if (earnings.every(e => e === 0) && data.dailyEarnings > 0) {
+          // If no historical data but current daily earnings exist, show current rate
+          earnings[6] = data.dailyEarnings;
         }
         
         if (!earningsChart) {
@@ -188,79 +225,143 @@
                 borderColor: '#4ef5a3',
                 backgroundColor: 'rgba(78, 245, 163, 0.1)',
                 tension: 0.4,
-                fill: true
+                fill: true,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#4ef5a3',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2
               }]
             },
             options: {
               responsive: true,
               maintainAspectRatio: true,
+              animation: {
+                duration: 750
+              },
               plugins: {
                 legend: {
                   labels: { color: '#fff' }
+                },
+                tooltip: {
+                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                  titleColor: '#fff',
+                  bodyColor: '#fff',
+                  borderColor: '#4ef5a3',
+                  borderWidth: 1
                 }
               },
               scales: {
-                x: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                y: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                x: { 
+                  ticks: { color: '#fff' }, 
+                  grid: { color: 'rgba(255,255,255,0.1)' } 
+                },
+                y: { 
+                  ticks: { 
+                    color: '#fff',
+                    callback: function(value) {
+                      return '$' + value.toFixed(2);
+                    }
+                  }, 
+                  grid: { color: 'rgba(255,255,255,0.1)' },
+                  beginAtZero: true
+                }
               }
             }
           });
         } else {
-          // Update existing chart
+          // Update existing chart with new data and labels
+          earningsChart.data.labels = days;
           earningsChart.data.datasets[0].data = earnings;
-          earningsChart.update('none'); // 'none' mode for smooth updates
+          earningsChart.update('active'); // Use 'active' for smoother animation
         }
       }
 
-      // Portfolio Composition Chart (Doughnut)
+      // Portfolio Composition Chart (Doughnut) - Sync with investments data
       const ctx2 = document.getElementById('portfolioChart');
       if (ctx2) {
         const planCounts = {};
-        (data.investments || []).forEach(inv => {
+        const investments = data.investments || [];
+        
+        // Calculate total per plan
+        investments.forEach(inv => {
           if (inv && inv.plan) {
-            planCounts[inv.plan] = (planCounts[inv.plan] || 0) + Number(inv.amount || 0);
+            const planName = inv.plan || 'Unknown Plan';
+            const amount = Number(inv.amount || 0);
+            if (amount > 0) {
+              planCounts[planName] = (planCounts[planName] || 0) + amount;
+            }
           }
         });
         
+        const planLabels = Object.keys(planCounts);
+        const planValues = Object.values(planCounts);
+        
         // Always ensure at least one label exists
-        if (Object.keys(planCounts).length === 0) {
-          planCounts['No Investments'] = 1;
+        if (planLabels.length === 0) {
+          planLabels.push('No Investments');
+          planValues.push(1);
         }
+        
+        // Generate colors dynamically based on number of plans
+        const colors = [
+          'rgba(78, 245, 163, 0.8)',
+          'rgba(34, 197, 94, 0.8)',
+          'rgba(22, 91, 71, 0.8)',
+          'rgba(10, 61, 46, 0.8)',
+          'rgba(15, 46, 35, 0.8)',
+          'rgba(31, 184, 116, 0.8)',
+          'rgba(16, 185, 129, 0.8)',
+          'rgba(5, 150, 105, 0.8)'
+        ];
         
         if (!portfolioChart) {
           // Create chart if it doesn't exist
           portfolioChart = new Chart(ctx2, {
             type: 'doughnut',
             data: {
-              labels: Object.keys(planCounts),
+              labels: planLabels,
               datasets: [{
-                data: Object.values(planCounts),
-                backgroundColor: [
-                  'rgba(78, 245, 163, 0.8)',
-                  'rgba(34, 197, 94, 0.8)',
-                  'rgba(22, 91, 71, 0.8)',
-                  'rgba(10, 61, 46, 0.8)',
-                  'rgba(15, 46, 35, 0.8)',
-                  'rgba(31, 184, 116, 0.8)'
-                ]
+                data: planValues,
+                backgroundColor: colors.slice(0, planLabels.length)
               }]
             },
             options: {
               responsive: true,
               maintainAspectRatio: true,
+              animation: {
+                duration: 750
+              },
               plugins: {
                 legend: {
                   labels: { color: '#fff' },
                   position: 'bottom'
+                },
+                tooltip: {
+                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                  titleColor: '#fff',
+                  bodyColor: '#fff',
+                  borderColor: '#4ef5a3',
+                  borderWidth: 1,
+                  callbacks: {
+                    label: function(context) {
+                      const label = context.label || '';
+                      const value = context.parsed || 0;
+                      const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                      const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                      return `${label}: $${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${percentage}%)`;
+                    }
+                  }
                 }
               }
             }
           });
         } else {
-          // Update existing chart
-          portfolioChart.data.labels = Object.keys(planCounts);
-          portfolioChart.data.datasets[0].data = Object.values(planCounts);
-          portfolioChart.update('none'); // 'none' mode for smooth updates
+          // Update existing chart with new data
+          portfolioChart.data.labels = planLabels;
+          portfolioChart.data.datasets[0].data = planValues;
+          portfolioChart.data.datasets[0].backgroundColor = colors.slice(0, planLabels.length);
+          portfolioChart.update('active'); // Use 'active' for smoother animation
         }
       }
     }
