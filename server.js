@@ -2435,6 +2435,80 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error', message: err.message || 'An unexpected error occurred' });
 });
 
+// Broadcast email to all users (Admin only)
+app.post('/api/admin/broadcast-email', adminAuth, [
+    body('subject').notEmpty().withMessage('Subject is required'),
+    body('message').notEmpty().withMessage('Message is required')
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: errors.array()[0].msg });
+    }
+
+    try {
+        const { subject, message } = req.body;
+
+        // Get all verified users
+        const { rows: users } = await pool.query('SELECT email FROM users WHERE verified = TRUE');
+
+        if (users.length === 0) {
+            return res.json({ message: 'No verified users found', sent: 0 });
+        }
+
+        // Create HTML email
+        const html = `
+            <html>
+            <head>
+                <style>
+                    body { font-family: 'Inter', sans-serif; color: #222; line-height: 1.6; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; background: #f9fafb; }
+                    .header { background: linear-gradient(135deg, #22c55e 0%, #10b981 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0; }
+                    .header h1 { color: #fff; margin: 0; font-size: 28px; }
+                    .content { background: #fff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                    .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>RealSphere Announcement</h1>
+                    </div>
+                    <div class="content">
+                        <p>${message.replace(/\n/g, '<br>')}</p>
+                    </div>
+                    <div class="footer">
+                        <p>© ${new Date().getFullYear()} RealSphere. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        // Send to all users (in production, consider rate limiting)
+        let sent = 0;
+        let failed = 0;
+
+        for (const user of users) {
+            const result = await sendEmail(user.email, subject, html);
+            if (result.success) {
+                sent++;
+            } else {
+                failed++;
+            }
+        }
+
+        res.json({ 
+            message: `Broadcast sent to ${sent} users${failed > 0 ? `, ${failed} failed` : ''}`, 
+            sent, 
+            failed,
+            total: users.length
+        });
+    } catch (err) {
+        console.error('Broadcast email error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found', message: 'The requested resource was not found' });
