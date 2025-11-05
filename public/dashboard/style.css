@@ -58,7 +58,7 @@ body[data-theme="light"]::before {
   left: 0;
   height: 100vh;
   overflow-y: auto;
-  z-index: 2;
+  z-index: 100;
 }
 
 @keyframes slideIn {
@@ -954,17 +954,23 @@ tr:hover {
 .dashboard-logo {
   display: block;
   position: fixed;
-  top: 1rem;
+  top: 0.55rem;
   left: 1rem;
-  z-index: 1000;
+  z-index: 1;
   height: 65px;
   width: auto;
+  transition: z-index 0.3s ease;
 }
 
 .dashboard-logo img {
   height: 65px;
   width: auto;
   max-width: 216px;
+}
+
+/* Hide dashboard logo when sidebar is open (behind menu) */
+body.sidebar-open .dashboard-logo {
+  z-index: 1;
 }
 
 /* Hide dashboard logo on desktop - only show on mobile */

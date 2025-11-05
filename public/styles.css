@@ -43,7 +43,7 @@ body {
     line-height: 1.6;
     overflow-x: hidden;
     /* Prevent content from going under fixed header */
-    padding-top: 80px;
+    padding-top: 56px;
 }
 
 .container {
@@ -126,7 +126,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1rem 20px;
+    padding: 0.7rem 20px;
 }
 
 .nav-brand .logo {
@@ -932,17 +932,17 @@ body {
     font-style: italic;
     font-size: 2.5rem;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.85);
+    color: #4ef5a3;
     letter-spacing: 0.05em;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 2px 8px rgba(78, 245, 163, 0.4);
     transition: all 0.3s ease;
     white-space: nowrap;
     padding: 0.5rem 1rem;
 }
 
 .trust-logo:hover .trust-partner-name {
-    color: rgba(255, 255, 255, 1);
-    text-shadow: 0 2px 12px rgba(78, 245, 163, 0.4);
+    color: #4ef5a3;
+    text-shadow: 0 2px 12px rgba(78, 245, 163, 0.6);
     transform: scale(1.05);
 }
 
