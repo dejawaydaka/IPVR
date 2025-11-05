@@ -21,5 +21,8 @@
     "multer": "^2.0.2",
     "nodemailer": "^7.0.10",
     "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@railway/cli": "^4.11.0"
   }
 }
