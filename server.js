@@ -7,6 +7,8 @@ const multer = require('multer');
 const { Pool } = require('pg');
 const path = require('path');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
@@ -14,6 +16,66 @@ const port = process.env.PORT || 3000;
 
 // Behind Railway/Proxies - trust X-Forwarded-* headers for correct client IPs
 app.set('trust proxy', 1);
+
+// ===== EMAIL CONFIGURATION =====
+const transporter = nodemailer.createTransport({
+  host: 'smtp.zoho.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: 'support@realsphereltd.com',
+    pass: process.env.ZOHO_APP_PASSWORD || ''
+  }
+});
+
+// Test email connection
+transporter.verify((error, success) => {
+  if (error) {
+    console.warn('⚠️  Email service not configured. Set ZOHO_APP_PASSWORD in environment variables.');
+    console.warn('   Email notifications will be disabled until configured.');
+  } else {
+    console.log('✅ Email service ready (Zoho SMTP)');
+  }
+});
+
+// ===== EMAIL TEMPLATES =====
+const emailTemplates = {
+  verifyEmail: require('./emails/verifyEmail.js'),
+  passwordReset: require('./emails/passwordReset.js'),
+  depositNotification: require('./emails/depositNotification.js'),
+  withdrawalNotification: require('./emails/withdrawalNotification.js'),
+  investmentCreated: require('./emails/investmentCreated.js'),
+  investmentMatured: require('./emails/investmentMatured.js'),
+  adminAlert: require('./emails/adminAlert.js')
+};
+
+// ===== EMAIL UTILITY FUNCTIONS =====
+const sendEmail = async (to, subject, html) => {
+  if (!process.env.ZOHO_APP_PASSWORD) {
+    console.warn(`⚠️  Email not sent to ${to}: ZOHO_APP_PASSWORD not configured`);
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  try {
+    await transporter.sendMail({
+      from: '"RealSphere Support" <support@realsphereltd.com>',
+      to,
+      subject,
+      html
+    });
+    console.log(`✅ Email sent to ${to}`);
+    return { success: true };
+  } catch (error) {
+    console.error(`❌ Email send error to ${to}:`, error.message);
+    return { success: false, error: error.message };
+  }
+};
+
+const sendAdminEmail = async (subject, message, type = 'info', details = {}) => {
+  const adminEmail = process.env.ADMIN_EMAIL || 'support@realsphereltd.com';
+  const html = emailTemplates.adminAlert.adminAlert(subject, message, type, details);
+  return await sendEmail(adminEmail, `[RealSphere Admin] ${subject}`, html);
+};
 
 // ===== ADMIN AUTHENTICATION MIDDLEWARE =====
 function adminAuth(req, res, next) {
@@ -192,6 +254,20 @@ async function ensureSchema() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // Add email verification and reset token columns to users table if they don't exist
+  try {
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS verified BOOLEAN DEFAULT FALSE;');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token TEXT;');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT;');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;');
+    console.log('✅ Email verification columns added to users table');
+  } catch (err) {
+    // Columns might already exist, ignore error
+    if (!err.message.includes('already exists')) {
+      console.error('Error adding email columns:', err.message);
+    }
+  }
 }
 
 // Initialize database connection (non-blocking)
@@ -437,15 +513,27 @@ app.post('/register', [
         // Hash password
         const hashedPassword = bcrypt.hashSync(password, 10);
 
-        // Create user with $5 bonus
+        // Generate verification token
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const verificationLink = `${baseUrl}/verify?token=${verificationToken}`;
+
+        // Create user with $5 bonus (unverified by default)
         const { rows: newUser } = await pool.query(
-            `INSERT INTO users (email, password, name, balance, bonus)
-             VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO users (email, password, name, balance, bonus, verification_token)
+             VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING id, email, name, balance, bonus, admin_approved, created_at`,
-            [sanitizeString(email), hashedPassword, sanitizeString(name || ''), 5, 5]
+            [sanitizeString(email), hashedPassword, sanitizeString(name || ''), 5, 5, verificationToken]
         );
 
-    res.json({ message: 'Registered successfully' });
+        // Send verification email
+        const verifyHtml = emailTemplates.verifyEmail.verifyEmail(email, verificationLink);
+        await sendEmail(email, 'Verify Your RealSphere Account', verifyHtml);
+
+        // Send admin alert
+        await sendAdminEmail('New User Registration', `New user registered: ${email}`, 'info', { email, name: name || email.split('@')[0] });
+
+        res.json({ message: 'Registered successfully. Please check your email to verify your account.' });
     } catch (err) {
         console.error('Registration error:', err);
         if (err.message === 'Database connection failed' || err.message === 'DATABASE_URL not set') {
@@ -489,6 +577,14 @@ app.post('/login', [
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
+        // Check if email is verified
+        if (!user.verified) {
+            return res.status(403).json({ 
+                message: 'Email not verified', 
+                error: 'Please check your email and click the verification link to activate your account.' 
+            });
+        }
+
         // Return user data without password
         const { password: _, ...userData } = user;
         res.json({ message: 'Login successful', user: userData });
@@ -497,6 +593,139 @@ app.post('/login', [
         if (err.message === 'Database connection failed' || err.message === 'DATABASE_URL not set') {
             return res.status(503).json({ message: 'Database service unavailable. Please try again later.' });
         }
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Email verification endpoint
+app.get('/verify', async (req, res) => {
+    try {
+        const { token } = req.query;
+        
+        if (!token) {
+            return res.status(400).send('<html><body><h1>Invalid Verification Link</h1><p>No token provided.</p></body></html>');
+        }
+
+        const { rows: users } = await pool.query(
+            'SELECT * FROM users WHERE verification_token = $1',
+            [token]
+        );
+
+        if (users.length === 0) {
+            return res.status(400).send('<html><body><h1>Invalid Verification Link</h1><p>The verification token is invalid or has expired.</p></body></html>');
+        }
+
+        const user = users[0];
+
+        if (user.verified) {
+            return res.status(200).send('<html><body><h1>Account Already Verified</h1><p>Your account is already verified. You can <a href="/dashboard/index.html">log in</a> now.</p></body></html>');
+        }
+
+        // Verify user
+        await pool.query(
+            'UPDATE users SET verified = TRUE, verification_token = NULL WHERE id = $1',
+            [user.id]
+        );
+
+        res.status(200).send('<html><body><h1>Email Verified Successfully!</h1><p>Your account has been verified. You can now <a href="/dashboard/index.html">log in</a> to your account.</p></body></html>');
+    } catch (err) {
+        console.error('Verification error:', err);
+        res.status(500).send('<html><body><h1>Verification Error</h1><p>An error occurred during verification. Please try again later.</p></body></html>');
+    }
+});
+
+// Forgot password endpoint
+app.post('/forgot-password', [
+    body('email').isEmail().normalizeEmail()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    try {
+        const { email } = req.body;
+
+        const { rows: users } = await pool.query(
+            'SELECT * FROM users WHERE email = $1',
+            [email]
+        );
+
+        if (users.length === 0) {
+            // Don't reveal if email exists for security
+            return res.json({ message: 'If that email exists, a password reset link has been sent.' });
+        }
+
+        const user = users[0];
+
+        // Generate reset token (expires in 1 hour)
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+        await pool.query(
+            'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3',
+            [resetToken, expiresAt, user.id]
+        );
+
+        // Send reset email
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const resetLink = `${baseUrl}/reset?token=${resetToken}`;
+        const resetHtml = emailTemplates.passwordReset.passwordReset(email, resetLink);
+        await sendEmail(email, 'Reset Your RealSphere Password', resetHtml);
+
+        res.json({ message: 'If that email exists, a password reset link has been sent.' });
+    } catch (err) {
+        console.error('Forgot password error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Reset password endpoint
+app.post('/reset-password', [
+    body('token').notEmpty(),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: errors.array()[0].msg });
+    }
+
+    try {
+        const { token, password } = req.body;
+
+        const { rows: users } = await pool.query(
+            'SELECT * FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()',
+            [token]
+        );
+
+        if (users.length === 0) {
+            return res.status(400).json({ message: 'Invalid or expired reset token' });
+        }
+
+        const user = users[0];
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Update password and clear reset token
+        await pool.query(
+            'UPDATE users SET password = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2',
+            [hashedPassword, user.id]
+        );
+
+        // Send confirmation email
+        const confirmHtml = emailTemplates.passwordReset.passwordReset(user.email, '#');
+        await sendEmail(user.email, 'Password Changed Successfully', `
+            <html><body>
+                <h2>Password Changed Successfully</h2>
+                <p>Your RealSphere password has been changed successfully.</p>
+                <p>If you didn't make this change, please contact support immediately.</p>
+            </body></html>
+        `);
+
+        res.json({ message: 'Password reset successfully' });
+    } catch (err) {
+        console.error('Reset password error:', err);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -1032,6 +1261,15 @@ app.post('/api/invest', [
             [newTotalInvestment, user.id]
         );
         
+        // Send investment creation email
+        const investmentHtml = emailTemplates.investmentCreated.investmentCreated(
+            user.email,
+            numericAmount,
+            plan,
+            dailyPercent
+        );
+        await sendEmail(user.email, 'Investment Created Successfully', investmentHtml);
+        
         // Get updated user data
         const { rows: updatedUsers } = await pool.query(
             'SELECT * FROM users WHERE id = $1',
@@ -1094,6 +1332,23 @@ app.post('/api/deposit', upload.single('proof'), async (req, res) => {
             [user.id, numericAmount, currency || 'USD', transactionHash || '', proofPath, 'pending']
         );
 
+        // Send deposit notification email to user
+        const depositHtml = emailTemplates.depositNotification.depositNotification(
+            user.email, 
+            numericAmount, 
+            currency || 'USD', 
+            'pending'
+        );
+        await sendEmail(user.email, 'Deposit Received - Under Review', depositHtml);
+
+        // Send admin alert
+        await sendAdminEmail(
+            'New Deposit Pending Approval',
+            `New deposit pending approval from ${user.email}`,
+            'info',
+            { email: user.email, amount: `$${numericAmount}`, currency: currency || 'USD', depositId: depositRows[0].id }
+        );
+
         // Return success message indicating deposit is pending approval
         res.json({ 
             message: 'Deposit request submitted successfully. Your balance will be updated after admin approval.', 
@@ -1148,10 +1403,28 @@ app.post('/api/withdraw', [
         }
 
         // Record withdrawal
-        await pool.query(
+        const { rows: withdrawalRows } = await pool.query(
             `INSERT INTO withdrawals (user_id, amount, crypto_type, wallet_address, status)
-             VALUES ($1, $2, $3, $4, $5)`,
+             VALUES ($1, $2, $3, $4, $5)
+             RETURNING *`,
             [user.id, numericAmount, cryptoType, sanitizeString(walletAddress), 'pending']
+        );
+
+        // Send withdrawal notification email to user
+        const withdrawalHtml = emailTemplates.withdrawalNotification.withdrawalNotification(
+            user.email,
+            numericAmount,
+            cryptoType,
+            'pending'
+        );
+        await sendEmail(user.email, 'Withdrawal Request Submitted', withdrawalHtml);
+
+        // Send admin alert
+        await sendAdminEmail(
+            'New Withdrawal Request',
+            `Withdrawal request from ${user.email}`,
+            'info',
+            { email: user.email, amount: `$${numericAmount}`, cryptoType, withdrawalId: withdrawalRows[0].id }
         );
         
         res.json({ message: 'Withdrawal request submitted successfully' });
@@ -1422,6 +1695,23 @@ app.post('/api/admin/deposits/:id/approve', adminAuth, async (req, res) => {
                 ['approved', id]
             );
         }
+
+        // Get user email for notification
+        const { rows: users } = await pool.query(
+            'SELECT email FROM users WHERE id = $1',
+            [deposit.user_id]
+        );
+
+        if (users.length > 0) {
+            // Send approval email to user
+            const depositHtml = emailTemplates.depositNotification.depositNotification(
+                users[0].email,
+                Number(deposit.amount),
+                deposit.currency || 'USD',
+                'approved'
+            );
+            await sendEmail(users[0].email, 'Deposit Approved', depositHtml);
+        }
         
         res.json({ message: 'Deposit approved successfully' });
     } catch (err) {
@@ -1434,10 +1724,39 @@ app.post('/api/admin/deposits/:id/approve', adminAuth, async (req, res) => {
 app.post('/api/admin/deposits/:id/reject', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
+        const { rows: deposits } = await pool.query(
+            'SELECT * FROM deposits WHERE id = $1',
+            [id]
+        );
+        
+        if (deposits.length === 0) {
+            return res.status(404).json({ message: 'Deposit not found' });
+        }
+
+        const deposit = deposits[0];
+        
         await pool.query(
             'UPDATE deposits SET status = $1 WHERE id = $2',
             ['rejected', id]
         );
+
+        // Get user email for notification
+        const { rows: users } = await pool.query(
+            'SELECT email FROM users WHERE id = $1',
+            [deposit.user_id]
+        );
+
+        if (users.length > 0) {
+            // Send rejection email to user
+            const depositHtml = emailTemplates.depositNotification.depositNotification(
+                users[0].email,
+                Number(deposit.amount),
+                deposit.currency || 'USD',
+                'rejected'
+            );
+            await sendEmail(users[0].email, 'Deposit Rejected', depositHtml);
+        }
+
         res.json({ message: 'Deposit rejected' });
     } catch (err) {
         console.error('Reject deposit error:', err);
@@ -1465,6 +1784,23 @@ app.post('/api/admin/withdrawals/:id/approve', adminAuth, async (req, res) => {
             'UPDATE withdrawals SET status = $1 WHERE id = $2',
             ['approved', id]
         );
+
+        // Get user email for notification
+        const { rows: users } = await pool.query(
+            'SELECT email FROM users WHERE id = $1',
+            [withdrawal.user_id]
+        );
+
+        if (users.length > 0) {
+            // Send approval email to user
+            const withdrawalHtml = emailTemplates.withdrawalNotification.withdrawalNotification(
+                users[0].email,
+                Number(withdrawal.amount),
+                withdrawal.crypto_type,
+                'approved'
+            );
+            await sendEmail(users[0].email, 'Withdrawal Approved', withdrawalHtml);
+        }
         
         // Deduct from user's total profit (already deducted when created, just update status)
         res.json({ message: 'Withdrawal approved successfully' });
@@ -1494,6 +1830,23 @@ app.post('/api/admin/withdrawals/:id/reject', adminAuth, async (req, res) => {
             'UPDATE withdrawals SET status = $1 WHERE id = $2',
             ['rejected', id]
         );
+
+        // Get user email for notification
+        const { rows: users } = await pool.query(
+            'SELECT email FROM users WHERE id = $1',
+            [withdrawal.user_id]
+        );
+
+        if (users.length > 0) {
+            // Send rejection email to user
+            const withdrawalHtml = emailTemplates.withdrawalNotification.withdrawalNotification(
+                users[0].email,
+                Number(withdrawal.amount),
+                withdrawal.crypto_type,
+                'rejected'
+            );
+            await sendEmail(users[0].email, 'Withdrawal Rejected', withdrawalHtml);
+        }
         
         // Refund the amount back to user's total profit
         await pool.query(

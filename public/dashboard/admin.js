@@ -46,6 +46,7 @@ function renderAdminSidebar(currentPage = '') {
   else if (currentPath.includes('/admin/testimonials.html')) currentFile = 'testimonials.html';
   else if (currentPath.includes('/admin/news.html')) currentFile = 'news.html';
   else if (currentPath.includes('/admin/plans.html')) currentFile = 'plans.html';
+  else if (currentPath.includes('/admin/emails.html')) currentFile = 'emails.html';
   else if (currentPath.includes('/admin.html')) currentFile = 'admin.html';
   
   // Determine base path (if in /admin/ folder, use relative paths)
@@ -59,7 +60,8 @@ function renderAdminSidebar(currentPage = '') {
     { path: `${basePath}projects.html`, name: 'Projects', icon: 'fas fa-building', file: 'projects.html' },
     { path: `${basePath}testimonials.html`, name: 'Testimonials', icon: 'fas fa-comments', file: 'testimonials.html' },
     { path: `${basePath}news.html`, name: 'News & Insights', icon: 'fas fa-newspaper', file: 'news.html' },
-    { path: `${basePath}plans.html`, name: 'Investment Plans', icon: 'fas fa-coins', file: 'plans.html' }
+    { path: `${basePath}plans.html`, name: 'Investment Plans', icon: 'fas fa-coins', file: 'plans.html' },
+    { path: `${basePath}emails.html`, name: 'Email Notifications', icon: 'fas fa-envelope', file: 'emails.html' }
   ];
   
   return `
