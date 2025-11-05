@@ -973,6 +973,13 @@ body.sidebar-open .dashboard-logo {
   z-index: 1;
 }
 
+/* Move logo up 20% higher on mobile */
+@media (max-width: 768px) {
+  .dashboard-logo {
+    top: 0.44rem;
+  }
+}
+
 /* Hide dashboard logo on desktop - only show on mobile */
 @media (min-width: 769px) {
   .dashboard-logo {
