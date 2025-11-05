@@ -64,7 +64,9 @@ function renderAdminSidebar(currentPage = '') {
   
   return `
     <aside class="sidebar">
-      <h2><i class="fas fa-shield-alt"></i> Admin Panel</h2>
+      <div style="text-align: center; margin-bottom: 1rem;">
+        <img src="${isInAdminFolder ? '../' : ''}../Rswhite.png" alt="RealSphere" style="height: 50px; width: auto; max-width: 100%;">
+      </div>
       <div class="user-display">
         <span style="color: #4ef5a3; font-weight: 600;">Administrator</span>
       </div>
@@ -264,6 +266,50 @@ function renderPendingDeposits(deposits) {
           <i class="fas fa-times"></i> Reject
         </button>
       </td>
+    </tr>
+  `).join('');
+}
+
+// Render confirmed deposits
+function renderConfirmedDeposits(deposits) {
+  const tbody = document.getElementById('confirmedDepositsBody');
+  if (!tbody) return;
+  
+  if (deposits.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">No confirmed deposits</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = deposits.map(deposit => `
+    <tr>
+      <td>${deposit.user_email || 'N/A'}</td>
+      <td>$${formatNumber(deposit.amount)}</td>
+      <td>${deposit.currency || 'USD'}</td>
+      <td>${deposit.transaction_hash ? deposit.transaction_hash.substring(0, 20) + '...' : 'N/A'}</td>
+      <td>${formatDate(deposit.created_at)}</td>
+      <td><span style="color: #4ef5a3; font-weight: 500;">Approved</span></td>
+    </tr>
+  `).join('');
+}
+
+// Render confirmed withdrawals
+function renderConfirmedWithdrawals(withdrawals) {
+  const tbody = document.getElementById('confirmedWithdrawalsBody');
+  if (!tbody) return;
+  
+  if (withdrawals.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">No confirmed withdrawals</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = withdrawals.map(withdrawal => `
+    <tr>
+      <td>${withdrawal.user_email || 'N/A'}</td>
+      <td>$${formatNumber(withdrawal.amount)}</td>
+      <td>${withdrawal.crypto_type}</td>
+      <td>${withdrawal.wallet_address.substring(0, 20)}...</td>
+      <td>${formatDate(withdrawal.created_at)}</td>
+      <td><span style="color: #4ef5a3; font-weight: 500;">Approved</span></td>
     </tr>
   `).join('');
 }

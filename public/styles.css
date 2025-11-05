@@ -1331,9 +1331,15 @@ body {
     margin-bottom: 1rem;
 }
 
+.footer-brand .logo img {
+    height: 40px;
+    width: auto;
+}
+
 .footer-brand .logo i {
     color: var(--primary-color);
     font-size: 1.8rem;
+    display: none; /* Hide icon when using logo image */
 }
 
 .footer-brand p {

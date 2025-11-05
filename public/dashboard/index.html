@@ -14,6 +14,11 @@
     <div class="spinner"></div>
   </div>
   
+  <!-- Dashboard Logo (Top Left) -->
+  <div class="dashboard-logo">
+    <img src="../Rswhite.png" alt="RealSphere">
+  </div>
+  
   <!-- Mobile Hamburger Menu -->
   <div class="mobile-menu-toggle" id="mobileMenuToggle">
     <i class="fas fa-bars"></i>
@@ -353,6 +358,9 @@
               </tr>
             `;
           } else {
+            // Separate deposits by status for bonus detection
+            const approvedDeposits = deposits.filter(d => d.status === 'approved').sort((a, b) => (a.createdAt || a.timestamp) - (b.createdAt || b.timestamp));
+            
             transactionsBody.innerHTML = deposits.map(dep => {
               const date = new Date(dep.createdAt || dep.timestamp);
               let statusColor = '#888';
@@ -369,14 +377,16 @@
                 statusText = 'Rejected';
               }
               
+              // Check if this is the first approved deposit (registration bonus indicator)
+              const isFirstApproved = dep.status === 'approved' && approvedDeposits.length > 0 && approvedDeposits[0].id === dep.id;
+              const bonusNote = isFirstApproved ? '<br><small style="color: #4ef5a3; font-size: 0.75rem;">+ $5 Registration Bonus Applied</small>' : '';
+              
               const details = dep.transactionHash 
                 ? `<span style="font-family: monospace; font-size: 0.85rem;" title="${sanitizeHTML(dep.transactionHash)}">${sanitizeHTML(dep.transactionHash.substring(0, 20))}...</span>`
-                : dep.proof 
-                  ? `<a href="${sanitizeHTML(dep.proof)}" target="_blank" style="color: #4ef5a3;">View Proof</a>`
-                  : 'N/A';
+                : 'N/A';
               
               return `<tr>
-                <td><i class="fas fa-arrow-down" style="color: #4ef5a3;"></i> Deposit</td>
+                <td><i class="fas fa-arrow-down" style="color: #4ef5a3;"></i> Deposit${bonusNote}</td>
                 <td>$${Number(dep.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 <td>${sanitizeHTML(dep.currency || 'USD')}</td>
                 <td><span style="color: ${statusColor}; font-weight: 500;">${statusText}</span></td>
@@ -384,6 +394,22 @@
                 <td>${details}</td>
               </tr>`;
             }).join('');
+            
+            // Add registration bonus as separate transaction if user has bonus
+            const userBonus = Number(data.bonus || 0);
+            if (userBonus > 0) {
+              // Find the first approved deposit date to use as bonus date
+              const firstApproved = approvedDeposits[0];
+              const bonusDate = firstApproved ? new Date(firstApproved.createdAt || firstApproved.timestamp) : new Date();
+              transactionsBody.innerHTML += `<tr>
+                <td><i class="fas fa-gift" style="color: #4ef5a3;"></i> Registration Bonus</td>
+                <td>$${userBonus.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td>USD</td>
+                <td><span style="color: #4ef5a3; font-weight: 500;">Approved</span></td>
+                <td>${bonusDate.toLocaleDateString()} ${bonusDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                <td>N/A</td>
+              </tr>`;
+            }
           }
         }
 

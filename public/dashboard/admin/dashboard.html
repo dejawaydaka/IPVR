@@ -13,6 +13,11 @@
     <div class="spinner"></div>
   </div>
   
+  <!-- Dashboard Logo (Top Left) -->
+  <div class="dashboard-logo">
+    <img src="../../Rswhite.png" alt="RealSphere">
+  </div>
+  
   <!-- Mobile Hamburger Menu -->
   <div class="mobile-menu-toggle" id="mobileMenuToggle">
     <i class="fas fa-bars"></i>
@@ -123,6 +128,54 @@
         </table>
       </div>
     </div>
+
+    <!-- Confirmed Deposits Section -->
+    <div class="admin-section">
+      <h2><i class="fas fa-check-circle"></i> Confirmed Deposits</h2>
+      <div class="table-section">
+        <table id="confirmedDepositsTable">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Amount</th>
+              <th>Currency</th>
+              <th>Transaction Hash</th>
+              <th>Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="confirmedDepositsBody">
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 2rem;">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Confirmed Withdrawals Section -->
+    <div class="admin-section">
+      <h2><i class="fas fa-check-circle"></i> Confirmed Withdrawals</h2>
+      <div class="table-section">
+        <table id="confirmedWithdrawalsTable">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Amount</th>
+              <th>Crypto Type</th>
+              <th>Wallet Address</th>
+              <th>Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="confirmedWithdrawalsBody">
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 2rem;">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -164,6 +217,20 @@
         }
         const withdrawalsData = await withdrawalsRes.json();
         renderPendingWithdrawals(withdrawalsData.withdrawals || []);
+        
+        // Fetch confirmed deposits
+        const confirmedDepositsRes = await adminFetch('/api/admin/deposits/confirmed');
+        if (confirmedDepositsRes.ok) {
+          const confirmedDepositsData = await confirmedDepositsRes.json();
+          renderConfirmedDeposits(confirmedDepositsData.deposits || []);
+        }
+        
+        // Fetch confirmed withdrawals
+        const confirmedWithdrawalsRes = await adminFetch('/api/admin/withdrawals/confirmed');
+        if (confirmedWithdrawalsRes.ok) {
+          const confirmedWithdrawalsData = await confirmedWithdrawalsRes.json();
+          renderConfirmedWithdrawals(confirmedWithdrawalsData.withdrawals || []);
+        }
         
       } catch (error) {
         console.error('Dashboard data load error:', error);

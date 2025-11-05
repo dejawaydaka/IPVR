@@ -376,13 +376,22 @@ function renderSidebar(currentPage = '') {
   currentPage = currentPath;
   
         const displayName = user.name || user.email?.split('@')[0] || 'User';
-        const profileImg = user.profileImage || user.profile_image || '/uploads/user.png';
+        // Fix profile image path - ensure it starts with / if it's a relative path
+        let profileImg = user.profileImage || user.profile_image || '';
+        if (profileImg && !profileImg.startsWith('http') && !profileImg.startsWith('/')) {
+          profileImg = '/' + profileImg;
+        }
+        if (!profileImg) {
+          profileImg = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Ccircle cx=%2220%22 cy=%2220%22 r=%2218%22 fill=%22%234ef5a3%22/%3E%3Ctext x=%2220%22 y=%2225%22 font-size=%2214%22 fill=%22white%22 text-anchor=%22middle%22%3E' + encodeURIComponent(displayName.charAt(0).toUpperCase()) + '%3C/text%3E%3C/svg%3E';
+        }
   
   return `
     <aside class="sidebar">
-      <h2>RealSphere</h2>
+      <div style="text-align: center; margin-bottom: 1rem;">
+        <img src="../Rswhite.png" alt="RealSphere" style="height: 50px; width: auto; max-width: 100%;">
+      </div>
       <div class="user-display">
-        <img src="${profileImg}" alt="User" onerror="this.src='/uploads/user.png'" />
+        <img src="${profileImg}" alt="User" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Ccircle cx=%2220%22 cy=%2220%22 r=%2218%22 fill=%22%234ef5a3%22/%3E%3Ctext x=%2220%22 y=%2225%22 font-size=%2214%22 fill=%22white%22 text-anchor=%22middle%22%3E${encodeURIComponent(displayName.charAt(0).toUpperCase())}%3C/text%3E%3C/svg%3E';" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" />
         <span>${sanitizeHTML(displayName)}</span>
       </div>
       <ul>

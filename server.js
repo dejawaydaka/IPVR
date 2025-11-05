@@ -1325,6 +1325,42 @@ app.get('/api/admin/withdrawals/pending', adminAuth, async (req, res) => {
     }
 });
 
+// Get confirmed deposits (approved)
+app.get('/api/admin/deposits/confirmed', adminAuth, async (req, res) => {
+    try {
+        const { rows: deposits } = await pool.query(
+            `SELECT d.*, u.email as user_email, u.name as user_name
+             FROM deposits d 
+             LEFT JOIN users u ON d.user_id = u.id 
+             WHERE d.status = 'approved' 
+             ORDER BY d.created_at DESC 
+             LIMIT 100`
+        );
+        res.json({ deposits });
+    } catch (err) {
+        console.error('Confirmed deposits error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Get confirmed withdrawals (approved)
+app.get('/api/admin/withdrawals/confirmed', adminAuth, async (req, res) => {
+    try {
+        const { rows: withdrawals } = await pool.query(
+            `SELECT w.*, u.email as user_email, u.name as user_name
+             FROM withdrawals w 
+             LEFT JOIN users u ON w.user_id = u.id 
+             WHERE w.status = 'approved' 
+             ORDER BY w.created_at DESC 
+             LIMIT 100`
+        );
+        res.json({ withdrawals });
+    } catch (err) {
+        console.error('Confirmed withdrawals error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // Approve deposit
 app.post('/api/admin/deposits/:id/approve', adminAuth, async (req, res) => {
     try {

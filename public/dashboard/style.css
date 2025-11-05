@@ -79,6 +79,19 @@ body[data-theme="light"]::before {
   font-weight: 700;
   text-align: center;
   text-shadow: 0 0 15px rgba(78, 245, 163, 0.5);
+  display: none; /* Hide h2, logo image is used instead */
+}
+
+.sidebar .logo-img {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+}
+
+.sidebar .logo-img img {
+  height: 50px;
+  width: auto;
+  max-width: 100%;
 }
 
 .sidebar .user-display {
@@ -96,6 +109,10 @@ body[data-theme="light"]::before {
   border-radius: 50%;
   border: 2px solid #4ef5a3;
   margin-bottom: 0.5rem;
+  object-fit: cover;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .sidebar .user-display span {
@@ -931,6 +948,23 @@ tr:hover {
 
 .toggle-switch.active::before {
   transform: translateX(30px);
+}
+
+/* ===== DASHBOARD LOGO (TOP LEFT) ===== */
+.dashboard-logo {
+  display: block;
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1000;
+  height: 45px;
+  width: auto;
+}
+
+.dashboard-logo img {
+  height: 45px;
+  width: auto;
+  max-width: 150px;
 }
 
 /* ===== MOBILE HAMBURGER MENU ===== */
