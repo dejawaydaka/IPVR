@@ -159,9 +159,14 @@
     let portfolioChart = null;
 
     function updateCharts(data) {
+      // Ensure data exists, use empty object if not
+      if (!data) {
+        data = { dailyEarnings: 0, investments: [] };
+      }
+      
       // Daily Earnings Trend Chart (Line)
       const ctx1 = document.getElementById('earningsChart');
-      if (ctx1 && !earningsChart) {
+      if (ctx1) {
         const days = [];
         const earnings = [];
         for (let i = 6; i >= 0; i--) {
@@ -171,94 +176,97 @@
           earnings.push(data.dailyEarnings || 0);
         }
         
-        earningsChart = new Chart(ctx1, {
-          type: 'line',
-          data: {
-            labels: days,
-            datasets: [{
-              label: 'Daily Earnings ($)',
-              data: earnings,
-              borderColor: '#4ef5a3',
-              backgroundColor: 'rgba(78, 245, 163, 0.1)',
-              tension: 0.4,
-              fill: true
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: {
-                labels: { color: '#fff' }
-              }
+        if (!earningsChart) {
+          // Create chart if it doesn't exist
+          earningsChart = new Chart(ctx1, {
+            type: 'line',
+            data: {
+              labels: days,
+              datasets: [{
+                label: 'Daily Earnings ($)',
+                data: earnings,
+                borderColor: '#4ef5a3',
+                backgroundColor: 'rgba(78, 245, 163, 0.1)',
+                tension: 0.4,
+                fill: true
+              }]
             },
-            scales: {
-              x: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-              y: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } }
-          }
-          }
-        });
-      } else if (earningsChart && data) {
-        const earnings = [];
-        for (let i = 6; i >= 0; i--) {
-          earnings.push(data.dailyEarnings || 0);
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              plugins: {
+                legend: {
+                  labels: { color: '#fff' }
+                }
+              },
+              scales: {
+                x: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                y: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+              }
+            }
+          });
+        } else {
+          // Update existing chart
+          earningsChart.data.datasets[0].data = earnings;
+          earningsChart.update('none'); // 'none' mode for smooth updates
         }
-        earningsChart.data.datasets[0].data = earnings;
-        earningsChart.update();
       }
 
       // Portfolio Composition Chart (Doughnut)
       const ctx2 = document.getElementById('portfolioChart');
-      if (ctx2 && !portfolioChart) {
+      if (ctx2) {
         const planCounts = {};
         (data.investments || []).forEach(inv => {
-          planCounts[inv.plan] = (planCounts[inv.plan] || 0) + Number(inv.amount || 0);
-        });
-        
-        if (Object.keys(planCounts).length === 0) {
-          planCounts['No Investments'] = 1;
-        }
-        
-        portfolioChart = new Chart(ctx2, {
-          type: 'doughnut',
-          data: {
-            labels: Object.keys(planCounts),
-            datasets: [{
-              data: Object.values(planCounts),
-              backgroundColor: [
-                'rgba(78, 245, 163, 0.8)',
-                'rgba(34, 197, 94, 0.8)',
-                'rgba(22, 91, 71, 0.8)',
-                'rgba(10, 61, 46, 0.8)',
-                'rgba(15, 46, 35, 0.8)',
-                'rgba(31, 184, 116, 0.8)'
-              ]
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: {
-                labels: { color: '#fff' },
-                position: 'bottom'
-              }
-            }
+          if (inv && inv.plan) {
+            planCounts[inv.plan] = (planCounts[inv.plan] || 0) + Number(inv.amount || 0);
           }
         });
-      } else if (portfolioChart && data) {
-        const planCounts = {};
-        (data.investments || []).forEach(inv => {
-          planCounts[inv.plan] = (planCounts[inv.plan] || 0) + Number(inv.amount || 0);
-        });
         
+        // Always ensure at least one label exists
         if (Object.keys(planCounts).length === 0) {
           planCounts['No Investments'] = 1;
         }
         
-        portfolioChart.data.labels = Object.keys(planCounts);
-        portfolioChart.data.datasets[0].data = Object.values(planCounts);
-        portfolioChart.update();
+        if (!portfolioChart) {
+          // Create chart if it doesn't exist
+          portfolioChart = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+              labels: Object.keys(planCounts),
+              datasets: [{
+                data: Object.values(planCounts),
+                backgroundColor: [
+                  'rgba(78, 245, 163, 0.8)',
+                  'rgba(34, 197, 94, 0.8)',
+                  'rgba(22, 91, 71, 0.8)',
+                  'rgba(10, 61, 46, 0.8)',
+                  'rgba(15, 46, 35, 0.8)',
+                  'rgba(31, 184, 116, 0.8)'
+                ]
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              plugins: {
+                legend: {
+                  labels: { color: '#fff' },
+                  position: 'bottom'
+                }
+              }
+            }
+          });
+        } else {
+          // Update existing chart
+          portfolioChart.data.labels = Object.keys(planCounts);
+          portfolioChart.data.datasets[0].data = Object.values(planCounts);
+          portfolioChart.update('none'); // 'none' mode for smooth updates
+        }
       }
     }
+
+    // Store last successful data to preserve on errors
+    let lastSuccessfulData = null;
 
     async function refreshDashboard() {
       const user = getCurrentUser();
@@ -283,6 +291,9 @@
         
         // Fetch user data
         const data = await fetchUserData(email);
+        
+        // Store successful data for fallback
+        lastSuccessfulData = data;
         
         // Update metrics
         const totalBalance = Number(data.totalBalance || 0);
@@ -311,7 +322,7 @@
           document.getElementById('dashUserRole').textContent = data.admin_approved ? 'Admin' : 'User';
         }
 
-        // Update investments table
+        // Update investments table - always update, even if empty
         const body = document.getElementById('investmentsBody');
         if (body) {
           const investments = data.investments || [];
@@ -328,12 +339,13 @@
             `;
           } else {
             body.innerHTML = investments.map(inv => {
+              if (!inv) return '';
               const rate = profitRates[inv.plan] || 0;
               const start = new Date(inv.startDate);
               const status = Math.floor((Date.now() - inv.startDate) / (1000*60*60*24)) < (inv.days||7) ? 'Active' : 'Completed';
               return `<tr>
-                <td>${sanitizeHTML(inv.plan)}</td>
-                <td>$${Number(inv.amount).toLocaleString()}</td>
+                <td>${sanitizeHTML(inv.plan || 'N/A')}</td>
+                <td>$${Number(inv.amount || 0).toLocaleString()}</td>
                 <td>${(rate*100).toFixed(1)}% Daily</td>
                 <td><span style="color: ${status === 'Active' ? '#4ef5a3' : '#888'}">${status}</span></td>
                 <td>${start.toISOString().split('T')[0]}</td>
@@ -343,7 +355,7 @@
           }
         }
 
-        // Update transaction history table
+        // Update transaction history table - always update, preserve data
         const transactionsBody = document.getElementById('transactionsBody');
         if (transactionsBody) {
           const deposits = data.deposits || [];
@@ -353,34 +365,43 @@
           const allTransactions = [];
           
           // Add deposits as transactions
-          deposits.forEach(dep => {
-            allTransactions.push({
-              type: 'deposit',
-              amount: dep.amount,
-              currency: dep.currency || 'USD',
-              status: dep.status || 'pending',
-              createdAt: dep.createdAt || dep.timestamp,
-              transactionHash: dep.transactionHash,
-              id: dep.id
+          if (Array.isArray(deposits)) {
+            deposits.forEach(dep => {
+              if (dep) {
+                allTransactions.push({
+                  type: 'deposit',
+                  amount: dep.amount || 0,
+                  currency: dep.currency || 'USD',
+                  status: dep.status || 'pending',
+                  createdAt: dep.createdAt || dep.timestamp || Date.now(),
+                  transactionHash: dep.transactionHash,
+                  id: dep.id
+                });
+              }
             });
-          });
+          }
           
           // Add other transactions (bonuses, etc.)
-          transactions.forEach(txn => {
-            allTransactions.push({
-              type: txn.type,
-              amount: txn.amount,
-              currency: txn.currency || 'USD',
-              status: txn.status || 'completed',
-              createdAt: txn.createdAt || txn.timestamp,
-              description: txn.description,
-              id: txn.id
+          if (Array.isArray(transactions)) {
+            transactions.forEach(txn => {
+              if (txn) {
+                allTransactions.push({
+                  type: txn.type || 'transaction',
+                  amount: txn.amount || 0,
+                  currency: txn.currency || 'USD',
+                  status: txn.status || 'completed',
+                  createdAt: txn.createdAt || txn.timestamp || Date.now(),
+                  description: txn.description,
+                  id: txn.id
+                });
+              }
             });
-          });
+          }
           
           // Sort by date (newest first)
           allTransactions.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
           
+          // Always render transactions, even if empty
           if (allTransactions.length === 0) {
             transactionsBody.innerHTML = `
               <tr>
@@ -394,7 +415,8 @@
             `;
           } else {
             transactionsBody.innerHTML = allTransactions.map(txn => {
-              const date = new Date(txn.createdAt || txn.timestamp);
+              if (!txn) return '';
+              const date = new Date(txn.createdAt || txn.timestamp || Date.now());
               let statusColor = '#888';
               let statusText = txn.status || 'pending';
               let icon = 'fas fa-circle';
@@ -430,12 +452,12 @@
               }
               
               const details = txn.transactionHash 
-                ? `<span style="font-family: monospace; font-size: 0.85rem;" title="${sanitizeHTML(txn.transactionHash)}">${sanitizeHTML(txn.transactionHash.substring(0, 20))}...</span>`
+                ? `<span style="font-family: monospace; font-size: 0.85rem;" title="${sanitizeHTML(txn.transactionHash)}">${sanitizeHTML((txn.transactionHash || '').substring(0, 20))}...</span>`
                 : (txn.description || 'N/A');
               
               return `<tr>
                 <td><i class="${icon}" style="color: #4ef5a3;"></i> ${sanitizeHTML(typeText)}</td>
-                <td>$${Number(txn.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td>$${Number(txn.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 <td>${sanitizeHTML(txn.currency || 'USD')}</td>
                 <td><span style="color: ${statusColor}; font-weight: 500;">${statusText}</span></td>
                 <td>${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
@@ -445,7 +467,7 @@
           }
         }
 
-        // Update charts
+        // Update charts - always update with current data
         updateCharts(data);
         
         // Clear any previous errors
@@ -456,12 +478,26 @@
         }
       } catch (error) {
         console.error('Dashboard refresh failed:', error);
-        // Only show error if data wasn't actually loaded
-        const balanceEl = document.getElementById('dashTotalBalance');
-        const hasData = balanceEl && balanceEl.textContent && balanceEl.textContent !== '$0.00' && balanceEl.textContent !== '0';
         
-        if (!hasData) {
-          showError('Could not load dashboard data. Please try refreshing the page.');
+        // Use last successful data if available to preserve display
+        if (lastSuccessfulData) {
+          console.log('[Dashboard] Using cached data due to error');
+          updateCharts(lastSuccessfulData);
+          
+          // Preserve transaction history from last successful fetch
+          const transactionsBody = document.getElementById('transactionsBody');
+          if (transactionsBody && transactionsBody.children.length > 0) {
+            // Keep existing transaction history if it exists
+            console.log('[Dashboard] Preserving existing transaction history');
+          }
+        } else {
+          // Only show error if we have no data at all
+          const balanceEl = document.getElementById('dashTotalBalance');
+          const hasData = balanceEl && balanceEl.textContent && balanceEl.textContent !== '$0.00' && balanceEl.textContent !== '0' && balanceEl.textContent !== '$0';
+          
+          if (!hasData) {
+            showError('Could not load dashboard data. Please try refreshing the page.');
+          }
         }
       }
     }
