@@ -967,6 +967,13 @@ tr:hover {
   max-width: 216px;
 }
 
+/* Hide dashboard logo on desktop - only show on mobile */
+@media (min-width: 769px) {
+  .dashboard-logo {
+    display: none;
+  }
+}
+
 /* ===== MOBILE HAMBURGER MENU ===== */
 .mobile-menu-toggle {
   display: none;
