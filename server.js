@@ -18,25 +18,98 @@ const port = process.env.PORT || 3000;
 app.set('trust proxy', 1);
 
 // ===== EMAIL CONFIGURATION =====
+// Create transporter with connection timeout and retry settings
 const transporter = nodemailer.createTransport({
   host: 'smtp.zoho.com',
   port: 465,
-  secure: true,
+  secure: true, // true for 465, false for other ports
   auth: {
     user: 'support@realsphereltd.com',
     pass: process.env.ZOHO_APP_PASSWORD || ''
-  }
+  },
+  connectionTimeout: 20000, // 20 seconds
+  greetingTimeout: 20000, // 20 seconds
+  socketTimeout: 20000, // 20 seconds
+  pool: true, // Use connection pooling
+  maxConnections: 1,
+  maxMessages: 3,
+  rateDelta: 1000, // Time window for rate limiting
+  rateLimit: 5 // Max messages per rateDelta
 });
 
-// Test email connection
-transporter.verify((error, success) => {
-  if (error) {
+// Alternative transporter for TLS (port 587) - fallback option
+const transporterTLS = nodemailer.createTransport({
+  host: 'smtp.zoho.com',
+  port: 587,
+  secure: false, // false for TLS
+  auth: {
+    user: 'support@realsphereltd.com',
+    pass: process.env.ZOHO_APP_PASSWORD || ''
+  },
+  connectionTimeout: 20000,
+  greetingTimeout: 20000,
+  socketTimeout: 20000,
+  requireTLS: true
+});
+
+// Test email connection with retry logic
+let emailServiceReady = false;
+let emailServiceMethod = 'ssl'; // 'ssl' or 'tls'
+
+async function verifyEmailConnection() {
+  if (!process.env.ZOHO_APP_PASSWORD) {
     console.warn('⚠️  Email service not configured. Set ZOHO_APP_PASSWORD in environment variables.');
     console.warn('   Email notifications will be disabled until configured.');
-  } else {
-    console.log('✅ Email service ready (Zoho SMTP)');
+    return false;
   }
-});
+
+  // Try SSL first (port 465)
+  try {
+    await new Promise((resolve, reject) => {
+      transporter.verify((error, success) => {
+        if (error) reject(error);
+        else resolve(success);
+      });
+    });
+    emailServiceReady = true;
+    emailServiceMethod = 'ssl';
+    console.log('✅ Email service ready (Zoho SMTP - SSL on port 465)');
+    return true;
+  } catch (sslError) {
+    console.warn('⚠️  SSL connection failed, trying TLS (port 587)...');
+    
+    // Fallback to TLS (port 587)
+    try {
+      await new Promise((resolve, reject) => {
+        transporterTLS.verify((error, success) => {
+          if (error) reject(error);
+          else resolve(success);
+        });
+      });
+      emailServiceReady = true;
+      emailServiceMethod = 'tls';
+      console.log('✅ Email service ready (Zoho SMTP - TLS on port 587)');
+      return true;
+    } catch (tlsError) {
+      console.error('❌ Email connection failed:', {
+        ssl: sslError.message,
+        tls: tlsError.message
+      });
+      console.warn('⚠️  Email notifications will be disabled.');
+      console.warn('   This may be due to Railway network restrictions or SMTP configuration.');
+      console.warn('   Consider upgrading to Railway Pro plan or using a different email service.');
+      emailServiceReady = false;
+      return false;
+    }
+  }
+}
+
+// Verify connection on startup (non-blocking)
+setTimeout(() => {
+  verifyEmailConnection().catch(err => {
+    console.error('Email verification error:', err.message);
+  });
+}, 2000); // Wait 2 seconds for server to fully start
 
 // ===== EMAIL TEMPLATES =====
 const emailTemplates = {
@@ -50,25 +123,63 @@ const emailTemplates = {
 };
 
 // ===== EMAIL UTILITY FUNCTIONS =====
-const sendEmail = async (to, subject, html) => {
+const sendEmail = async (to, subject, html, retries = 2) => {
   if (!process.env.ZOHO_APP_PASSWORD) {
     console.warn(`⚠️  Email not sent to ${to}: ZOHO_APP_PASSWORD not configured`);
     return { success: false, error: 'Email service not configured' };
   }
 
-  try {
-    await transporter.sendMail({
-      from: '"RealSphere Support" <support@realsphereltd.com>',
-      to,
-      subject,
-      html
-    });
-    console.log(`✅ Email sent to ${to}`);
-    return { success: true };
-  } catch (error) {
-    console.error(`❌ Email send error to ${to}:`, error.message);
-    return { success: false, error: error.message };
+  if (!emailServiceReady) {
+    // Try to verify connection again if not ready
+    const verified = await verifyEmailConnection();
+    if (!verified) {
+      console.warn(`⚠️  Email not sent to ${to}: Email service not ready`);
+      return { success: false, error: 'Email service not ready' };
+    }
   }
+
+  // Select transporter based on working method
+  const activeTransporter = emailServiceMethod === 'tls' ? transporterTLS : transporter;
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await activeTransporter.sendMail({
+        from: '"RealSphere Support" <support@realsphereltd.com>',
+        to,
+        subject,
+        html,
+        connectionTimeout: 20000,
+        socketTimeout: 20000
+      });
+      console.log(`✅ Email sent to ${to} (attempt ${attempt})`);
+      return { success: true };
+    } catch (error) {
+      const errorMsg = error.message || 'Unknown error';
+      console.error(`❌ Email send error to ${to} (attempt ${attempt}/${retries}):`, errorMsg);
+      
+      // If SSL fails and we haven't tried TLS yet, switch to TLS
+      if (attempt === 1 && emailServiceMethod === 'ssl' && 
+          (errorMsg.includes('timeout') || errorMsg.includes('ECONNREFUSED'))) {
+        console.log('⚠️  Retrying with TLS (port 587)...');
+        emailServiceMethod = 'tls';
+        emailServiceReady = false;
+        const verified = await verifyEmailConnection();
+        if (verified) {
+          continue; // Retry with TLS
+        }
+      }
+      
+      // Last attempt failed
+      if (attempt === retries) {
+        return { success: false, error: errorMsg };
+      }
+      
+      // Wait before retry (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+    }
+  }
+  
+  return { success: false, error: 'All retry attempts failed' };
 };
 
 const sendAdminEmail = async (subject, message, type = 'info', details = {}) => {
