@@ -452,6 +452,7 @@
       if (Array.isArray(transactions)) {
         transactions.forEach((txn) => {
           if (txn) {
+            console.log('[Dashboard] Processing transaction:', txn.type, txn.amount, txn);
             allTransactions.push({
               type: txn.type || 'transaction',
               amount: txn.amount || 0,
@@ -463,6 +464,16 @@
             });
           }
         });
+        
+        // Log registration bonuses specifically
+        const regBonuses = transactions.filter(t => t.type === 'registration_bonus');
+        if (regBonuses.length > 0) {
+          console.log(`[Dashboard] Found ${regBonuses.length} registration bonus transaction(s):`, regBonuses);
+        } else {
+          console.log('[Dashboard] No registration bonus transactions found in transactions array');
+        }
+      } else {
+        console.warn('[Dashboard] Transactions is not an array:', transactions);
       }
       
       // Sort by date (newest first)

@@ -1607,6 +1607,13 @@ app.get('/api/user/:email', async (req, res) => {
         console.log(`[API] User ${user.id} (${user.email}) - Found ${transactions.length} transactions`);
         if (transactions.length > 0) {
             console.log('[API] Sample transaction:', transactions[0]);
+            // Log registration bonuses specifically
+            const regBonuses = transactions.filter(t => t.type === 'registration_bonus');
+            if (regBonuses.length > 0) {
+                console.log(`[API] Found ${regBonuses.length} registration bonus(es):`, regBonuses);
+            } else {
+                console.log(`[API] No registration bonus found for user ${user.id}`);
+            }
         }
         
         // Calculate total_deposits from approved deposits only
@@ -2170,11 +2177,23 @@ app.post('/admin/approve', [
             const insertResult = await pool.query(
                 `INSERT INTO transactions (user_id, type, amount, currency, status, description, created_at)
                  VALUES ($1, $2, $3, $4, $5, $6, NOW())
-                 RETURNING id, created_at`,
+                 RETURNING id, type, amount, currency, status, description, created_at`,
                 [user.id, 'registration_bonus', registrationBonus, 'USD', 'completed', 'Registration Bonus - Welcome to RealSphere']
             );
             
-            console.log(`[Admin] Registration bonus transaction created:`, insertResult.rows[0]);
+            const createdTransaction = insertResult.rows[0];
+            console.log(`[Admin] Registration bonus transaction created:`, createdTransaction);
+            
+            // Verify transaction was created by querying it back
+            const { rows: verifyTransaction } = await pool.query(
+                'SELECT * FROM transactions WHERE id = $1',
+                [createdTransaction.id]
+            );
+            if (verifyTransaction.length > 0) {
+                console.log(`[Admin] Verified transaction exists in database:`, verifyTransaction[0]);
+            } else {
+                console.error(`[Admin] ERROR: Transaction ${createdTransaction.id} not found after creation!`);
+            }
         } else {
             console.log(`[Admin] User ${user.id} already has bonus of $${currentBonus}, skipping registration bonus`);
         }
@@ -2235,11 +2254,23 @@ app.post('/api/admin/users/:id/approve', adminAuth, async (req, res) => {
             const insertResult = await pool.query(
                 `INSERT INTO transactions (user_id, type, amount, currency, status, description, created_at)
                  VALUES ($1, $2, $3, $4, $5, $6, NOW())
-                 RETURNING id, created_at`,
+                 RETURNING id, type, amount, currency, status, description, created_at`,
                 [user.id, 'registration_bonus', registrationBonus, 'USD', 'completed', 'Registration Bonus - Welcome to RealSphere']
             );
             
-            console.log(`[Admin] Registration bonus transaction created:`, insertResult.rows[0]);
+            const createdTransaction = insertResult.rows[0];
+            console.log(`[Admin] Registration bonus transaction created:`, createdTransaction);
+            
+            // Verify transaction was created by querying it back
+            const { rows: verifyTransaction } = await pool.query(
+                'SELECT * FROM transactions WHERE id = $1',
+                [createdTransaction.id]
+            );
+            if (verifyTransaction.length > 0) {
+                console.log(`[Admin] Verified transaction exists in database:`, verifyTransaction[0]);
+            } else {
+                console.error(`[Admin] ERROR: Transaction ${createdTransaction.id} not found after creation!`);
+            }
         } else {
             console.log(`[Admin] User ${user.id} already has bonus of $${currentBonus}, skipping registration bonus`);
         }
