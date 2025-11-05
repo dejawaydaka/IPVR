@@ -135,9 +135,9 @@ body {
         padding: 0.35rem 10px;
     }
     
-    /* Increase logo size on mobile header by 150% */
+    /* Increase logo size on mobile header by 150% (from original 87px) */
     .header .nav-brand .logo img {
-        height: 108.75px !important;
+        height: 217.5px !important;
     }
 }
 
