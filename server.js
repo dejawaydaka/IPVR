@@ -2832,14 +2832,26 @@ app.post('/api/admin/broadcast-email', adminAuth, [
     }
 });
 
-// 404 handler - must be after all routes
-app.get('*', (req, res) => {
-  // Only handle HTML requests with 404.html, let API calls return JSON 404
+// 404 handler - must be after all routes (catch-all for unmatched routes)
+app.use((req, res, next) => {
+  // Skip if this is a static file request (handled by express.static)
+  // Only handle routes that don't match any defined endpoints
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'Not found', message: 'API endpoint not found', code: 'NOT_FOUND' });
   }
+  
   // For non-API routes, serve 404.html
-  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+  const filePath = path.join(__dirname, 'public', '404.html');
+  if (fs.existsSync(filePath)) {
+    res.status(404).sendFile(filePath, (err) => {
+      if (err) {
+        console.error('Error sending 404 page:', err);
+        res.status(404).send('404 - Page Not Found');
+      }
+    });
+  } else {
+    res.status(404).send('404 - Page Not Found');
+  }
 });
 
 // Start the server
