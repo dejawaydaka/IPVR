@@ -132,7 +132,7 @@ body {
 /* Mobile header: logo and menu parallel, reduced container, large logo */
 @media (max-width: 768px) {
     .header .container {
-        padding: 0.2rem 8px;
+        padding: 0.14rem 6px;
         align-items: center;
         justify-content: space-between;
     }
