@@ -620,32 +620,41 @@
         
         async function loadNews() {
             try {
+                console.log('[Homepage] Loading news articles...');
                 const res = await fetch('/api/news?limit=6');
                 if (!res.ok) {
                     throw new Error(`HTTP ${res.status}`);
                 }
-                const { news } = await res.json();
+                const data = await res.json();
+                // API returns { news: [...] }, extract the array
+                const news = data.news || data || [];
                 const container = document.getElementById('newsGrid');
                 
-                if (!container) return;
+                console.log('[Homepage] Loaded news articles:', news.length);
+                
+                if (!container) {
+                    console.error('[Homepage] News grid container not found');
+                    return;
+                }
                 
                 if (news && news.length > 0) {
                     container.innerHTML = news.map(article => {
                         const date = article.date ? new Date(article.date) : (article.created_at ? new Date(article.created_at) : new Date());
-                        const summary = (article.summary || '').substring(0, 150);
+                        const summary = (article.summary || article.description || '').substring(0, 150);
+                        const slug = article.slug || article.title?.toLowerCase().replace(/\s+/g, '-');
                         return `
-                            <article class="news-card glass" onclick="window.location.href='/news/${article.slug}.html'" style="cursor: pointer;">
+                            <article class="news-card glass" onclick="window.location.href='/news/${slug}.html'" style="cursor: pointer;">
                                 <div class="news-image">
-                                    <img src="${article.image_url || '/uploads/admin/default-news.jpg'}" alt="${escapeHTML(article.title)}" onerror="this.src='https://images.unsplash.com/photo-1504711434969-e33886168f5c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'">
+                                    <img src="${article.image_url || '/uploads/admin/default-news.jpg'}" alt="${escapeHTML(article.title || 'News Article')}" onerror="this.src='https://images.unsplash.com/photo-1504711434969-e33886168f5c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'">
                                 </div>
                                 <div class="news-content">
                                     <div class="news-meta">
                                         <span class="news-date"><i class="fas fa-calendar"></i> ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                         <span class="news-category">Insights</span>
                                     </div>
-                                    <h3>${escapeHTML(article.title)}</h3>
-                                    <p>${escapeHTML(summary)}${summary.length < (article.summary || '').length ? '...' : ''}</p>
-                                    <a href="/news/${article.slug}.html" class="read-btn" onclick="event.stopPropagation();">
+                                    <h3>${escapeHTML(article.title || 'News Article')}</h3>
+                                    <p>${escapeHTML(summary)}${summary.length < (article.summary || article.description || '').length ? '...' : ''}</p>
+                                    <a href="/news/${slug}.html" class="read-btn" onclick="event.stopPropagation();">
                                         <i class="fas fa-arrow-right"></i> Read More
                                     </a>
                                 </div>
@@ -653,13 +662,14 @@
                         `;
                     }).join('');
                 } else {
+                    console.warn('[Homepage] No news articles found');
                     container.innerHTML = '<div style="text-align: center; padding: 3rem; grid-column: 1/-1; color: rgba(255,255,255,0.7);"><i class="fas fa-newspaper" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No news available yet. Check back soon!</p></div>';
                 }
             } catch (err) {
-                console.error('Failed to load news:', err);
+                console.error('[Homepage] Failed to load news:', err);
                 const container = document.getElementById('newsGrid');
                 if (container) {
-                    container.innerHTML = '<div style="text-align: center; padding: 3rem; grid-column: 1/-1; color: rgba(255,255,255,0.7);"><p>Failed to load news. Please refresh the page.</p></div>';
+                    container.innerHTML = '<div style="text-align: center; padding: 3rem; grid-column: 1/-1; color: rgba(255,255,255,0.7);"><p>Failed to load news. Please refresh the page.</p><p style="font-size: 0.9rem; opacity: 0.6; margin-top: 0.5rem;">Error: ' + err.message + '</p></div>';
                 }
             }
         }
