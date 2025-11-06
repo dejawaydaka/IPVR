@@ -172,6 +172,14 @@
     document.addEventListener('DOMContentLoaded', () => {
       renderAdminSidebar('emails.html');
       loadNotificationSettings();
+      
+      // Hide loading overlay after 1 second
+      setTimeout(() => {
+        const overlay = document.getElementById('loadingOverlay');
+        if (overlay) {
+          overlay.classList.add('hidden');
+        }
+      }, 1000);
     });
 
     function refreshEmailData() {
