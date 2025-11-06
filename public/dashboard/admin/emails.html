@@ -8,8 +8,8 @@
   <link rel="stylesheet" href="../style.css">
 </head>
 <body>
-  <!-- Loading Overlay -->
-  <div class="loading-overlay" id="loadingOverlay">
+  <!-- Loading Overlay - Hidden by default -->
+  <div class="loading-overlay hidden" id="loadingOverlay" style="display: none !important;">
     <div class="spinner"></div>
   </div>
   
@@ -168,18 +168,42 @@
       window.location.href = '../admin-login.html';
     }
 
+    // Hide loading overlay immediately - multiple methods to ensure it works
+    function hideLoadingOverlay() {
+      const overlay = document.getElementById('loadingOverlay');
+      if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.style.display = 'none';
+        overlay.style.visibility = 'hidden';
+        overlay.style.opacity = '0';
+      }
+      // Also use showLoading function if available
+      if (typeof showLoading === 'function') {
+        showLoading(false);
+      }
+    }
+
+    // Hide overlay immediately - no delay
+    hideLoadingOverlay();
+
+    // Also hide on DOMContentLoaded as backup
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', hideLoadingOverlay);
+    } else {
+      // Page already loaded, hide immediately
+      hideLoadingOverlay();
+    }
+
+    // Also hide on window load as backup
+    window.addEventListener('load', hideLoadingOverlay);
+
+    // Final safety: hide after 1 second maximum
+    setTimeout(hideLoadingOverlay, 1000);
+
     // Initialize sidebar
     document.addEventListener('DOMContentLoaded', () => {
       renderAdminSidebar('emails.html');
       loadNotificationSettings();
-      
-      // Hide loading overlay after 1 second
-      setTimeout(() => {
-        const overlay = document.getElementById('loadingOverlay');
-        if (overlay) {
-          overlay.classList.add('hidden');
-        }
-      }, 1000);
     });
 
     function refreshEmailData() {
