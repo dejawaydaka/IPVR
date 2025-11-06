@@ -164,9 +164,9 @@ VALUES
 (
   'Real Estate Market Shows Strong Growth in Q1 2025',
   'The real estate market continues its upward trajectory with commercial and residential properties showing significant appreciation. Experts predict sustained growth through 2025.',
+  '<p>The first quarter of 2025 has shown remarkable strength in the real estate market, with both commercial and residential sectors experiencing significant growth. According to industry analysts, average property values have increased by 8.5% year-over-year, outpacing inflation and providing strong returns for investors.</p><p><strong>Key Highlights:</strong></p><ul><li>Commercial real estate values up 9.2%</li><li>Residential properties appreciating at 7.8%</li><li>Rental yields remain strong at 5-7%</li><li>Inventory levels stabilizing</li></ul><p>Market experts attribute this growth to several factors including low interest rates, strong economic fundamentals, and increasing demand for quality properties. The outlook for the remainder of 2025 remains positive, with continued growth expected in prime locations.</p>',
   'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
   'real-estate-market-shows-strong-growth-in-q1-2025',
-  '<p>The first quarter of 2025 has shown remarkable strength in the real estate market, with both commercial and residential sectors experiencing significant growth. According to industry analysts, average property values have increased by 8.5% year-over-year, outpacing inflation and providing strong returns for investors.</p><p><strong>Key Highlights:</strong></p><ul><li>Commercial real estate values up 9.2%</li><li>Residential properties appreciating at 7.8%</li><li>Rental yields remain strong at 5-7%</li><li>Inventory levels stabilizing</li></ul><p>Market experts attribute this growth to several factors including low interest rates, strong economic fundamentals, and increasing demand for quality properties. The outlook for the remainder of 2025 remains positive, with continued growth expected in prime locations.</p>',
   NOW(),
   NOW()
 )
