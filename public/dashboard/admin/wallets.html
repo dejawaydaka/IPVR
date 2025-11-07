@@ -69,6 +69,15 @@
           <input type="text" id="walletAddress" required>
         </div>
         <div class="form-group">
+          <label>Coin Logo</label>
+          <input type="file" id="walletLogoFile" accept="image/*">
+          <div id="walletLogoPreview" style="margin-top: 1rem; display: none;">
+            <img id="walletLogoPreviewImg" src="" alt="Logo Preview" style="max-width: 100px; height: 100px; object-fit: contain; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); padding: 10px;">
+          </div>
+          <input type="hidden" id="walletLogoUrl">
+          <small style="color: rgba(255,255,255,0.6); margin-top: 0.5rem; display: block;">Upload a logo for this cryptocurrency (e.g., Bitcoin, Ethereum). This will display on the user dashboard.</small>
+        </div>
+        <div class="form-group">
           <label>QR Code Image</label>
           <input type="file" id="walletQrFile" accept="image/*">
           <div id="walletQrPreview" style="margin-top: 1rem; display: none;">

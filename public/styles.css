@@ -1752,7 +1752,7 @@ body {
     transform: translateY(-50%);
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.7);
+    color: #000;
     cursor: pointer;
     padding: 4px 8px;
     font-size: 1rem;
@@ -1760,8 +1760,16 @@ body {
     z-index: 10;
 }
 
+.password-toggle i {
+    color: #000 !important;
+}
+
 .password-toggle:hover {
-    color: rgba(255, 255, 255, 1);
+    color: #333;
+}
+
+.password-toggle:hover i {
+    color: #333 !important;
 }
 
 /* Responsive Design */

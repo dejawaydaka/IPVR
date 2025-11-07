@@ -533,7 +533,7 @@ function renderWallets(wallets) {
       <td style="font-family: monospace; font-size: 0.85rem;">${wallet.address.substring(0, 30)}...</td>
       <td>${wallet.qr_url ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times"></i>'}</td>
       <td>
-        <button class="btn btn-primary btn-sm" onclick="editWallet(${wallet.id}, '${wallet.coin_name}', '${wallet.address}', '${wallet.qr_url || ''}')">
+        <button class="btn btn-primary btn-sm" onclick="editWallet(${wallet.id}, '${wallet.coin_name}', '${wallet.address}', '${wallet.qr_url || ''}', '${wallet.logo_url || ''}')">
           <i class="fas fa-edit"></i> Edit
         </button>
       </td>
@@ -662,6 +662,23 @@ async function uploadImage(file, type = 'admin') {
 // Setup image preview handlers
 function setupImagePreviews() {
   // Wallet QR
+  // Wallet Logo
+  const walletLogoFile = document.getElementById('walletLogoFile');
+  if (walletLogoFile) {
+    walletLogoFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          document.getElementById('walletLogoPreviewImg').src = event.target.result;
+          document.getElementById('walletLogoPreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+  
+  // Wallet QR Code
   const walletQrFile = document.getElementById('walletQrFile');
   if (walletQrFile) {
     walletQrFile.addEventListener('change', (e) => {
@@ -727,15 +744,25 @@ function setupImagePreviews() {
 }
 
 // Wallet management
-function openWalletModal(id = null, coinName = '', address = '', qrUrl = '') {
+function openWalletModal(id = null, coinName = '', address = '', qrUrl = '', logoUrl = '') {
   document.getElementById('walletId').value = id || '';
   document.getElementById('walletCoinName').value = coinName;
   document.getElementById('walletAddress').value = address;
   document.getElementById('walletQrUrl').value = qrUrl || '';
+  document.getElementById('walletLogoUrl').value = logoUrl || '';
   document.getElementById('walletQrFile').value = '';
+  document.getElementById('walletLogoFile').value = '';
   document.getElementById('walletModalTitle').textContent = id ? 'Edit Wallet' : 'Add Wallet';
   
-  // Show preview if URL exists
+  // Show logo preview if URL exists
+  if (logoUrl) {
+    document.getElementById('walletLogoPreviewImg').src = logoUrl;
+    document.getElementById('walletLogoPreview').style.display = 'block';
+  } else {
+    document.getElementById('walletLogoPreview').style.display = 'none';
+  }
+  
+  // Show QR preview if URL exists
   if (qrUrl) {
     document.getElementById('walletQrPreviewImg').src = qrUrl;
     document.getElementById('walletQrPreview').style.display = 'block';
@@ -746,8 +773,8 @@ function openWalletModal(id = null, coinName = '', address = '', qrUrl = '') {
   openModal('walletModal');
 }
 
-function editWallet(id, coinName, address, qrUrl) {
-  openWalletModal(id, coinName, address, qrUrl);
+function editWallet(id, coinName, address, qrUrl, logoUrl = '') {
+  openWalletModal(id, coinName, address, qrUrl, logoUrl);
 }
 
 async function saveWallet(e) {
@@ -758,10 +785,20 @@ async function saveWallet(e) {
   const coinName = document.getElementById('walletCoinName').value;
   const address = document.getElementById('walletAddress').value;
   const qrFile = document.getElementById('walletQrFile').files[0];
+  const logoFile = document.getElementById('walletLogoFile').files[0];
   let qrUrl = document.getElementById('walletQrUrl').value;
+  let logoUrl = document.getElementById('walletLogoUrl').value;
   
   try {
-    // Upload image if new file selected
+    // Upload logo if new file selected
+    if (logoFile) {
+      const uploadedUrl = await uploadImage(logoFile, 'wallet-logo');
+      if (uploadedUrl) {
+        logoUrl = uploadedUrl;
+      }
+    }
+    
+    // Upload QR code if new file selected
     if (qrFile) {
       const uploadedUrl = await uploadImage(qrFile, 'wallet-qr');
       if (uploadedUrl) {
@@ -772,7 +809,7 @@ async function saveWallet(e) {
     const res = await adminFetch('/api/admin/wallets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: id || null, coin_name: coinName, address, qr_url: qrUrl })
+      body: JSON.stringify({ id: id || null, coin_name: coinName, address, qr_url: qrUrl, logo_url: logoUrl })
     });
     
     if (res.ok) {

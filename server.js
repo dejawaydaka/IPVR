@@ -2689,7 +2689,10 @@ app.get('/api/wallets', async (req, res) => {
     }
 });
 
-app.post('/api/admin/wallets', adminAuth, adminUpload.single('qr_code'), [
+app.post('/api/admin/wallets', adminAuth, adminUpload.fields([
+    { name: 'qr_code', maxCount: 1 },
+    { name: 'logo', maxCount: 1 }
+]), [
     body('coin_name').notEmpty(),
     body('address').notEmpty()
 ], async (req, res) => {
@@ -2699,12 +2702,18 @@ app.post('/api/admin/wallets', adminAuth, adminUpload.single('qr_code'), [
     }
     
     try {
-        const { coin_name, address, qr_url, id } = req.body;
+        const { coin_name, address, qr_url, logo_url, id } = req.body;
         
         // Handle QR code file upload
         let qrCodeUrl = qr_url || null;
-        if (req.file) {
-            qrCodeUrl = `/uploads/admin/${req.file.filename}`;
+        if (req.files && req.files['qr_code'] && req.files['qr_code'][0]) {
+            qrCodeUrl = `/uploads/admin/${req.files['qr_code'][0].filename}`;
+        }
+        
+        // Handle logo file upload
+        let logoUrl = logo_url || null;
+        if (req.files && req.files['logo'] && req.files['logo'][0]) {
+            logoUrl = `/uploads/admin/${req.files['logo'][0].filename}`;
         }
         
         // Check if wallet exists (by ID if provided, or by coin_name)
@@ -2719,10 +2728,10 @@ app.post('/api/admin/wallets', adminAuth, adminUpload.single('qr_code'), [
         
         if (existing.length > 0) {
             // Update existing
-            if (qrCodeUrl) {
+            if (qrCodeUrl || logoUrl) {
                 await pool.query(
-                    'UPDATE wallets SET coin_name = $1, address = $2, qr_url = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4',
-                    [coin_name, address, qrCodeUrl, existing[0].id]
+                    'UPDATE wallets SET coin_name = $1, address = $2, qr_url = COALESCE($3, qr_url), logo_url = COALESCE($4, logo_url), updated_at = CURRENT_TIMESTAMP WHERE id = $5',
+                    [coin_name, address, qrCodeUrl, logoUrl, existing[0].id]
                 );
             } else {
                 await pool.query(
@@ -2734,8 +2743,8 @@ app.post('/api/admin/wallets', adminAuth, adminUpload.single('qr_code'), [
         } else {
             // Create new
             await pool.query(
-                'INSERT INTO wallets (coin_name, address, qr_url) VALUES ($1, $2, $3)',
-                [coin_name, address, qrCodeUrl]
+                'INSERT INTO wallets (coin_name, address, qr_url, logo_url) VALUES ($1, $2, $3, $4)',
+                [coin_name, address, qrCodeUrl, logoUrl]
             );
             res.json({ message: 'Wallet added successfully' });
         }
