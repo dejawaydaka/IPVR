@@ -136,23 +136,24 @@
             name: wallet.coin_name,
             symbol: wallet.coin_name.split(' ')[0].toUpperCase(),
             address: wallet.address,
-            qr_url: wallet.qr_url
+            qr_url: wallet.qr_url,
+            logo_url: wallet.logo_url || null
           }));
         } else {
           // Fallback if API fails
           depositMethods = [
-            { name: 'Bitcoin (BTC)', symbol: 'BTC', address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', qr_url: '' },
-            { name: 'Ethereum (ETH)', symbol: 'ETH', address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb', qr_url: '' },
-            { name: 'USDT (TRC20)', symbol: 'USDT', address: 'TQzKjJmhUjq2sVtXwYzAbCdEfGhIjKlMn', qr_url: '' }
+            { name: 'Bitcoin (BTC)', symbol: 'BTC', address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', qr_url: '', logo_url: null },
+            { name: 'Ethereum (ETH)', symbol: 'ETH', address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb', qr_url: '', logo_url: null },
+            { name: 'USDT (TRC20)', symbol: 'USDT', address: 'TQzKjJmhUjq2sVtXwYzAbCdEfGhIjKlMn', qr_url: '', logo_url: null }
           ];
         }
       } catch (error) {
         console.error('Failed to load wallets:', error);
         // Fallback
         depositMethods = [
-          { name: 'Bitcoin (BTC)', symbol: 'BTC', address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', qr_url: '' },
-          { name: 'Ethereum (ETH)', symbol: 'ETH', address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb', qr_url: '' },
-          { name: 'USDT (TRC20)', symbol: 'USDT', address: 'TQzKjJmhUjq2sVtXwYzAbCdEfGhIjKlMn', qr_url: '' }
+          { name: 'Bitcoin (BTC)', symbol: 'BTC', address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', qr_url: '', logo_url: null },
+          { name: 'Ethereum (ETH)', symbol: 'ETH', address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb', qr_url: '', logo_url: null },
+          { name: 'USDT (TRC20)', symbol: 'USDT', address: 'TQzKjJmhUjq2sVtXwYzAbCdEfGhIjKlMn', qr_url: '', logo_url: null }
         ];
       }
       renderCryptoMethods();
@@ -174,7 +175,10 @@
       grid.innerHTML = depositMethods.map((crypto, index) => `
         <div class="crypto-card" style="animation-delay: ${index * 0.1}s">
           <div class="crypto-icon">
-            <i class="fab fa-${crypto.symbol === 'BTC' ? 'bitcoin' : crypto.symbol === 'ETH' ? 'ethereum' : crypto.symbol === 'USDT' ? 'coins' : 'coins'}"></i>
+            ${crypto.logo_url ? 
+              `<img src="${crypto.logo_url}" alt="${crypto.name}" style="width: 60px; height: 60px; object-fit: contain; border-radius: 50%; background: rgba(255,255,255,0.05); padding: 8px;">` : 
+              `<i class="fab fa-${crypto.symbol === 'BTC' ? 'bitcoin' : crypto.symbol === 'ETH' ? 'ethereum' : crypto.symbol === 'USDT' ? 'coins' : 'coins'}"></i>`
+            }
           </div>
           <div class="crypto-name">${crypto.name}</div>
           <div class="crypto-symbol">${crypto.symbol}</div>
