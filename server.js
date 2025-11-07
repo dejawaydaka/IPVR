@@ -651,7 +651,13 @@ const walletStorage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         // Use coin name in filename for better organization and persistence
-        const coinName = req.body.coin_name ? req.body.coin_name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase() : 'wallet';
+        // Handle both JSON and FormData (FormData sends as string)
+        let coinName = 'wallet';
+        if (req.body && req.body.coin_name) {
+            coinName = typeof req.body.coin_name === 'string' 
+                ? req.body.coin_name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()
+                : String(req.body.coin_name).replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+        }
         const fieldType = file.fieldname === 'logo' ? 'logo' : 'qr';
         const ext = path.extname(file.originalname);
         const filename = `${coinName}_${fieldType}${ext}`;
