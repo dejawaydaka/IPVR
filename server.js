@@ -417,9 +417,19 @@ async function ensureSchema() {
       coin_name VARCHAR(100) NOT NULL UNIQUE,
       address TEXT NOT NULL,
       qr_url TEXT,
+      logo_url TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );`;
+    );
+    
+    -- Add logo_url column if it doesn't exist (for existing databases)
+    DO $$ 
+    BEGIN 
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'wallets' AND column_name = 'logo_url') THEN
+        ALTER TABLE wallets ADD COLUMN logo_url TEXT;
+      END IF;
+    END $$;`;
 
   const createProjects = `
     CREATE TABLE IF NOT EXISTS projects (
@@ -2702,6 +2712,21 @@ app.post('/api/admin/wallets', adminAuth, adminUpload.fields([
     }
     
     try {
+        // Ensure logo_url column exists
+        try {
+            await pool.query(`
+                DO $$ 
+                BEGIN 
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                                   WHERE table_name = 'wallets' AND column_name = 'logo_url') THEN
+                        ALTER TABLE wallets ADD COLUMN logo_url TEXT;
+                    END IF;
+                END $$;
+            `);
+        } catch (migrationErr) {
+            console.warn('Logo URL column migration check:', migrationErr.message);
+        }
+        
         const { coin_name, address, qr_url, logo_url, id } = req.body;
         
         // Handle QR code file upload
@@ -2727,30 +2752,69 @@ app.post('/api/admin/wallets', adminAuth, adminUpload.fields([
         }
         
         if (existing.length > 0) {
-            // Update existing
-            if (qrCodeUrl || logoUrl) {
-                await pool.query(
-                    'UPDATE wallets SET coin_name = $1, address = $2, qr_url = COALESCE($3, qr_url), logo_url = COALESCE($4, logo_url), updated_at = CURRENT_TIMESTAMP WHERE id = $5',
-                    [coin_name, address, qrCodeUrl, logoUrl, existing[0].id]
-                );
+            // Update existing - check if logo_url column exists before using it
+            const { rows: columnCheck } = await pool.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'wallets' AND column_name = 'logo_url'
+            `);
+            
+            if (columnCheck.length > 0) {
+                // Column exists, use it
+                if (qrCodeUrl || logoUrl) {
+                    await pool.query(
+                        'UPDATE wallets SET coin_name = $1, address = $2, qr_url = COALESCE($3, qr_url), logo_url = COALESCE($4, logo_url), updated_at = CURRENT_TIMESTAMP WHERE id = $5',
+                        [coin_name, address, qrCodeUrl, logoUrl, existing[0].id]
+                    );
+                } else {
+                    await pool.query(
+                        'UPDATE wallets SET coin_name = $1, address = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+                        [coin_name, address, existing[0].id]
+                    );
+                }
             } else {
-                await pool.query(
-                    'UPDATE wallets SET coin_name = $1, address = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
-                    [coin_name, address, existing[0].id]
-                );
+                // Column doesn't exist, add it first
+                await pool.query('ALTER TABLE wallets ADD COLUMN IF NOT EXISTS logo_url TEXT');
+                if (qrCodeUrl || logoUrl) {
+                    await pool.query(
+                        'UPDATE wallets SET coin_name = $1, address = $2, qr_url = COALESCE($3, qr_url), logo_url = COALESCE($4, logo_url), updated_at = CURRENT_TIMESTAMP WHERE id = $5',
+                        [coin_name, address, qrCodeUrl, logoUrl, existing[0].id]
+                    );
+                } else {
+                    await pool.query(
+                        'UPDATE wallets SET coin_name = $1, address = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+                        [coin_name, address, existing[0].id]
+                    );
+                }
             }
             res.json({ message: 'Wallet updated successfully' });
         } else {
-            // Create new
-            await pool.query(
-                'INSERT INTO wallets (coin_name, address, qr_url, logo_url) VALUES ($1, $2, $3, $4)',
-                [coin_name, address, qrCodeUrl, logoUrl]
-            );
+            // Create new - check if logo_url column exists
+            const { rows: columnCheck } = await pool.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'wallets' AND column_name = 'logo_url'
+            `);
+            
+            if (columnCheck.length > 0) {
+                // Column exists, use it
+                await pool.query(
+                    'INSERT INTO wallets (coin_name, address, qr_url, logo_url) VALUES ($1, $2, $3, $4)',
+                    [coin_name, address, qrCodeUrl, logoUrl]
+                );
+            } else {
+                // Column doesn't exist, add it first
+                await pool.query('ALTER TABLE wallets ADD COLUMN IF NOT EXISTS logo_url TEXT');
+                await pool.query(
+                    'INSERT INTO wallets (coin_name, address, qr_url, logo_url) VALUES ($1, $2, $3, $4)',
+                    [coin_name, address, qrCodeUrl, logoUrl]
+                );
+            }
             res.json({ message: 'Wallet added successfully' });
         }
     } catch (err) {
         console.error('Wallet management error:', err);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error: ' + err.message });
     }
 });
 
