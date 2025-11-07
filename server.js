@@ -640,6 +640,37 @@ const adminUpload = multer({
     }
 });
 
+// Setup multer specifically for wallet assets (logos and QR codes) - stored in tracked directory
+const walletStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const walletPath = path.join(__dirname, 'public', 'wallet-assets');
+        if (!fs.existsSync(walletPath)) {
+            fs.mkdirSync(walletPath, { recursive: true });
+        }
+        cb(null, walletPath);
+    },
+    filename: (req, file, cb) => {
+        // Use coin name in filename for better organization and persistence
+        const coinName = req.body.coin_name ? req.body.coin_name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase() : 'wallet';
+        const fieldType = file.fieldname === 'logo' ? 'logo' : 'qr';
+        const ext = path.extname(file.originalname);
+        const filename = `${coinName}_${fieldType}${ext}`;
+        cb(null, filename);
+    }
+});
+
+const walletUpload = multer({
+    storage: walletStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'));
+        }
+    }
+});
+
 // Middleware to serve static files
 app.use(express.static('public'));
 
@@ -2699,7 +2730,7 @@ app.get('/api/wallets', async (req, res) => {
     }
 });
 
-app.post('/api/admin/wallets', adminAuth, adminUpload.fields([
+app.post('/api/admin/wallets', adminAuth, walletUpload.fields([
     { name: 'qr_code', maxCount: 1 },
     { name: 'logo', maxCount: 1 }
 ]), [
@@ -2729,16 +2760,16 @@ app.post('/api/admin/wallets', adminAuth, adminUpload.fields([
         
         const { coin_name, address, qr_url, logo_url, id } = req.body;
         
-        // Handle QR code file upload
+        // Handle QR code file upload - use wallet-assets directory (tracked in git)
         let qrCodeUrl = qr_url || null;
         if (req.files && req.files['qr_code'] && req.files['qr_code'][0]) {
-            qrCodeUrl = `/uploads/admin/${req.files['qr_code'][0].filename}`;
+            qrCodeUrl = `/wallet-assets/${req.files['qr_code'][0].filename}`;
         }
         
-        // Handle logo file upload
+        // Handle logo file upload - use wallet-assets directory (tracked in git)
         let logoUrl = logo_url || null;
         if (req.files && req.files['logo'] && req.files['logo'][0]) {
-            logoUrl = `/uploads/admin/${req.files['logo'][0].filename}`;
+            logoUrl = `/wallet-assets/${req.files['logo'][0].filename}`;
         }
         
         // Check if wallet exists (by ID if provided, or by coin_name)
@@ -2760,32 +2791,19 @@ app.post('/api/admin/wallets', adminAuth, adminUpload.fields([
             `);
             
             if (columnCheck.length > 0) {
-                // Column exists, use it
-                if (qrCodeUrl || logoUrl) {
-                    await pool.query(
-                        'UPDATE wallets SET coin_name = $1, address = $2, qr_url = COALESCE($3, qr_url), logo_url = COALESCE($4, logo_url), updated_at = CURRENT_TIMESTAMP WHERE id = $5',
-                        [coin_name, address, qrCodeUrl, logoUrl, existing[0].id]
-                    );
-                } else {
-                    await pool.query(
-                        'UPDATE wallets SET coin_name = $1, address = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
-                        [coin_name, address, existing[0].id]
-                    );
-                }
+                // Column exists, use it - preserve existing URLs if new ones not provided
+                // Use COALESCE to keep existing value if new value is null
+                await pool.query(
+                    'UPDATE wallets SET coin_name = $1, address = $2, qr_url = COALESCE(NULLIF($3, \'\'), qr_url), logo_url = COALESCE(NULLIF($4, \'\'), logo_url), updated_at = CURRENT_TIMESTAMP WHERE id = $5',
+                    [coin_name, address, qrCodeUrl || null, logoUrl || null, existing[0].id]
+                );
             } else {
                 // Column doesn't exist, add it first
                 await pool.query('ALTER TABLE wallets ADD COLUMN IF NOT EXISTS logo_url TEXT');
-                if (qrCodeUrl || logoUrl) {
-                    await pool.query(
-                        'UPDATE wallets SET coin_name = $1, address = $2, qr_url = COALESCE($3, qr_url), logo_url = COALESCE($4, logo_url), updated_at = CURRENT_TIMESTAMP WHERE id = $5',
-                        [coin_name, address, qrCodeUrl, logoUrl, existing[0].id]
-                    );
-                } else {
-                    await pool.query(
-                        'UPDATE wallets SET coin_name = $1, address = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
-                        [coin_name, address, existing[0].id]
-                    );
-                }
+                await pool.query(
+                    'UPDATE wallets SET coin_name = $1, address = $2, qr_url = COALESCE(NULLIF($3, \'\'), qr_url), logo_url = COALESCE(NULLIF($4, \'\'), logo_url), updated_at = CURRENT_TIMESTAMP WHERE id = $5',
+                    [coin_name, address, qrCodeUrl || null, logoUrl || null, existing[0].id]
+                );
             }
             res.json({ message: 'Wallet updated successfully' });
         } else {

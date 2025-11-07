@@ -30,6 +30,9 @@ public/uploads/*.png
 public/uploads/*.gif
 public/uploads/proofs/*
 
+# Wallet assets are tracked in git (NOT ignored) - they persist across deployments
+# public/wallet-assets/* is intentionally NOT in .gitignore
+
 # Server PID
 server.pid
 

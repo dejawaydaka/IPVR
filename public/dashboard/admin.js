@@ -790,26 +790,31 @@ async function saveWallet(e) {
   let logoUrl = document.getElementById('walletLogoUrl').value;
   
   try {
-    // Upload logo if new file selected
-    if (logoFile) {
-      const uploadedUrl = await uploadImage(logoFile, 'wallet-logo');
-      if (uploadedUrl) {
-        logoUrl = uploadedUrl;
-      }
+    // Use FormData to send files directly to wallet endpoint (uses wallet-assets directory)
+    const formData = new FormData();
+    formData.append('id', id || '');
+    formData.append('coin_name', coinName);
+    formData.append('address', address);
+    
+    // Only send existing URLs if no new file is being uploaded
+    if (!logoFile && logoUrl) {
+      formData.append('logo_url', logoUrl);
+    }
+    if (!qrFile && qrUrl) {
+      formData.append('qr_url', qrUrl);
     }
     
-    // Upload QR code if new file selected
+    // Append files if they exist
+    if (logoFile) {
+      formData.append('logo', logoFile);
+    }
     if (qrFile) {
-      const uploadedUrl = await uploadImage(qrFile, 'wallet-qr');
-      if (uploadedUrl) {
-        qrUrl = uploadedUrl;
-      }
+      formData.append('qr_code', qrFile);
     }
     
     const res = await adminFetch('/api/admin/wallets', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: id || null, coin_name: coinName, address, qr_url: qrUrl, logo_url: logoUrl })
+      body: formData
     });
     
     if (res.ok) {
