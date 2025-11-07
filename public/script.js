@@ -128,6 +128,26 @@ class RealSphere {
             });
         });
 
+        // Modal switching - Login to Register
+        const showRegisterFromLogin = document.getElementById('showRegisterFromLogin');
+        if (showRegisterFromLogin) {
+            showRegisterFromLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.hideModal('loginModal');
+                setTimeout(() => this.showModal('registerModal'), 300);
+            });
+        }
+
+        // Modal switching - Register to Login
+        const showLoginFromRegister = document.getElementById('showLoginFromRegister');
+        if (showLoginFromRegister) {
+            showLoginFromRegister.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.hideModal('registerModal');
+                setTimeout(() => this.showModal('loginModal'), 300);
+            });
+        }
+
         // Form submissions
         const loginForm = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');

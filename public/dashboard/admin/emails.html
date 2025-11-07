@@ -202,8 +202,22 @@
 
     // Initialize sidebar
     document.addEventListener('DOMContentLoaded', () => {
-      renderAdminSidebar('emails.html');
+      const sidebarContainer = document.getElementById('sidebar-container');
+      if (sidebarContainer && typeof renderAdminSidebar === 'function') {
+        sidebarContainer.innerHTML = renderAdminSidebar('emails.html');
+      }
       loadNotificationSettings();
+      
+      // Setup mobile menu toggle
+      const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+      if (mobileMenuToggle) {
+        mobileMenuToggle.addEventListener('click', () => {
+          const sidebar = document.querySelector('.sidebar');
+          if (sidebar) {
+            sidebar.classList.toggle('active');
+          }
+        });
+      }
     });
 
     function refreshEmailData() {
