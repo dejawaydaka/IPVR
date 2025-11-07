@@ -200,13 +200,12 @@
     // Final safety: hide after 1 second maximum
     setTimeout(hideLoadingOverlay, 1000);
 
-    // Initialize sidebar
-    document.addEventListener('DOMContentLoaded', () => {
+    // Initialize sidebar using admin.js function
+    function initAdminDashboard() {
       const sidebarContainer = document.getElementById('sidebar-container');
       if (sidebarContainer && typeof renderAdminSidebar === 'function') {
         sidebarContainer.innerHTML = renderAdminSidebar('emails.html');
       }
-      loadNotificationSettings();
       
       // Setup mobile menu toggle
       const mobileMenuToggle = document.getElementById('mobileMenuToggle');
@@ -218,7 +217,18 @@
           }
         });
       }
-    });
+    }
+    
+    // Initialize on page load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        initAdminDashboard();
+        loadNotificationSettings();
+      });
+    } else {
+      initAdminDashboard();
+      loadNotificationSettings();
+    }
 
     function refreshEmailData() {
       loadNotificationSettings();
