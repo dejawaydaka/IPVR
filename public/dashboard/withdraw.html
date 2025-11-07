@@ -53,13 +53,13 @@
     <header>
       <h1>Withdraw Funds</h1>
       <div class="user-info">
-        <span id="availableProfit">Loading...</span>
+        <span id="availableBalance">Loading...</span>
       </div>
     </header>
 
     <div class="page-section">
       <h2>Request Withdrawal</h2>
-      <p style="margin-bottom: 2rem; opacity: 0.8;">Withdraw your profits to your cryptocurrency wallet</p>
+      <p style="margin-bottom: 2rem; opacity: 0.8;">Withdraw from your available balance to your cryptocurrency wallet</p>
       
       <div class="error-message" id="errorMessage"></div>
       <div class="success-message" id="successMessage"></div>
@@ -69,7 +69,7 @@
           <label for="withdrawAmount">Withdrawal Amount (USD)</label>
           <input type="number" id="withdrawAmount" placeholder="Enter amount" min="1" step="0.01" required>
           <small style="color: rgba(255,255,255,0.6); margin-top: 0.5rem; display: block;">
-            Available Profit: $<span id="availableProfitAmount">0.00</span>
+            Available Balance: $<span id="availableBalanceAmount">0.00</span>
           </small>
         </div>
 
@@ -136,10 +136,10 @@
 
       try {
         const userData = await fetchUserData(currentUser.email);
-        const totalProfit = Number(userData.totalProfit || 0);
+        const totalBalance = Number(userData.balance || 0);
         
-        document.getElementById('availableProfit').textContent = `Available Profit: $${totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        document.getElementById('availableProfitAmount').textContent = totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('availableBalance').textContent = `Available Balance: $${totalBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('availableBalanceAmount').textContent = totalBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         
         // Load withdrawal history
         const withdrawals = userData.withdrawals || [];
@@ -194,10 +194,10 @@
 
       try {
         const userData = await fetchUserData(currentUser.email);
-        const totalProfit = Number(userData.totalProfit || 0);
+        const totalBalance = Number(userData.balance || 0);
 
-        if (amount > totalProfit) {
-          showError(`Insufficient profit. Available: $${totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2})}`);
+        if (amount > totalBalance) {
+          showError(`Insufficient balance. Available: $${totalBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}`);
           return;
         }
 

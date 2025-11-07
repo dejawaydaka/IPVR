@@ -217,6 +217,16 @@ header h1 {
   gap: 0.25rem;
 }
 
+.user-info span {
+  padding-top: 0;
+}
+
+@media (max-width: 768px) {
+  .user-info span {
+    padding-top: 5%;
+  }
+}
+
 .user-info .user-role {
   font-size: 0.85rem;
   color: #4ef5a3;
