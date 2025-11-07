@@ -260,6 +260,13 @@ header h1 {
 .user-info span {
   font-weight: 500;
   color: rgba(255, 255, 255, 0.9);
+  padding-top: 0;
+}
+
+@media (max-width: 768px) {
+  .user-info span {
+    padding-top: 5%;
+  }
 }
 
 /* ===== METRICS GRID ===== */
