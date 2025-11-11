@@ -728,23 +728,24 @@ body.pricing-page .modal-content .summary-item strong {
   background: linear-gradient(135deg, rgba(30, 64, 45, 0.92), rgba(12, 31, 21, 0.9));
   border: 1px solid rgba(78, 245, 163, 0.35);
   border-radius: 18px;
-  padding: 1.25rem 1.5rem;
-  margin-bottom: 1.75rem;
+  padding: 0.9rem 1.3rem;
+  margin-bottom: 1.1rem;
   color: #f5fffb;
-  box-shadow: 0 18px 40px rgba(8, 20, 14, 0.35);
+  box-shadow: 0 14px 30px rgba(8, 20, 14, 0.28);
+  max-width: 398px;
 }
 
 .kyc-warning-content {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .kyc-warning-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
   background: rgba(78, 245, 163, 0.18);
   color: #4ef5a3;
   display: flex;
@@ -754,21 +755,21 @@ body.pricing-page .modal-content .summary-item strong {
 }
 
 .kyc-warning-text {
-  flex: 1 1 240px;
+  flex: 1 1 auto;
 }
 
 .kyc-warning-text strong {
   display: block;
-  font-size: 1.15rem;
-  margin-bottom: 0.25rem;
+  font-size: 1.05rem;
+  margin-bottom: 0.15rem;
   letter-spacing: 0.01em;
 }
 
 .kyc-warning-text p {
   margin: 0;
   color: rgba(255, 255, 255, 0.8);
-  line-height: 1.6;
-  font-size: 0.95rem;
+  line-height: 1.45;
+  font-size: 0.9rem;
 }
 
 .kyc-warning .btn {
@@ -884,45 +885,32 @@ body.pricing-page .modal-content .summary-item strong {
 
 .referral-card {
   display: flex;
-  gap: 1.5rem;
-  padding: 1.75rem;
+  gap: 1.25rem;
+  padding: 1.35rem 1.5rem;
   background: linear-gradient(135deg, rgba(30, 64, 45, 0.9), rgba(10, 25, 18, 0.95));
   border: 1px solid rgba(78, 245, 163, 0.2);
-  border-radius: 20px;
-  margin: 2rem 0;
+  border-radius: 18px;
+  margin: 1.5rem 0;
   color: #f0fff7;
-  box-shadow: 0 24px 60px rgba(8, 20, 14, 0.45);
+  box-shadow: 0 20px 45px rgba(8, 20, 14, 0.38);
+  max-width: 398px;
+  min-height: 300px;
 }
 
-.referral-content {
-  flex: 1 1 340px;
-}
-
-.referral-content h2 {
-  font-size: 1.75rem;
-  margin-bottom: 0.5rem;
-}
-
-.referral-content p {
-  margin-bottom: 1rem;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.referral-input {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.referral-input input {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.25);
-  color: #ffffff;
-}
+  .referral-content {
+    flex: 1 1 100%;
+  }
+  
+  .referral-card {
+    align-items: stretch;
+    min-height: auto;
+    max-width: 100%;
+  }
+  
+  .referral-status {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
 
 .referral-input input:focus {
   outline: none;
@@ -936,11 +924,13 @@ body.pricing-page .modal-content .summary-item strong {
 }
 
 .referral-status {
-  flex: 1 1 220px;
+  flex: 0 0 340px;
   background: rgba(0, 0, 0, 0.2);
-  border-radius: 16px;
-  padding: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  max-width: 340px;
+  min-height: 128px;
 }
 
 .referral-status h3 {

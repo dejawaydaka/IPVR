@@ -85,9 +85,9 @@ section {
 }
 
 .home-page .header .container {
-    padding: 1.4rem 28px;
+    padding: 1.6rem 36px;
     align-items: center;
-    gap: 2rem;
+    gap: 2.5rem;
 }
 
 .home-page .nav-link {
@@ -380,7 +380,7 @@ section {
 
 .home-page .nav-actions .translator-anchor {
     position: relative;
-    transform: translateY(100%);
+    transform: translateY(120%);
     margin-top: 0;
     width: auto;
 }
@@ -2355,7 +2355,7 @@ section {
 
     .home-page .mobile-menu-toggle {
         color: #ffffff;
-        transform: translateY(-50%);
+        transform: translateY(-43%);
     }
 
     .home-page .mobile-menu-toggle i {
