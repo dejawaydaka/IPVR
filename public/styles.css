@@ -2237,7 +2237,7 @@ section {
     }
 
     .home-page .hero-content {
-        transform: translateY(-12%);
+        transform: translateY(17%);
     }
 }
 
@@ -2277,7 +2277,7 @@ section {
 
     .home-page .hero-content {
         padding: 3rem 0 2.25rem;
-        transform: translateY(-20%);
+        transform: translateY(17%);
     }
 
     /* About page mobile responsive fixes */
@@ -2412,6 +2412,11 @@ section {
 @media (max-width: 480px) {
     .container {
         padding: 0 15px;
+    }
+    
+    .home-page .hero-content {
+        transform: translateY(17%);
+        padding: 2.5rem 0 1.75rem;
     }
     
     .hero-title {
