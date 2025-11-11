@@ -173,6 +173,7 @@
 
     const pricingGrid = document.getElementById('pricingGrid');
     let currentUser = null;
+    let currentUserData = null;
     let pricingOptions = [];
     let selectedPlan = null;
 
@@ -275,7 +276,24 @@
       renderPricing(pricingOptions);
     }
 
-    function openInvestModal(planName) {
+    const getStoredKycStatus = () => (localStorage.getItem('rs_kyc_status') || '').toLowerCase();
+
+    async function ensureUserData(forceRefresh = false) {
+      if (!currentUser) return null;
+      if (!forceRefresh && currentUserData) return currentUserData;
+      try {
+        currentUserData = await fetchUserData(currentUser.email);
+        if (currentUserData?.kycStatus) {
+          localStorage.setItem('rs_kyc_status', currentUserData.kycStatus.toLowerCase());
+        }
+      } catch (error) {
+        console.error('Error ensuring user data:', error);
+        if (!currentUserData) throw error;
+      }
+      return currentUserData;
+    }
+
+    async function openInvestModal(planName) {
       selectedPlan = pricingOptions.find(plan => plan.name === planName);
       if (!selectedPlan) {
         showError('Pricing option unavailable. Please refresh the page.');
@@ -284,6 +302,19 @@
 
       if (!currentUser) {
         showError('Please login to invest');
+        return;
+      }
+
+      let latestData = null;
+      try {
+        latestData = await ensureUserData();
+      } catch (err) {
+        console.error('Unable to load user data before investing:', err);
+      }
+
+      const kycStatus = (latestData?.kycStatus || getStoredKycStatus() || 'pending').toLowerCase();
+      if (kycStatus !== 'approved') {
+        showError('KYC verification is required before you can invest. Please complete your KYC on the dashboard.');
         return;
       }
 
@@ -301,7 +332,7 @@
     async function updateAvailableBalance() {
       if (!currentUser) return;
       try {
-        const userData = await fetchUserData(currentUser.email);
+        const userData = await ensureUserData(true);
         const totalProfit = Number(userData.totalProfit || 0);
         const balance = Number(userData.balance || 0);
         const totalInvestment = Number(userData.totalInvestment || 0);
@@ -332,11 +363,18 @@
       }
 
       try {
-        const userData = await fetchUserData(currentUser.email);
+        const userData = await ensureUserData(true);
         const totalProfit = Number(userData.totalProfit || 0);
         const balance = Number(userData.balance || 0);
         const totalInvestment = Number(userData.totalInvestment || 0);
         const available = balance + totalProfit - totalInvestment;
+        const status = (userData?.kycStatus || getStoredKycStatus() || 'pending').toLowerCase();
+
+        if (status !== 'approved') {
+          showError('Complete your KYC verification to unlock investments.');
+          closeModal('investModal');
+          return;
+        }
 
         if (amount > available) {
           showError(`Insufficient balance. Available: $${available.toLocaleString(undefined, { minimumFractionDigits: 2 })}`);
@@ -363,8 +401,14 @@
       currentUser = getCurrentUser();
       if (!currentUser) return;
 
-      await loadPricingOptions();
-      await updateAvailableBalance();
+        try {
+          await ensureUserData();
+        } catch (error) {
+          console.error('Initial user data load failed:', error);
+        }
+
+        await loadPricingOptions();
+        await updateAvailableBalance();
     });
   </script>
   

@@ -62,27 +62,16 @@
       <div class="header-spacer"></div>
     </header>
 
-    <div class="kyc-banner" id="kycBanner" style="display: none;">
-      <div class="kyc-banner-content">
-        <div class="kyc-banner-info">
-          <h3 id="kycBannerTitle">Complete Your KYC</h3>
-          <p id="kycBannerMessage">Upload a valid government-issued ID to unlock withdrawals and higher investment limits.</p>
+    <div class="kyc-warning" id="kycWarning" style="display: none;">
+      <div class="kyc-warning-content">
+        <div class="kyc-warning-icon">
+          <i class="fas fa-shield-alt"></i>
         </div>
-        <form id="kycForm" class="kyc-form" enctype="multipart/form-data">
-          <div class="kyc-form-field">
-            <label for="kycFullName">Full Name</label>
-            <input type="text" id="kycFullName" name="fullName" placeholder="Enter full name as on ID" required>
-          </div>
-          <div class="kyc-form-field">
-            <label for="kycFront">Front of ID</label>
-            <input type="file" id="kycFront" name="kycFront" accept="image/*" required>
-          </div>
-          <div class="kyc-form-field">
-            <label for="kycBack">Back of ID</label>
-            <input type="file" id="kycBack" name="kycBack" accept="image/*" required>
-          </div>
-          <button type="submit" class="btn btn-primary" id="kycSubmitBtn">Submit KYC</button>
-        </form>
+        <div class="kyc-warning-text">
+          <strong id="kycWarningTitle">Complete Your KYC</strong>
+          <p id="kycWarningMessage">Verify your identity to unlock full access to RealSphere.</p>
+        </div>
+        <button class="btn btn-primary" id="openKycModal">Complete KYC</button>
       </div>
     </div>
 
@@ -146,8 +135,6 @@
         <h3>Why Refer Friends?</h3>
         <ul>
           <li><i class="fas fa-check-circle"></i> $5 bonus per verified referral</li>
-          <li><i class="fas fa-check-circle"></i> Bonuses recorded in your transactions</li>
-          <li><i class="fas fa-check-circle"></i> Boosts available balance automatically</li>
         </ul>
       </div>
     </div>
@@ -209,6 +196,39 @@
     </div>
   </div>
 
+  <!-- KYC Modal -->
+  <div class="modal-overlay" id="kycModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Verify Your Identity</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-lead">Upload a valid government-issued ID so we can activate investments and withdrawals for your account.</p>
+        <form id="kycForm" class="kyc-modal-form" enctype="multipart/form-data">
+          <div class="modal-form-grid">
+            <div class="form-field">
+              <label for="kycFullName">Full Name</label>
+              <input type="text" id="kycFullName" name="fullName" placeholder="Enter full name as on ID" required>
+            </div>
+            <div class="form-field">
+              <label for="kycFront">Front of ID</label>
+              <input type="file" id="kycFront" name="kycFront" accept="image/*" required>
+            </div>
+            <div class="form-field">
+              <label for="kycBack">Back of ID</label>
+              <input type="file" id="kycBack" name="kycBack" accept="image/*" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeModal('kycModal')">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="kycSubmitBtn">Submit KYC</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
   <script>
     // Helper function to sanitize HTML
@@ -225,10 +245,12 @@
     const referralLinkInput = document.getElementById('referralLinkInput');
     const referralCodeLabel = document.getElementById('referralCodeLabel');
     const copyReferralLinkBtn = document.getElementById('copyReferralLink');
-    const kycBanner = document.getElementById('kycBanner');
+    const kycWarning = document.getElementById('kycWarning');
+    const kycWarningTitle = document.getElementById('kycWarningTitle');
+    const kycWarningMessage = document.getElementById('kycWarningMessage');
+    const openKycModalBtn = document.getElementById('openKycModal');
+    const kycModal = document.getElementById('kycModal');
     const kycForm = document.getElementById('kycForm');
-    const kycBannerTitle = document.getElementById('kycBannerTitle');
-    const kycBannerMessage = document.getElementById('kycBannerMessage');
     const kycSubmitBtn = document.getElementById('kycSubmitBtn');
 
     function updateCharts(data) {
@@ -458,46 +480,69 @@
       }
     }
 
-    function updateKycBanner(data) {
-      if (!kycBanner) return;
-      const status = (data?.kycStatus || 'pending').toLowerCase();
+    let isKycApproved = false;
 
-      if (status === 'approved') {
-        kycBanner.style.display = 'none';
+    function updateKycUI(data) {
+      const status = (data?.kycStatus || 'pending').toLowerCase();
+      isKycApproved = status === 'approved';
+      localStorage.setItem('rs_kyc_status', status);
+
+      if (!kycWarning) return;
+
+      if (isKycApproved) {
+        kycWarning.style.display = 'none';
+        closeModal('kycModal');
         document.body.classList.remove('kyc-active');
         return;
       }
 
       document.body.classList.add('kyc-active');
-      kycBanner.style.display = 'block';
-      if (kycBannerTitle) {
-        kycBannerTitle.textContent = status === 'submitted' ? 'KYC Submitted' : status === 'rejected' ? 'KYC Review Needed' : 'Complete Your KYC';
-      }
+      kycWarning.style.display = 'block';
 
-      if (kycBannerMessage) {
+      if (kycWarningTitle) {
         if (status === 'submitted') {
-          kycBannerMessage.textContent = 'Your documents are under review. We will notify you as soon as verification is complete.';
+          kycWarningTitle.textContent = 'KYC Under Review';
         } else if (status === 'rejected') {
-          kycBannerMessage.textContent = 'We could not verify your last submission. Please upload clear photos of the front and back of your government-issued ID.';
+          kycWarningTitle.textContent = 'KYC Needs Attention';
         } else {
-          kycBannerMessage.textContent = 'Upload a valid government-issued ID to unlock withdrawals and higher investment limits.';
+          kycWarningTitle.textContent = 'Complete Your KYC';
         }
       }
 
-      if (kycForm) {
-        const disableForm = (disabled) => {
-          Array.from(kycForm.elements).forEach(el => el.disabled = disabled);
-        };
-
+      if (kycWarningMessage) {
         if (status === 'submitted') {
-          kycForm.style.display = 'none';
-          disableForm(true);
+          kycWarningMessage.textContent = 'Your documents are under review. We\'ll notify you as soon as verification is complete.';
+        } else if (status === 'rejected') {
+          kycWarningMessage.textContent = 'We could not verify your last submission. Please upload clear front and back images of your ID.';
         } else {
-          kycForm.style.display = 'flex';
-          disableForm(false);
-          const fullNameInput = document.getElementById('kycFullName');
-          if (fullNameInput && data?.name) {
-            fullNameInput.value = data.name;
+          kycWarningMessage.textContent = 'Verify your identity to unlock investments, withdrawals, and full account access.';
+        }
+      }
+
+      if (openKycModalBtn) {
+        openKycModalBtn.textContent = status === 'submitted' ? 'View Submission' : 'Complete KYC';
+      }
+
+      if (kycForm) {
+        const fullNameInput = document.getElementById('kycFullName');
+        if (fullNameInput && data?.name && !fullNameInput.value) {
+          fullNameInput.value = data.name;
+        }
+
+        const fields = Array.from(kycForm.elements || []);
+        const reviewing = status === 'submitted';
+        fields.forEach(field => {
+          if (field && field.id !== 'kycSubmitBtn') {
+            field.disabled = reviewing;
+          }
+        });
+        if (kycSubmitBtn) {
+          if (reviewing) {
+            kycSubmitBtn.disabled = true;
+            kycSubmitBtn.textContent = 'Under Review';
+          } else {
+            kycSubmitBtn.disabled = false;
+            kycSubmitBtn.textContent = 'Submit KYC';
           }
         }
       }
@@ -541,6 +586,7 @@
           if (kycForm) {
             kycForm.reset();
           }
+          closeModal('kycModal');
           await refreshDashboard();
         } else {
           const errorData = await response.json().catch(() => ({}));
@@ -828,7 +874,7 @@
         // Update charts - always update with current data
         updateCharts(data);
         updateReferralSection(data);
-        updateKycBanner(data);
+        updateKycUI(data);
         
         // Clear any previous errors
         const errorEl = document.getElementById('errorMessage');
@@ -869,7 +915,7 @@
             // Update charts from cached data
             updateCharts(cachedData);
             updateReferralSection(cachedData);
-            updateKycBanner(cachedData);
+            updateKycUI(cachedData);
             
             console.log('[Dashboard] Successfully restored dashboard from cached data');
           } catch (renderError) {
@@ -921,6 +967,21 @@
             }
           });
         });
+      }
+
+      if (openKycModalBtn) {
+        openKycModalBtn.addEventListener('click', () => {
+          if (typeof openModal === 'function') {
+            openModal('kycModal');
+          } else if (kycModal) {
+            kycModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+          }
+        });
+      }
+
+      if (typeof setupModalClose === 'function') {
+        setupModalClose();
       }
 
       if (kycForm) {

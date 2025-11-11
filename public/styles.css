@@ -1545,18 +1545,18 @@ section {
     font-family: 'Dancing Script', 'Parisienne', 'Great Vibes', cursive;
     font-style: italic;
     font-size: 2.5rem;
-    font-weight: 700;
-    color: #0b4228;
+    font-weight: 900;
+    color: #052a18;
     letter-spacing: 0.05em;
-    text-shadow: 0 2px 8px rgba(78, 245, 163, 0.4);
+    text-shadow: 0 3px 10px rgba(54, 179, 115, 0.45);
     transition: all 0.3s ease;
     white-space: nowrap;
     padding: 0.5rem 1rem;
 }
 
 .trust-logo:hover .trust-partner-name {
-    color: #0f6134;
-    text-shadow: 0 2px 12px rgba(78, 245, 163, 0.45);
+    color: #054020;
+    text-shadow: 0 4px 14px rgba(54, 179, 115, 0.55);
     transform: scale(1.05);
 }
 
@@ -1572,6 +1572,13 @@ section {
     
     .trust-logo {
         padding: 1rem 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .home-page .hero-content {
+        transform: translateY(-16%);
+        padding: 2.5rem 0 1.75rem;
     }
 }
 
@@ -2215,11 +2222,28 @@ section {
     .pricing-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
     .insights-content { grid-template-columns: 1fr; gap: 2rem; }
     .insights-cta { justify-content: center; }
+
+    .home-page .mobile-menu-toggle {
+        color: #ffffff;
+        transform: translateY(-50%);
+    }
+
+    .home-page .mobile-menu-toggle i {
+        color: inherit;
+    }
+
+    .home-page .hero .container {
+        padding: calc(var(--header-height) + 0.75rem) 20px 3rem;
+    }
+
+    .home-page .hero-content {
+        transform: translateY(-12%);
+    }
 }
 
 @media (max-width: 768px) {
     :root {
-        --header-height: 120px;
+        --header-height: 92px;
     }
     
     .nav {
@@ -2245,6 +2269,15 @@ section {
     
     .translate-widget {
         margin-left: 0;
+    }
+
+    .home-page .hero .container {
+        padding: calc(var(--header-height) + 0.5rem) 16px 2.75rem;
+    }
+
+    .home-page .hero-content {
+        padding: 3rem 0 2.25rem;
+        transform: translateY(-20%);
     }
 
     /* About page mobile responsive fixes */
