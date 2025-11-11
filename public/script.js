@@ -1,8 +1,77 @@
 // RealSphere - Frontend JavaScript
+const REFERRAL_STORAGE_KEY = 'rs_referral_code';
+const TRANSLATOR_SCRIPT_ID = 'googleTranslateScript';
+
+function getQueryParam(name) {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+}
+
+function storeReferralFromQuery() {
+    const referralParam = getQueryParam('ref');
+    if (referralParam) {
+        localStorage.setItem(REFERRAL_STORAGE_KEY, referralParam.toUpperCase());
+    }
+}
+
+function setupTranslator() {
+    const desktopAnchor = document.getElementById('translatorAnchor');
+    const mobileAnchor = document.getElementById('translatorMobileAnchor');
+    const footerAnchor = document.getElementById('translatorFooterAnchor');
+
+    if (!desktopAnchor && !mobileAnchor && !footerAnchor) {
+        return;
+    }
+
+    let translatorWrapper = document.getElementById('google_translate_element');
+
+    if (!translatorWrapper) {
+        translatorWrapper = document.createElement('div');
+        translatorWrapper.id = 'google_translate_element';
+        translatorWrapper.className = 'translate-widget';
+    }
+
+    const positionTranslator = () => {
+        const prefersMobile = window.matchMedia('(max-width: 992px)').matches;
+        let target;
+
+        if (prefersMobile) {
+            target = footerAnchor || mobileAnchor || desktopAnchor;
+        } else {
+            target = desktopAnchor || mobileAnchor || footerAnchor;
+        }
+
+        if (target && translatorWrapper.parentElement !== target) {
+            target.appendChild(translatorWrapper);
+        }
+    };
+
+    positionTranslator();
+
+    window.googleTranslateElementInit = function () {
+        new google.translate.TranslateElement({
+            pageLanguage: 'en',
+            includedLanguages: 'en,es,fr,de,it,pt,zh-CN',
+            autoDisplay: false
+        }, 'google_translate_element');
+        positionTranslator();
+    };
+
+    if (!document.getElementById(TRANSLATOR_SCRIPT_ID)) {
+        const script = document.createElement('script');
+        script.id = TRANSLATOR_SCRIPT_ID;
+        script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+        document.body.appendChild(script);
+    } else if (window.google && window.google.translate && window.google.translate.TranslateElement) {
+        window.googleTranslateElementInit();
+    }
+
+    window.addEventListener('resize', positionTranslator);
+}
+
 class RealSphere {
     constructor() {
         this.init();
-        this.loadInvestmentPlans();
         this.setupEventListeners();
         this.setupScrollEffects();
     }
@@ -166,18 +235,12 @@ class RealSphere {
         }
 
         // Hero action buttons
-        const explorePlansBtn = document.getElementById('explorePlansBtn');
+        const viewPricingBtn = document.getElementById('viewPricingBtn');
         const learnMoreBtn = document.getElementById('learnMoreBtn');
 
-        if (explorePlansBtn) {
-            explorePlansBtn.addEventListener('click', () => {
-                // Scroll to investment plans section
-                const plansSection = document.getElementById('plans');
-                if (plansSection) {
-                    plansSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                } else {
-                    window.location.href = 'services.html#plans';
-                }
+        if (viewPricingBtn) {
+            viewPricingBtn.addEventListener('click', () => {
+                window.location.href = 'pricing.html';
             });
         }
 
@@ -273,6 +336,13 @@ class RealSphere {
         if (modal) {
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
+            if (modalId === 'registerModal') {
+                const referralField = document.getElementById('registerReferralId');
+                const storedReferral = localStorage.getItem(REFERRAL_STORAGE_KEY);
+                if (referralField && storedReferral && !referralField.value) {
+                    referralField.value = storedReferral;
+                }
+            }
         }
     }
 
@@ -348,7 +418,7 @@ class RealSphere {
                     return;
                 }
                 // Navigate to dashboard investments section
-                window.location.href = 'dashboard/investments.html';
+                window.location.href = 'dashboard/pricing.html';
             });
         });
 
@@ -445,8 +515,16 @@ class RealSphere {
         const registerData = {
             name: formData.get('name') || document.getElementById('registerName')?.value || e.target.querySelector('input[type="text"]').value,
             email: formData.get('email') || e.target.querySelector('input[type="email"]').value,
-            password: formData.get('password') || e.target.querySelector('input[type="password"]').value
+            password: formData.get('password') || e.target.querySelector('input[type="password"]').value,
+            phone: formData.get('phone') || document.getElementById('registerPhone')?.value || '',
+            country: formData.get('country') || document.getElementById('registerCountry')?.value || '',
+            referralId: (formData.get('referralId') || document.getElementById('registerReferralId')?.value || '').trim()
         };
+
+        if (registerData.referralId) {
+            registerData.referralId = registerData.referralId.toUpperCase();
+            localStorage.setItem(REFERRAL_STORAGE_KEY, registerData.referralId);
+        }
 
         try {
             const response = await fetch('/register', {
@@ -458,42 +536,10 @@ class RealSphere {
             });
 
             if (response.ok) {
-                this.showNotification('Registration successful!', 'success');
+                this.showNotification('Registration successful! Please verify your email to activate your account.', 'success');
                 this.hideModal('registerModal');
-                // Save minimal user info and update UI
-                localStorage.setItem('rs_user', JSON.stringify({ email: registerData.email, name: registerData.name || registerData.fullName || '' }));
-                // Optional avatar upload if provided
-                const fileInput = document.getElementById('registerAvatar');
-                const file = fileInput && fileInput.files && fileInput.files[0];
-                if (file) {
-                    await new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onload = async () => {
-                            try {
-                                const resp = await fetch('/profile/upload', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ email: registerData.email, image: reader.result })
-                                });
-                                if (resp.ok) {
-                                    const data = await resp.json();
-                                    // Update local storage with uploaded path for faster first paint on dashboard
-                                    const raw = localStorage.getItem('rs_user');
-                                    if (raw) {
-                                        const obj = JSON.parse(raw);
-                                        obj.profileImage = data.profileImage || obj.profileImage;
-                                        localStorage.setItem('rs_user', JSON.stringify(obj));
-                                    }
-                                }
-                            } catch(_) {}
-                            resolve();
-                        };
-                        reader.readAsDataURL(file);
-                    });
-                }
+                e.target.reset();
                 this.updateAuthUI();
-                // Optional redirect to dashboard after registration
-                try { window.location.href = 'dashboard/index.html'; } catch(_) {}
             } else {
                 let errorMsg = 'Registration failed. Please try again.';
                 try {
@@ -848,6 +894,8 @@ window.openServiceModal = openServiceModal;
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    storeReferralFromQuery();
+    setupTranslator();
     window.realSphere = new RealSphere();
     // Bind plan buttons after DOM content is ready
     window.realSphere.bindPlanButtons();

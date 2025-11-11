@@ -11,7 +11,7 @@ All requested features have been successfully implemented with the green futuris
 ```
 public/dashboard/
 ├── index.html          ✅ Main dashboard with metrics & charts
-├── investments.html    ✅ Investment plans with modals
+├── pricing.html        ✅ Pricing catalogue with modals
 ├── withdraw.html       ✅ Crypto withdrawal page
 ├── deposit.html        ✅ Deposit with proof upload modal
 ├── settings.html       ✅ User settings + theme toggle
@@ -95,24 +95,20 @@ public/dashboard/
 
 ---
 
-### **2. Investments Page (`investments.html`)**
+### **2. Pricing Page (`pricing.html`)**
 **Features:**
-- 6 investment plan cards:
-  - Starter Plan ($50-$499, 2% daily)
-  - Bronze Plan ($500-$999, 2.5% daily)
-  - Silver Plan ($1,000-$1,999, 3% daily)
-  - Gold Plan ($2,000-$3,999, 3.5% daily)
-  - Diamond Plan ($4,000-$6,999, 4% daily)
-  - Elite Plan ($7,000+, 5% daily)
-- Invest modal with amount input
+- 7 pricing tier cards:
+  - Real Estate ($50-$499, 2% daily)
+  - Equities/Stocks ($500-$999, 2.5% daily)
+  - Agriculture ($1,000-$1,999, 3% daily)
+  - Air BNB ($2,000-$3,999, 3.5% daily)
+  - Commodities ($4,000-$6,999, 4% daily)
+  - Cannabis ($7,000+, 5% daily)
+  - Retirement Plan ($7,000+, 5% daily)
+- Allocation modal with amount input
 - Balance validation
-- Plan range validation
-
-**Data Binding:**
-- ✅ Plans displayed correctly
-- ✅ Modal shows available balance
-- ✅ Investment submission via `/api/invest`
-- ✅ Redirects to dashboard on success
+- Pricing range validation
+- Success + error toasts
 
 ---
 

@@ -62,6 +62,30 @@
       <div class="header-spacer"></div>
     </header>
 
+    <div class="kyc-banner" id="kycBanner" style="display: none;">
+      <div class="kyc-banner-content">
+        <div class="kyc-banner-info">
+          <h3 id="kycBannerTitle">Complete Your KYC</h3>
+          <p id="kycBannerMessage">Upload a valid government-issued ID to unlock withdrawals and higher investment limits.</p>
+        </div>
+        <form id="kycForm" class="kyc-form" enctype="multipart/form-data">
+          <div class="kyc-form-field">
+            <label for="kycFullName">Full Name</label>
+            <input type="text" id="kycFullName" name="fullName" placeholder="Enter full name as on ID" required>
+          </div>
+          <div class="kyc-form-field">
+            <label for="kycFront">Front of ID</label>
+            <input type="file" id="kycFront" name="kycFront" accept="image/*" required>
+          </div>
+          <div class="kyc-form-field">
+            <label for="kycBack">Back of ID</label>
+            <input type="file" id="kycBack" name="kycBack" accept="image/*" required>
+          </div>
+          <button type="submit" class="btn btn-primary" id="kycSubmitBtn">Submit KYC</button>
+        </form>
+      </div>
+    </div>
+
     <!-- Metrics Cards -->
     <div class="metrics-grid">
       <div class="metric-card" style="animation-delay: 0.1s;">
@@ -108,6 +132,26 @@
       </div>
     </div>
 
+    <div class="referral-card" id="referralCard" style="display: none;">
+      <div class="referral-content">
+        <h2>Refer &amp; Earn $5</h2>
+        <p>Share your unique referral link. When your referral verifies their account, you receive a $5 bonus instantly.</p>
+        <div class="referral-input">
+          <input type="text" id="referralLinkInput" readonly>
+          <button class="btn btn-primary" id="copyReferralLink"><i class="fas fa-copy"></i> Copy Link</button>
+        </div>
+        <span class="referral-code-label">Referral Code: <strong id="referralCodeLabel">-</strong></span>
+      </div>
+      <div class="referral-status">
+        <h3>Why Refer Friends?</h3>
+        <ul>
+          <li><i class="fas fa-check-circle"></i> $5 bonus per verified referral</li>
+          <li><i class="fas fa-check-circle"></i> Bonuses recorded in your transactions</li>
+          <li><i class="fas fa-check-circle"></i> Boosts available balance automatically</li>
+        </ul>
+      </div>
+    </div>
+
     <!-- Investment Table -->
     <div class="table-section">
       <h2>Investment Overview</h2>
@@ -116,7 +160,7 @@
       <table id="investmentsTable">
         <thead>
           <tr>
-            <th>Plan</th>
+            <th>Pricing Tier</th>
             <th>Amount</th>
             <th>ROI</th>
             <th>Status</th>
@@ -177,6 +221,15 @@
 
     let earningsChart = null;
     let portfolioChart = null;
+    const referralCard = document.getElementById('referralCard');
+    const referralLinkInput = document.getElementById('referralLinkInput');
+    const referralCodeLabel = document.getElementById('referralCodeLabel');
+    const copyReferralLinkBtn = document.getElementById('copyReferralLink');
+    const kycBanner = document.getElementById('kycBanner');
+    const kycForm = document.getElementById('kycForm');
+    const kycBannerTitle = document.getElementById('kycBannerTitle');
+    const kycBannerMessage = document.getElementById('kycBannerMessage');
+    const kycSubmitBtn = document.getElementById('kycSubmitBtn');
 
     function updateCharts(data) {
       // Ensure data exists, use empty object if not
@@ -306,7 +359,7 @@
         // Calculate total per plan
         investments.forEach(inv => {
           if (inv && inv.plan) {
-            const planName = inv.plan || 'Unknown Plan';
+            const planName = inv.plan || 'Unknown Pricing Tier';
             const amount = Number(inv.amount || 0);
             if (amount > 0) {
               planCounts[planName] = (planCounts[planName] || 0) + amount;
@@ -382,6 +435,124 @@
           portfolioChart.data.datasets[0].data = planValues;
           portfolioChart.data.datasets[0].backgroundColor = colors.slice(0, planLabels.length);
           portfolioChart.update('active'); // Use 'active' for smoother animation
+        }
+      }
+    }
+
+    function updateReferralSection(data) {
+      if (!referralCard) return;
+      if (!data || !data.referralCode) {
+        referralCard.style.display = 'none';
+        return;
+      }
+
+      const origin = window.location.origin || `${window.location.protocol}//${window.location.host}`;
+      const referralLink = data.referralLink || `${origin}/register.html?ref=${encodeURIComponent(data.referralCode)}`;
+
+      referralCard.style.display = 'flex';
+      if (referralLinkInput) {
+        referralLinkInput.value = referralLink;
+      }
+      if (referralCodeLabel) {
+        referralCodeLabel.textContent = data.referralCode;
+      }
+    }
+
+    function updateKycBanner(data) {
+      if (!kycBanner) return;
+      const status = (data?.kycStatus || 'pending').toLowerCase();
+
+      if (status === 'approved') {
+        kycBanner.style.display = 'none';
+        document.body.classList.remove('kyc-active');
+        return;
+      }
+
+      document.body.classList.add('kyc-active');
+      kycBanner.style.display = 'block';
+      if (kycBannerTitle) {
+        kycBannerTitle.textContent = status === 'submitted' ? 'KYC Submitted' : status === 'rejected' ? 'KYC Review Needed' : 'Complete Your KYC';
+      }
+
+      if (kycBannerMessage) {
+        if (status === 'submitted') {
+          kycBannerMessage.textContent = 'Your documents are under review. We will notify you as soon as verification is complete.';
+        } else if (status === 'rejected') {
+          kycBannerMessage.textContent = 'We could not verify your last submission. Please upload clear photos of the front and back of your government-issued ID.';
+        } else {
+          kycBannerMessage.textContent = 'Upload a valid government-issued ID to unlock withdrawals and higher investment limits.';
+        }
+      }
+
+      if (kycForm) {
+        const disableForm = (disabled) => {
+          Array.from(kycForm.elements).forEach(el => el.disabled = disabled);
+        };
+
+        if (status === 'submitted') {
+          kycForm.style.display = 'none';
+          disableForm(true);
+        } else {
+          kycForm.style.display = 'flex';
+          disableForm(false);
+          const fullNameInput = document.getElementById('kycFullName');
+          if (fullNameInput && data?.name) {
+            fullNameInput.value = data.name;
+          }
+        }
+      }
+    }
+
+    async function submitKycForm(event) {
+      event.preventDefault();
+      const user = getCurrentUser();
+      if (!user || !user.email) {
+        showError('Unable to identify user. Please log in again.');
+        return;
+      }
+
+      const fullNameInput = document.getElementById('kycFullName');
+      const frontFile = document.getElementById('kycFront')?.files[0];
+      const backFile = document.getElementById('kycBack')?.files[0];
+
+      if (!frontFile || !backFile) {
+        showError('Please upload both the front and back of your ID card.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('fullName', fullNameInput?.value?.trim() || '');
+      formData.append('kycFront', frontFile);
+      formData.append('kycBack', backFile);
+
+      if (kycSubmitBtn) {
+        kycSubmitBtn.disabled = true;
+        kycSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+      }
+
+      try {
+        const response = await fetch(`/api/user/${encodeURIComponent(user.email)}/kyc`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          showSuccess('KYC submitted successfully! We\'ll notify you once it\'s approved.');
+          if (kycForm) {
+            kycForm.reset();
+          }
+          await refreshDashboard();
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          showError(errorData.message || 'Failed to submit KYC. Please try again.');
+        }
+      } catch (err) {
+        console.error('KYC submission error:', err);
+        showError('An error occurred while submitting KYC. Please try again.');
+      } finally {
+        if (kycSubmitBtn) {
+          kycSubmitBtn.disabled = false;
+          kycSubmitBtn.innerHTML = 'Submit KYC';
         }
       }
     }
@@ -656,6 +827,8 @@
 
         // Update charts - always update with current data
         updateCharts(data);
+        updateReferralSection(data);
+        updateKycBanner(data);
         
         // Clear any previous errors
         const errorEl = document.getElementById('errorMessage');
@@ -695,6 +868,8 @@
             
             // Update charts from cached data
             updateCharts(cachedData);
+            updateReferralSection(cachedData);
+            updateKycBanner(cachedData);
             
             console.log('[Dashboard] Successfully restored dashboard from cached data');
           } catch (renderError) {
@@ -728,6 +903,29 @@
 
       console.log('[Dashboard] User found:', user);
       showLoading(true);
+      if (copyReferralLinkBtn) {
+        copyReferralLinkBtn.addEventListener('click', () => {
+          if (!referralLinkInput || !referralLinkInput.value) {
+            showError('Referral link is not available yet.');
+            return;
+          }
+          navigator.clipboard.writeText(referralLinkInput.value).then(() => {
+            showSuccess('Referral link copied to clipboard.');
+          }).catch(() => {
+            try {
+              referralLinkInput.select();
+              document.execCommand('copy');
+              showSuccess('Referral link copied to clipboard.');
+            } catch (_) {
+              showError('Unable to copy referral link.');
+            }
+          });
+        });
+      }
+
+      if (kycForm) {
+        kycForm.addEventListener('submit', submitKycForm);
+      }
       
       // Small delay to ensure DOM is ready, then refresh
       setTimeout(() => {

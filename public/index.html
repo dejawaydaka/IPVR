@@ -29,13 +29,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Parisienne&family=Great+Vibes&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
+<body class="home-page">
     <header class="header">
         <div class="container">
             <div class="nav-brand">
                 <div class="logo">
                     <a href="index.html" style="display: inline-block; cursor: pointer;">
-                        <img src="Rsblack.png" alt="RealSphere" style="height: 87px; width: auto;">
+                        <img src="Rswhite.png" alt="RealSphere" style="height: 87px; width: auto;">
                     </a>
                 </div>
             </div>
@@ -46,16 +46,21 @@
                     <li><a href="projects.html" class="nav-link">Projects</a></li>
                     <li><a href="about.html" class="nav-link">About</a></li>
                     <li><a href="team.html" class="nav-link">Team</a></li>
+                    <li><a href="pricing.html" class="nav-link">Pricing</a></li>
                     <li><a href="contact.html" class="nav-link">Contact</a></li>
                 </ul>
                 <div class="nav-actions-mobile">
                     <button class="btn btn-outline btn-mobile" id="loginBtnMobile">Login</button>
                     <button class="btn btn-primary btn-mobile" id="registerBtnMobile">Get Started</button>
+                    <div id="translatorMobileAnchor" class="translator-anchor translator-anchor-mobile"></div>
                 </div>
             </nav>
             <div class="nav-actions">
-                <button class="btn btn-outline" id="loginBtn">Login</button>
-                <button class="btn btn-primary" id="registerBtn">Get Started</button>
+                <div class="nav-buttons">
+                    <button class="btn btn-outline" id="loginBtn">Login</button>
+                    <button class="btn btn-primary" id="registerBtn">Get Started</button>
+                </div>
+                <div id="translatorAnchor" class="translator-anchor"></div>
             </div>
             <div class="mobile-menu-toggle">
                 <i class="fas fa-bars"></i>
@@ -85,9 +90,9 @@
                             Experience guaranteed returns through AI-powered property analysis and strategic acquisitions.
                         </p>
                         <div class="hero-actions">
-                            <button class="btn btn-primary btn-large" id="explorePlansBtn" type="button">
+                            <button class="btn btn-primary btn-large" id="viewPricingBtn" type="button">
                                 <i class="fas fa-chart-line"></i>
-                                Start Investing
+                                View Pricing
                             </button>
                             <button class="btn btn-outline btn-large" id="learnMoreBtn" type="button">
                                 <i class="fas fa-play"></i>
@@ -203,84 +208,6 @@
                         <h3>Tenant Management</h3>
                         <p>Professional tenant screening, lease management, and property maintenance services.</p>
                         <a href="#" class="service-link" onclick="event.preventDefault(); openServiceModal('tenant-management');">Learn More <i class="fas fa-arrow-right"></i></a>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Investment Plans Section (moved after services) -->
-        <section id="plans" class="plans-section">
-            <div class="container">
-                <div class="section-header">
-                    <span class="section-badge">Investment Plans</span>
-                    <h2 class="section-title">Choose a Plan and Start Earning</h2>
-                    <p class="section-description">3D frosted-glass cards with flexible ranges and daily returns</p>
-                </div>
-                <div class="plans-grid">
-                    <div class="plan-card" data-plan="Starter Plan" data-range="$50 – $499" data-rate="2%" data-days="7">
-                        <h3>Starter Plan</h3>
-                        <p class="plan-range">$50 – $499</p>
-                        <div class="plan-meta">
-                            <span class="badge">2% daily</span>
-                            <span class="badge">7 days</span>
-                            <span class="badge">Total 14%</span>
-                        </div>
-                        <button class="btn btn-primary plan-invest-btn">Invest Now</button>
-                    </div>
-
-                    <div class="plan-card" data-plan="Bronze Plan" data-range="$500 – $999" data-rate="2.5%" data-days="7">
-                        <h3>Bronze Plan</h3>
-                        <p class="plan-range">$500 – $999</p>
-                        <div class="plan-meta">
-                            <span class="badge">2.5% daily</span>
-                            <span class="badge">7 days</span>
-                            <span class="badge">Total 17.5%</span>
-                        </div>
-                        <button class="btn btn-primary plan-invest-btn">Invest Now</button>
-                    </div>
-
-                    <div class="plan-card" data-plan="Silver Plan" data-range="$1,000 – $1,999" data-rate="3%" data-days="7">
-                        <h3>Silver Plan</h3>
-                        <p class="plan-range">$1,000 – $1,999</p>
-                        <div class="plan-meta">
-                            <span class="badge">3% daily</span>
-                            <span class="badge">7 days</span>
-                            <span class="badge">Total 21%</span>
-                        </div>
-                        <button class="btn btn-primary plan-invest-btn">Invest Now</button>
-                    </div>
-
-                    <div class="plan-card" data-plan="Gold Plan" data-range="$2,000 – $3,999" data-rate="3.5%" data-days="7">
-                        <h3>Gold Plan</h3>
-                        <p class="plan-range">$2,000 – $3,999</p>
-                        <div class="plan-meta">
-                            <span class="badge">3.5% daily</span>
-                            <span class="badge">7 days</span>
-                            <span class="badge">Total 24.5%</span>
-                        </div>
-                        <button class="btn btn-primary plan-invest-btn">Invest Now</button>
-                    </div>
-
-                    <div class="plan-card" data-plan="Platinum Plan" data-range="$4,000 – $6,999" data-rate="4%" data-days="7">
-                        <h3>Platinum Plan</h3>
-                        <p class="plan-range">$4,000 – $6,999</p>
-                        <div class="plan-meta">
-                            <span class="badge">4% daily</span>
-                            <span class="badge">7 days</span>
-                            <span class="badge">Total 28%</span>
-                        </div>
-                        <button class="btn btn-primary plan-invest-btn">Invest Now</button>
-                    </div>
-
-                    <div class="plan-card" data-plan="Diamond Plan" data-range="$7,000 +" data-rate="5%" data-days="7">
-                        <h3>Diamond Plan</h3>
-                        <p class="plan-range">$7,000 +</p>
-                        <div class="plan-meta">
-                            <span class="badge">5% daily</span>
-                            <span class="badge">7 days</span>
-                            <span class="badge">Total 35%</span>
-                        </div>
-                        <button class="btn btn-primary plan-invest-btn">Invest Now</button>
                     </div>
                 </div>
             </div>
@@ -462,6 +389,28 @@
                 </div>
             </div>
         </section>
+        <!-- Location Map -->
+        <section class="map-section">
+            <div class="container">
+                <div class="section-header">
+                    <span class="section-badge">Our Location</span>
+                    <h2 class="section-title">Visit Our New York Headquarters</h2>
+                    <p class="section-description">We operate out of the heart of New York City. Explore the map to plan your visit.</p>
+                </div>
+                <div class="map-wrapper">
+                    <iframe 
+                        title="RealSphere Location"
+                        width="100%"
+                        height="100%"
+                        style="border:0;"
+                        loading="lazy"
+                        allowfullscreen
+                        referrerpolicy="no-referrer-when-downgrade"
+                        src="https://www.google.com/maps?q=New+York,+NY&output=embed">
+                    </iframe>
+                </div>
+            </div>
+        </section>
     </main>
 
     <footer class="footer">
@@ -483,6 +432,7 @@
                             <li><a href="services.html">Services</a></li>
                             <li><a href="projects.html">Projects</a></li>
                             <li><a href="team.html">Team</a></li>
+                            <li><a href="pricing.html">Pricing</a></li>
                             <li><a href="contact.html">Contact</a></li>
                         </ul>
                     </div>
@@ -510,6 +460,7 @@
                         <a href="#"><i class="fab fa-linkedin"></i></a>
                         <a href="#"><i class="fab fa-facebook"></i></a>
                     </div>
+                    <div id="translatorFooterAnchor" class="translator-anchor translator-anchor-footer"></div>
                 </div>
             </div>
         </div>
@@ -558,19 +509,43 @@
             </div>
             <form class="modal-form" id="registerForm">
                 <div class="form-group">
-                    <input type="text" id="registerName" placeholder="Full Name" required>
+                    <input type="text" id="registerName" name="name" placeholder="Full Name" required>
                 </div>
                 <div class="form-group">
-                    <input type="email" placeholder="Email" required>
+                    <input type="email" name="email" placeholder="Email" required>
                 </div>
                 <div class="form-group" style="position: relative;">
-                    <input type="password" id="registerPassword" placeholder="Password" required>
+                    <input type="password" id="registerPassword" name="password" placeholder="Password" required>
                     <button type="button" class="password-toggle" onclick="togglePasswordVisibility('registerPassword', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #000; cursor: pointer; padding: 4px; font-size: 1rem;">
                         <i class="fas fa-eye" id="registerPasswordIcon" style="color: #000;"></i>
                     </button>
                 </div>
                 <div class="form-group">
+                    <input type="tel" id="registerPhone" name="phone" placeholder="Phone Number" required>
+                </div>
+                <div class="form-group">
+                    <select id="registerCountry" name="country" required>
+                        <option value="" disabled selected>Select Country</option>
+                        <option value="United States">United States</option>
+                        <option value="Canada">Canada</option>
+                        <option value="United Kingdom">United Kingdom</option>
+                        <option value="Germany">Germany</option>
+                        <option value="France">France</option>
+                        <option value="Spain">Spain</option>
+                        <option value="Italy">Italy</option>
+                        <option value="United Arab Emirates">United Arab Emirates</option>
+                        <option value="Nigeria">Nigeria</option>
+                        <option value="South Africa">South Africa</option>
+                        <option value="India">India</option>
+                        <option value="China">China</option>
+                        <option value="Australia">Australia</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <input type="file" id="registerAvatar" accept="image/*">
+                </div>
+                <div class="form-group">
+                    <input type="text" id="registerReferralId" name="referralId" placeholder="Referral ID (optional)">
                 </div>
                 <button type="submit" class="btn btn-primary">Create Account</button>
                 <div style="text-align: center; margin-top: 0.3rem; padding-top: 0.7rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
@@ -612,49 +587,110 @@
 
     <script src="script.js"></script>
     <script>
+        const defaultProjects = [
+            {
+                title: 'Luxury Residential Complex - Sunset Hills',
+                description: 'A premium residential development featuring 200 luxury condominiums with state-of-the-art amenities, located in the heart of downtown.',
+                image_url: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                slug: 'luxury-residential-complex-sunset-hills'
+            },
+            {
+                title: 'Commercial Office Tower - Tech Hub Plaza',
+                description: 'A modern 30-story commercial office building designed for tech companies and corporate headquarters with flexible floor plans and sustainable design.',
+                image_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                slug: 'commercial-office-tower-tech-hub-plaza'
+            },
+            {
+                title: 'Mixed-Use Development - Riverside Quarter',
+                description: 'An innovative mixed-use development combining residential, retail, and entertainment spaces along the scenic riverfront.',
+                image_url: 'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                slug: 'mixed-use-development-riverside-quarter'
+            },
+            {
+                title: 'Smart Home Community - Green Valley Estates',
+                description: 'An eco-friendly residential community featuring smart home technology, sustainable construction, and green spaces.',
+                image_url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                slug: 'smart-home-community-green-valley-estates'
+            },
+            {
+                title: 'Luxury Hotel & Residences - Grand Plaza',
+                description: 'A prestigious hotel and residential tower offering hotel services with private residences, featuring world-class amenities and stunning city views.',
+                image_url: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                slug: 'luxury-hotel-residences-grand-plaza'
+            }
+        ];
+
+        const defaultTestimonials = [
+            {
+                name: 'Sarah Johnson',
+                image_url: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+                content: 'RealSphere has transformed my investment portfolio. Their expert guidance helped me diversify into real estate, and I\'ve seen consistent returns of 18% annually. The team is professional, responsive, and truly understands the market.'
+            },
+            {
+                name: 'Michael Chen',
+                image_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+                content: 'As a first-time real estate investor, I was nervous about entering the market. RealSphere\'s team provided exceptional support and education. My investment in the Sunset Hills project has already appreciated 25% in just 18 months.'
+            },
+            {
+                name: 'Emily Rodriguez',
+                image_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+                content: 'The transparency and professionalism at RealSphere is unmatched. I receive detailed monthly reports and always know exactly how my investments are performing. The portfolio management service has been invaluable in optimizing my returns.'
+            },
+            {
+                name: 'David Thompson',
+                image_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+                content: 'I\'ve been investing with RealSphere for three years, and they continue to exceed expectations. Their risk management strategies have protected my investments during market fluctuations, and their property selection is always top-notch.'
+            },
+            {
+                name: 'Jennifer Martinez',
+                image_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+                content: 'RealSphere made real estate investment accessible to me as a busy professional. Their hands-on approach means I don\'t have to worry about property management while still earning excellent returns. Highly recommend their services!'
+            }
+        ];
+
         // Load dynamic content on homepage
         async function loadProjects() {
+            const container = document.getElementById('projectsGrid');
+            if (!container) return;
+
+            const renderProjects = (projects) => {
+                container.innerHTML = projects.map(project => {
+                    const desc = (project.description || '').substring(0, 120);
+                    const imageUrl = project.image_url || '/uploads/admin/default-project.jpg';
+                    return `
+                        <div class="project-card glass" onclick="window.location.href='/projects/${project.slug}.html'" style="cursor: pointer;">
+                            <div class="project-image">
+                                <img src="${imageUrl}" alt="${escapeHTML(project.title)}" onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'">
+                                <div class="project-overlay">
+                                    <div class="project-info">
+                                        <span class="project-category">Featured</span>
+                                        <h3>${escapeHTML(project.title)}</h3>
+                                        <p>${escapeHTML(desc)}${desc.length < (project.description || '').length ? '...' : ''}</p>
+                                        <a href="/projects/${project.slug}.html" class="view-btn" onclick="event.stopPropagation();">
+                                            <i class="fas fa-arrow-right"></i> View Project
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            };
+
             try {
                 const res = await fetch('/api/projects?limit=6');
                 if (!res.ok) {
                     throw new Error(`HTTP ${res.status}`);
                 }
                 const { projects } = await res.json();
-                const container = document.getElementById('projectsGrid');
-                
-                if (!container) return;
-                
                 if (projects && projects.length > 0) {
-                    container.innerHTML = projects.map(project => {
-                        const desc = (project.description || '').substring(0, 120);
-                        const imageUrl = project.image_url || '/uploads/admin/default-project.jpg';
-                        return `
-                            <div class="project-card glass" onclick="window.location.href='/projects/${project.slug}.html'" style="cursor: pointer;">
-                                <div class="project-image">
-                                    <img src="${imageUrl}" alt="${escapeHTML(project.title)}" onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'">
-                                    <div class="project-overlay">
-                                        <div class="project-info">
-                                            <span class="project-category">Featured</span>
-                                            <h3>${escapeHTML(project.title)}</h3>
-                                            <p>${escapeHTML(desc)}${desc.length < (project.description || '').length ? '...' : ''}</p>
-                                            <a href="/projects/${project.slug}.html" class="view-btn" onclick="event.stopPropagation();">
-                                                <i class="fas fa-arrow-right"></i> View Project
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
+                    renderProjects(projects);
                 } else {
-                    container.innerHTML = '<div style="text-align: center; padding: 3rem; grid-column: 1/-1; color: rgba(255,255,255,0.7);"><i class="fas fa-folder-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No projects available yet. Check back soon!</p></div>';
+                    renderProjects(defaultProjects);
                 }
             } catch (err) {
                 console.error('Failed to load projects:', err);
-                const container = document.getElementById('projectsGrid');
-                if (container) {
-                    container.innerHTML = '<div style="text-align: center; padding: 3rem; grid-column: 1/-1; color: rgba(255,255,255,0.7);"><p>Failed to load projects. Please refresh the page.</p></div>';
-                }
+                renderProjects(defaultProjects);
             }
         }
         
@@ -914,33 +950,41 @@
             await Promise.all([loadProjects(), loadNews()]);
 
             // Load Testimonials
+            const grid = document.getElementById('testimonialsGrid');
+            const renderTestimonials = (items) => {
+                if (!grid) return;
+                grid.innerHTML = items.slice(0, 3).map(test => `
+                    <div class="testimonial-card">
+                        <div class="testimonial-content">
+                            <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
+                            <p>"${escapeHTML(test.content)}"</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <img src="${test.image_url || 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'}" alt="${escapeHTML(test.name)}" onerror="this.src='https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'">
+                            <div class="author-info">
+                                <h4>${escapeHTML(test.name)}</h4>
+                                <span>Investor</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            };
+
             try {
                 const testimonialsRes = await fetch('/api/testimonials');
                 if (testimonialsRes.ok) {
                     const { testimonials } = await testimonialsRes.json();
-                    const grid = document.getElementById('testimonialsGrid');
                     if (grid && testimonials && testimonials.length > 0) {
-                        grid.innerHTML = testimonials.slice(0, 3).map(test => `
-                            <div class="testimonial-card">
-                                <div class="testimonial-content">
-                                    <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
-                                    <p>"${escapeHTML(test.content)}"</p>
-                                </div>
-                                <div class="testimonial-author">
-                                    <img src="${test.image_url || 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'}" alt="${escapeHTML(test.name)}" onerror="this.src='https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'">
-                                    <div class="author-info">
-                                        <h4>${escapeHTML(test.name)}</h4>
-                                        <span>Investor</span>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('');
+                        renderTestimonials(testimonials);
                     } else if (grid) {
-                        grid.innerHTML = '<div style="text-align: center; padding: 3rem; grid-column: 1/-1; color: rgba(255,255,255,0.7);"><p>No testimonials available yet.</p></div>';
+                        renderTestimonials(defaultTestimonials);
                     }
+                } else {
+                    renderTestimonials(defaultTestimonials);
                 }
             } catch (e) {
                 console.error('Failed to load testimonials:', e);
+                renderTestimonials(defaultTestimonials);
             }
         }
 

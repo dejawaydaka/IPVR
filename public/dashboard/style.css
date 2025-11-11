@@ -681,53 +681,380 @@ tr:hover {
   margin-bottom: 2rem;
 }
 
-.plan-card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 20px;
-  padding: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2);
-  transition: all 0.4s ease;
-  position: relative;
-  overflow: hidden;
-  animation: floatIn 1.2s ease forwards;
-  opacity: 0;
+body.pricing-page .main-content,
+body.pricing-page .main-content h1,
+body.pricing-page .main-content h2,
+body.pricing-page .main-content h3,
+body.pricing-page .main-content p,
+body.pricing-page .main-content label,
+body.pricing-page .main-content span,
+body.pricing-page .main-content small {
+  color: #ffffff;
 }
 
-.plan-card:hover {
-  transform: translateY(-8px);
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 12px 40px rgba(78, 245, 163, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+body.pricing-page .page-section p {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+body.pricing-page .plan-card h3 {
+  color: #ffffff;
+}
+
+body.pricing-page .plan-description {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+body.pricing-page .plan-meta-label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+body.pricing-page .plan-meta-value,
+body.pricing-page .plan-meta-value.plan-meta-highlight {
+  color: #ffffff;
+}
+
+body.pricing-page .modal-content,
+body.pricing-page .modal-content label,
+body.pricing-page .modal-content p {
+  color: #1c1c1c;
+}
+
+body.pricing-page .modal-content .summary-item span,
+body.pricing-page .modal-content .summary-item strong {
+  color: #1c1c1c;
+}
+
+.kyc-banner {
+  position: fixed;
+  top: 96px;
+  right: 2rem;
+  width: min(420px, calc(100% - 4rem));
+  background: linear-gradient(135deg, rgba(30, 64, 45, 0.92), rgba(12, 31, 21, 0.9));
+  border: 1px solid rgba(78, 245, 163, 0.25);
+  border-radius: 18px;
+  padding: 1.75rem 2rem;
+  box-shadow: 0 22px 48px rgba(8, 20, 14, 0.45);
+  color: #f5fffb;
+  z-index: 1300;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  animation: kycSlideIn 0.35s ease forwards;
+}
+
+.kyc-banner::-webkit-scrollbar {
+  width: 6px;
+}
+
+.kyc-banner::-webkit-scrollbar-thumb {
+  background: rgba(78, 245, 163, 0.35);
+  border-radius: 6px;
+}
+
+@keyframes kycSlideIn {
+  from {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 1200px) {
+  .kyc-banner {
+    right: 1.5rem;
+    width: min(380px, calc(100% - 3rem));
+  }
+}
+
+@media (max-width: 992px) {
+  .kyc-banner {
+    top: 88px;
+    right: 1rem;
+    width: min(360px, calc(100% - 2.5rem));
+  }
+}
+
+@media (max-width: 768px) {
+  .kyc-banner {
+    top: auto;
+    bottom: 1.5rem;
+    left: 1.25rem;
+    right: 1.25rem;
+    width: auto;
+    max-height: calc(100vh - 4rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .kyc-banner {
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    padding: 1.5rem;
+  }
+}
+
+.kyc-banner-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.kyc-banner-info {
+  flex: 1 1 260px;
+}
+
+.kyc-banner-info h3 {
+  font-size: 1.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.kyc-banner-info p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.6;
+}
+
+.kyc-form {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  flex: 1 1 320px;
+}
+
+.kyc-form-field {
+  flex: 1 1 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.kyc-form-field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.kyc-form-field input {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+  color: #ffffff;
+}
+
+.kyc-form-field input:focus {
+  outline: none;
   border-color: rgba(78, 245, 163, 0.5);
 }
 
-.plan-card h3 {
-  color: #4ef5a3;
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-  font-weight: 700;
-  text-shadow: 0 0 10px rgba(78, 245, 163, 0.5);
+.referral-card {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(30, 64, 45, 0.9), rgba(10, 25, 18, 0.95));
+  border: 1px solid rgba(78, 245, 163, 0.2);
+  border-radius: 20px;
+  margin: 2.5rem 0;
+  color: #f0fff7;
+  box-shadow: 0 24px 60px rgba(8, 20, 14, 0.45);
 }
 
-.plan-card .plan-range {
+.referral-content {
+  flex: 1 1 340px;
+}
+
+.referral-content h2 {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.referral-content p {
+  margin-bottom: 1.25rem;
   color: rgba(255, 255, 255, 0.8);
+}
+
+.referral-input {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.referral-input input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.25);
+  color: #ffffff;
+}
+
+.referral-input input:focus {
+  outline: none;
+  border-color: rgba(78, 245, 163, 0.5);
+}
+
+.referral-code-label {
+  display: inline-block;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.referral-status {
+  flex: 1 1 220px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.referral-status h3 {
+  margin-bottom: 1rem;
   font-size: 1.1rem;
-  margin-bottom: 1rem;
 }
 
-.plan-card .plan-rate {
+.referral-status ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.referral-status li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.referral-status li i {
   color: #4ef5a3;
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-  text-shadow: 0 0 15px rgba(78, 245, 163, 0.5);
+}
+.plan-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border-radius: 20px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 18px 48px rgba(3, 10, 7, 0.3);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  overflow: hidden;
 }
 
-.plan-card .plan-duration {
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 1.5rem;
+.plan-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(78, 245, 163, 0.12), transparent 58%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.plan-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 26px 60px rgba(3, 10, 7, 0.45);
+  border-color: rgba(78, 245, 163, 0.45);
+}
+
+.plan-card:hover::before {
+  opacity: 1;
+}
+
+.plan-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.plan-category-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(78, 245, 163, 0.14);
+  border: 1px solid rgba(78, 245, 163, 0.35);
+  color: #4ef5a3;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.plan-card h3 {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.plan-description {
+  font-size: 0.98rem;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.7;
+}
+
+.plan-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.85rem;
+}
+
+.plan-meta-item {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.plan-meta-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.plan-meta-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.plan-meta-highlight {
+  color: #4ef5a3;
+}
+
+.plan-card .invest-btn {
+  margin-top: auto;
+  padding: 0.85rem;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #4ef5a3, #16ab77);
+  color: #0f1f17;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 /* ===== CRYPTO DEPOSIT CARDS ===== */
@@ -1198,6 +1525,33 @@ body.sidebar-open .dashboard-logo {
     padding: 0.75rem 1.25rem;
     font-size: 0.9rem;
   }
+  
+  .kyc-banner-content {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .kyc-form {
+    width: 100%;
+  }
+  
+  .kyc-form-field {
+    flex: 1 1 100%;
+  }
+  
+  .referral-card {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .referral-input {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .referral-input input {
+    width: 100%;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1257,5 +1611,21 @@ body.sidebar-open .dashboard-logo {
   background: rgba(255, 193, 7, 0.2);
   color: #ffc107;
   border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+body.kyc-active .main-content {
+  padding-bottom: 4rem;
+}
+
+@media (max-width: 768px) {
+  body.kyc-active .main-content {
+    padding-bottom: 8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  body.kyc-active .main-content {
+    padding-bottom: 9.5rem;
+  }
 }
 

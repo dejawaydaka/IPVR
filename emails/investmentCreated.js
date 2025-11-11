@@ -31,7 +31,7 @@ exports.investmentCreated = (email, amount, planName, dailyPercent) => `
       </div>
       <div class="details">
         <div class="detail-row">
-          <span><strong>Investment Plan:</strong></span>
+          <span><strong>Pricing Tier:</strong></span>
           <span>${planName}</span>
         </div>
         <div class="detail-row">

@@ -13,7 +13,7 @@
 #### **1. Multi-Page Dashboard System**
 - ✅ Created 5 fully functional dashboard pages:
   - **Dashboard** (`/dashboard/index.html`) - Main metrics, charts, and investment overview
-  - **Investments** (`/dashboard/investments.html`) - 6 investment plans with modal system
+- **Pricing** (`/dashboard/pricing.html`) - 7 synchronized pricing tiers with modal allocation
   - **Deposit** (`/dashboard/deposit.html`) - Crypto deposit methods with proof upload
   - **Withdraw** (`/dashboard/withdraw.html`) - Crypto withdrawal form with history
   - **Settings** (`/dashboard/settings.html`) - Username update and theme toggle
@@ -56,7 +56,7 @@
 ```
 public/dashboard/
 ├── index.html       → Main dashboard (metrics + charts)
-├── investments.html → Investment plans
+├── pricing.html → Pricing catalogue
 ├── deposit.html     → Deposit with upload
 ├── withdraw.html    → Withdrawal form
 ├── settings.html    → User settings

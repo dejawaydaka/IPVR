@@ -68,7 +68,7 @@ IPVR/
 ├── public/
 │   ├── dashboard/         # Multi-page dashboard
 │   │   ├── index.html     # Main dashboard
-│   │   ├── investments.html
+│   │   ├── pricing.html
 │   │   ├── deposit.html
 │   │   ├── withdraw.html
 │   │   ├── settings.html

@@ -1,13 +1,13 @@
 // ===== GLOBAL CONFIG =====
 const API_BASE = '';
 const profitRates = {
-  "Starter Plan": 0.02,
-  "Bronze Plan": 0.025,
-  "Silver Plan": 0.03,
-  "Gold Plan": 0.035,
-  "Platinum Plan": 0.04,
-  "Diamond Plan": 0.05,
-  "Elite Plan": 0.05
+  "Real Estate": 0.02,
+  "Equities/Stocks": 0.025,
+  "Agriculture": 0.03,
+  "Air BNB": 0.035,
+  "Commodities": 0.04,
+  "Cannabis": 0.05,
+  "Retirement Plan": 0.05
 };
 
 let loadingTimeout = null;
@@ -376,7 +376,7 @@ function renderSidebar(currentPage = '') {
   
   const pages = [
     { path: 'index.html', name: 'Dashboard', icon: 'fas fa-chart-line' },
-    { path: 'investments.html', name: 'Investments', icon: 'fas fa-coins' },
+    { path: 'pricing.html', name: 'Pricing', icon: 'fas fa-coins' },
     { path: 'deposit.html', name: 'Deposit', icon: 'fas fa-plus-circle' },
     { path: 'withdraw.html', name: 'Withdraw', icon: 'fas fa-money-bill-wave' },
     { path: 'settings.html', name: 'Settings', icon: 'fas fa-cog' }

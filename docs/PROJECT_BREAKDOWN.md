@@ -47,7 +47,7 @@ IPVR/
 │   ├── styles.css           # Global styles
 │   ├── dashboard/           # New multi-page dashboard
 │   │   ├── index.html       # Main dashboard with metrics
-│   │   ├── investments.html # Investment plans page
+│   │   ├── pricing.html     # Pricing catalogue page
 │   │   ├── deposit.html     # Deposit with proof upload
 │   │   ├── withdraw.html    # Withdrawal page
 │   │   ├── settings.html    # User settings & theme
@@ -126,23 +126,24 @@ IPVR/
 
 ---
 
-## 💰 Investment System
+## 💰 Pricing System
 
-### **Investment Plans**
-| Plan | Amount Range | Daily ROI | Total (7 days) |
-|------|--------------|-----------|----------------|
-| Starter Plan | $50 - $499 | 2% | 14% |
-| Bronze Plan | $500 - $999 | 2.5% | 17.5% |
-| Silver Plan | $1,000 - $1,999 | 3% | 21% |
-| Gold Plan | $2,000 - $3,999 | 3.5% | 24.5% |
-| Platinum Plan | $4,000 - $6,999 | 4% | 28% |
-| Diamond Plan | $7,000+ | 5% | 35% |
+### **Pricing Tiers**
+| Pricing Tier | Amount Range | Daily ROI | Total (7 days) |
+|--------------|--------------|-----------|----------------|
+| Real Estate | $50 - $499 | 2% | 14% |
+| Equities/Stocks | $500 - $999 | 2.5% | 17.5% |
+| Agriculture | $1,000 - $1,999 | 3% | 21% |
+| Air BNB | $2,000 - $3,999 | 3.5% | 24.5% |
+| Commodities | $4,000 - $6,999 | 4% | 28% |
+| Cannabis | $7,000+ | 5% | 35% |
+| Retirement Plan | $7,000+ | 5% | 35% |
 
 ### **Profit Calculation**
 - Daily profit = Investment amount × Daily ROI rate
 - Total profit = Daily profit × Days elapsed (max 7 days)
 - Profits update automatically via `/profits/update` endpoint
-- Investments run for 7 days per plan
+- Investments run for 7 days per pricing tier
 
 ### **Balance Management**
 - New users start with $5 bonus

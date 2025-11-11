@@ -29,7 +29,7 @@ exports.investmentMatured = (email, planName, amount, totalProfit) => `
         <div class="profit-amount">$${totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
       </div>
       <div style="background: #f9fafb; padding: 15px; border-radius: 6px; margin: 20px 0;">
-        <p style="margin: 5px 0;"><strong>Investment Plan:</strong> ${planName}</p>
+        <p style="margin: 5px 0;"><strong>Pricing Tier:</strong> ${planName}</p>
         <p style="margin: 5px 0;"><strong>Principal Amount:</strong> $${amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
         <p style="margin: 5px 0;"><strong>Total Profit:</strong> $${totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
       </div>

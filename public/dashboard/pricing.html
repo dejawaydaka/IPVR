@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pricing Catalogue - RealSphere</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/Rsblack.png">
+  <link rel="shortcut icon" type="image/png" href="/Rsblack.png">
+  <link rel="apple-touch-icon" href="/Rsblack.png">
+  
+  <!-- Open Graph / Social Media Meta Tags -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Pricing Catalogue - RealSphere">
+  <meta property="og:description" content="Review synchronized pricing tiers across every RealSphere strategy with transparent returns.">
+  <meta property="og:image" content="https://realsphereltd.com/Rsblack.png">
+  <meta property="og:url" content="https://realsphereltd.com/dashboard/pricing.html">
+  <meta property="og:site_name" content="RealSphere">
+  
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pricing Catalogue - RealSphere">
+  <meta name="twitter:description" content="Review synchronized pricing tiers across every RealSphere strategy with transparent returns.">
+  <meta name="twitter:image" content="https://realsphereltd.com/Rsblack.png">
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="pricing-page">
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+  
+  <!-- Dashboard Logo (Top Left) -->
+  <div class="dashboard-logo">
+    <a href="../index.html" style="display: inline-block; cursor: pointer;">
+      <img src="../Rswhite.png" alt="RealSphere">
+    </a>
+  </div>
+  
+  <!-- Mobile Hamburger Menu -->
+  <div class="mobile-menu-toggle" id="mobileMenuToggle">
+    <i class="fas fa-bars"></i>
+  </div>
+  
+  <!-- Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <header>
+      <h1>Pricing Catalogue</h1>
+      <div class="user-info">
+        <span id="userBalance">Loading...</span>
+      </div>
+    </header>
+
+    <div class="page-section">
+      <h2>Choose Your Pricing Tier</h2>
+      <p style="margin-bottom: 2rem; opacity: 0.8;">Every tier mirrors the public pricing page and admin console, giving you consistent insights before investing.</p>
+      
+      <div class="error-message" id="errorMessage"></div>
+      <div class="success-message" id="successMessage"></div>
+
+      <div class="plans-grid" id="pricingGrid">
+        <!-- Pricing tiers will be rendered here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Invest Modal -->
+  <div class="modal-overlay" id="investModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="investModalTitle">Allocate to Pricing Tier</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="investForm">
+          <div class="form-group">
+            <label>Pricing Tier</label>
+            <input type="text" id="investPlanName" readonly style="background: rgba(0,0,0,0.2);">
+          </div>
+          <div class="form-group">
+            <label>Amount (USD)</label>
+            <input type="number" id="investAmount" placeholder="Enter investment amount" min="1" step="0.01" required>
+            <small style="color: rgba(255,255,255,0.6); margin-top: 0.5rem; display: block;">
+              Minimum: $<span id="minAmount">0</span>
+            </small>
+          </div>
+          <div class="form-group">
+            <label>Available Balance</label>
+            <input type="text" id="availableBalance" readonly style="background: rgba(0,0,0,0.2);">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('investModal')">Cancel</button>
+        <button class="btn" onclick="confirmInvestment()">Confirm Investment</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    const FALLBACK_PRICING = [
+      {
+        name: 'Real Estate',
+        category: 'Property portfolios',
+        minAmount: 50,
+        maxAmount: 499,
+        dailyPercent: 0.02,
+        duration: 7,
+        description: 'Real estate pricing involves valuing properties based on location, size, condition, amenities, and demand using comparative, income, and cost approaches.'
+      },
+      {
+        name: 'Equities/Stocks',
+        category: 'Market instruments',
+        minAmount: 500,
+        maxAmount: 999,
+        dailyPercent: 0.025,
+        duration: 7,
+        description: 'Equity pricing reacts to supply and demand, company performance, macroeconomic indicators, industry trends, and investor sentiment across public exchanges.'
+      },
+      {
+        name: 'Agriculture',
+        category: 'Agro investments',
+        minAmount: 1000,
+        maxAmount: 1999,
+        dailyPercent: 0.03,
+        duration: 7,
+        description: 'Agriculture pricing blends cost-based and market-based strategies while accounting for yield, weather patterns, market demand, policy, and trade dynamics.'
+      },
+      {
+        name: 'Air BNB',
+        category: 'Short-term rentals',
+        minAmount: 2000,
+        maxAmount: 3999,
+        dailyPercent: 0.035,
+        duration: 7,
+        description: 'Airbnb pricing weighs location, property type, amenities, seasonality, events, and competition, using dynamic algorithms to adjust nightly rates.'
+      },
+      {
+        name: 'Commodities',
+        category: 'Exchange-traded assets',
+        minAmount: 4000,
+        maxAmount: 6999,
+        dailyPercent: 0.04,
+        duration: 7,
+        description: 'Commodities pricing monitors supply-demand shifts, geopolitical events, weather, currency moves, and global macro trends across exchange benchmarks.'
+      },
+      {
+        name: 'Cannabis',
+        category: 'Emerging markets',
+        minAmount: 7000,
+        maxAmount: null,
+        dailyPercent: 0.05,
+        duration: 7,
+        description: 'Cannabis pricing depends on product type, potency, brand, regulation, and market demand, requiring agility as legalization landscapes evolve.'
+      },
+      {
+        name: 'Retirement Plan',
+        category: 'Long-horizon income',
+        minAmount: 7000,
+        maxAmount: null,
+        dailyPercent: 0.05,
+        duration: 7,
+        description: 'Retirement pricing aligns target income with lifestyle goals by modelling current finances, future needs, and disciplined long-term allocations.'
+      }
+    ];
+
+    const pricingGrid = document.getElementById('pricingGrid');
+    let currentUser = null;
+    let pricingOptions = [];
+    let selectedPlan = null;
+
+    const formatCurrency = (value) => `$${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 0 })}`;
+    const formatPercent = (value) => {
+      const percent = Number(value || 0) * 100;
+      const decimals = Number.isInteger(percent) ? 0 : 1;
+      return `${percent.toFixed(decimals)}%`;
+    };
+    const formatRange = (min, max) => (max === null || max === undefined || !isFinite(Number(max)))
+      ? `${formatCurrency(min)}+`
+      : `${formatCurrency(min)} – ${formatCurrency(max)}`;
+
+    const normalisePricing = (data) => {
+      if (!Array.isArray(data)) return [];
+      return data.map((plan, index) => {
+        const fallback = FALLBACK_PRICING.find(item => item.name === plan.name) || {};
+        const minAmount = Number(plan.minAmount ?? fallback.minAmount ?? 0);
+        const maxAmountRaw = plan.maxAmount ?? fallback.maxAmount ?? null;
+        const maxAmount = maxAmountRaw === null || maxAmountRaw === undefined ? null : Number(maxAmountRaw);
+        const dailyPercent = Number(plan.dailyPercent ?? fallback.dailyPercent ?? 0);
+        const duration = Number(plan.duration ?? fallback.duration ?? 7);
+        const totalPercent = dailyPercent * duration;
+
+        return {
+          id: plan.id ?? index + 1,
+          name: plan.name ?? fallback.name ?? `Tier ${index + 1}`,
+          category: plan.category ?? fallback.category ?? 'Portfolio strategy',
+          description: plan.description ?? fallback.description ?? '',
+          minAmount,
+          maxAmount,
+          dailyPercent,
+          duration,
+          totalPercent,
+          rangeLabel: plan.rangeLabel ?? formatRange(minAmount, maxAmount),
+          dailyReturnLabel: plan.dailyReturnLabel ?? formatPercent(dailyPercent),
+          totalReturnLabel: plan.totalReturnLabel ?? formatPercent(totalPercent),
+          durationLabel: plan.durationLabel ?? `${duration} days`
+        };
+      });
+    };
+
+    const renderPricing = (plans) => {
+      if (!pricingGrid) return;
+
+      if (!plans.length) {
+        pricingGrid.innerHTML = `
+          <div class="plan-card">
+            <p style="color: rgba(255,255,255,0.75); margin: 0;">No pricing data available. Please try again shortly.</p>
+          </div>
+        `;
+        return;
+      }
+
+      pricingGrid.innerHTML = plans.map((plan, idx) => `
+        <div class="plan-card pricing-card-elevated" data-plan="${sanitizeHTML(plan.name)}" style="animation-delay: ${idx * 0.08}s">
+          <div class="plan-card-header">
+            <span class="plan-category-badge">${sanitizeHTML(plan.category)}</span>
+            <h3>${sanitizeHTML(plan.name)}</h3>
+          </div>
+          <p class="plan-description">${sanitizeHTML(plan.description)}</p>
+          <div class="plan-meta">
+            <div class="plan-meta-item">
+              <span class="plan-meta-label">Entry Capital</span>
+              <span class="plan-meta-value">${sanitizeHTML(plan.rangeLabel)}</span>
+            </div>
+            <div class="plan-meta-item">
+              <span class="plan-meta-label">Daily ROI</span>
+              <span class="plan-meta-value plan-meta-highlight">${sanitizeHTML(plan.dailyReturnLabel)}</span>
+            </div>
+            <div class="plan-meta-item">
+              <span class="plan-meta-label">Cycle Length</span>
+              <span class="plan-meta-value">${sanitizeHTML(plan.durationLabel)}</span>
+            </div>
+            <div class="plan-meta-item">
+              <span class="plan-meta-label">Total Cycle Return</span>
+              <span class="plan-meta-value">${sanitizeHTML(plan.totalReturnLabel)}</span>
+            </div>
+          </div>
+          <button class="invest-btn" onclick="openInvestModal('${sanitizeHTML(plan.name)}')">
+            <i class="fas fa-coins"></i> Allocate
+          </button>
+        </div>
+      `).join('');
+    };
+
+    async function loadPricingOptions() {
+      try {
+        const response = await fetch('/api/pricing', { cache: 'no-store' });
+        if (response.ok) {
+          const payload = await response.json();
+          pricingOptions = normalisePricing(payload?.pricing);
+        } else {
+          pricingOptions = normalisePricing(FALLBACK_PRICING);
+        }
+      } catch (err) {
+        console.warn('Failed to load pricing data:', err);
+        pricingOptions = normalisePricing(FALLBACK_PRICING);
+      }
+      renderPricing(pricingOptions);
+    }
+
+    function openInvestModal(planName) {
+      selectedPlan = pricingOptions.find(plan => plan.name === planName);
+      if (!selectedPlan) {
+        showError('Pricing option unavailable. Please refresh the page.');
+        return;
+      }
+
+      if (!currentUser) {
+        showError('Please login to invest');
+        return;
+      }
+
+      const min = Number(selectedPlan.minAmount || 0);
+      const max = selectedPlan.maxAmount === null || selectedPlan.maxAmount === undefined ? null : Number(selectedPlan.maxAmount);
+
+      document.getElementById('investPlanName').value = selectedPlan.name;
+      document.getElementById('minAmount').textContent = min.toLocaleString();
+      document.getElementById('investAmount').min = min;
+      document.getElementById('investAmount').max = max ? max : '';
+      updateAvailableBalance();
+      openModal('investModal');
+    }
+
+    async function updateAvailableBalance() {
+      if (!currentUser) return;
+      try {
+        const userData = await fetchUserData(currentUser.email);
+        const totalProfit = Number(userData.totalProfit || 0);
+        const balance = Number(userData.balance || 0);
+        const totalInvestment = Number(userData.totalInvestment || 0);
+        const available = balance + totalProfit - totalInvestment;
+
+        document.getElementById('availableBalance').value = `$${available.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        document.getElementById('userBalance').textContent = `Balance: $${available.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      } catch (error) {
+        console.error('Error fetching balance:', error);
+      }
+    }
+
+    async function confirmInvestment() {
+      if (!selectedPlan || !currentUser) return;
+
+      const amount = Number(document.getElementById('investAmount').value);
+      const min = Number(selectedPlan.minAmount || 0);
+      const max = selectedPlan.maxAmount === null || selectedPlan.maxAmount === undefined ? Infinity : Number(selectedPlan.maxAmount);
+
+      if (!amount || amount < min) {
+        showError(`Minimum allocation is $${min.toLocaleString()}`);
+        return;
+      }
+
+      if (amount > max) {
+        showError(`Maximum allocation is $${Number(selectedPlan.maxAmount).toLocaleString()}`);
+        return;
+      }
+
+      try {
+        const userData = await fetchUserData(currentUser.email);
+        const totalProfit = Number(userData.totalProfit || 0);
+        const balance = Number(userData.balance || 0);
+        const totalInvestment = Number(userData.totalInvestment || 0);
+        const available = balance + totalProfit - totalInvestment;
+
+        if (amount > available) {
+          showError(`Insufficient balance. Available: $${available.toLocaleString(undefined, { minimumFractionDigits: 2 })}`);
+          return;
+        }
+
+        await makeInvestment(currentUser.email, amount, selectedPlan.name);
+        showSuccess('Allocation successful!');
+        closeModal('investModal');
+        document.getElementById('investForm').reset();
+        await updateAvailableBalance();
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1500);
+      } catch (error) {
+        showError(error.message || 'Investment failed');
+      }
+    }
+
+    window.openInvestModal = openInvestModal;
+    window.confirmInvestment = confirmInvestment;
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      currentUser = getCurrentUser();
+      if (!currentUser) return;
+
+      await loadPricingOptions();
+      await updateAvailableBalance();
+    });
+  </script>
+  
+  <!-- Smartsupp Live Chat script -->
+  <script type="text/javascript">
+      var _smartsupp = _smartsupp || {};
+      _smartsupp.key = '2f2fecf5784eca7c31d959fd1e245ed22d4971ab';
+      window.smartsupp||(function(d) {
+          var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
+          s=d.getElementsByTagName('script')[0];c=d.createElement('script');
+          c.type='text/javascript';c.charset='utf-8';c.async=true;
+          c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
+      })(document);
+  </script>
+  <noscript> Powered by <a href="https://www.smartsupp.com" target="_blank">Smartsupp</a></noscript>
+</body>
+</html>
+

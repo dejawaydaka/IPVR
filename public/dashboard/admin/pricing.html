@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Investment Plans - Admin Panel</title>
+  <title>Pricing Catalogue - Admin Panel</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="../style.css">
 </head>
@@ -32,25 +32,27 @@
   <div class="main-content">
     <header>
       <div class="user-info">
-        <h1>Investment Plans <i class="fas fa-coins"></i></h1>
+        <h1>Pricing Catalogue <i class="fas fa-coins"></i></h1>
         <div class="user-details">
           <span class="user-role">Administrator</span>
         </div>
       </div>
       <div class="header-spacer"></div>
       <button class="btn btn-primary" onclick="openPlanModal()">
-        <i class="fas fa-plus"></i> Add Plan
+        <i class="fas fa-plus"></i> Add Pricing Tier
       </button>
     </header>
 
-    <!-- Plans Table -->
+    <!-- Pricing Table -->
     <div class="admin-section">
-      <h2><i class="fas fa-list"></i> Investment Plans</h2>
+      <h2><i class="fas fa-list"></i> Pricing Catalogue</h2>
       <div class="table-section">
         <table id="plansTable">
           <thead>
             <tr>
-              <th>Plan Name</th>
+              <th>Pricing Name</th>
+              <th>Category</th>
+              <th>Description</th>
               <th>Min Amount</th>
               <th>Max Amount</th>
               <th>Daily %</th>
@@ -61,7 +63,7 @@
           </thead>
           <tbody id="plansBody">
             <tr>
-              <td colspan="7" style="text-align: center; padding: 2rem;">Loading...</td>
+              <td colspan="9" style="text-align: center; padding: 2rem;">Loading...</td>
             </tr>
           </tbody>
         </table>
@@ -73,13 +75,13 @@
   <div id="planModal" class="modal-overlay">
     <div class="modal">
       <div class="modal-header">
-        <h3 id="planModalTitle">Add Investment Plan</h3>
+        <h3 id="planModalTitle">Add Pricing Tier</h3>
         <button class="modal-close" onclick="closeModal('planModal')">&times;</button>
       </div>
       <form id="planForm" onsubmit="savePlan(event)">
         <input type="hidden" id="planId">
         <div class="form-group">
-          <label>Plan Name</label>
+          <label>Pricing Name</label>
           <input type="text" id="planName" required>
         </div>
         <div class="form-group">
@@ -105,7 +107,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeModal('planModal')">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Plan</button>
+          <button type="submit" class="btn btn-primary">Save Pricing</button>
         </div>
       </form>
     </div>
@@ -134,6 +136,45 @@
       if (!str) return '';
       return String(str).replace(/\\'/g, "'").replace(/&quot;/g, '"').replace(/\\n/g, '\n');
     }
+    function sanitizeHTML(value) {
+      if (!value) return '';
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    const PRICING_METADATA = {
+      'Real Estate': {
+        category: 'Property portfolios',
+        description: 'Real estate pricing involves valuing properties based on various factors such as location, size, condition, amenities, and market demand. Common pricing strategies include comparative market analysis (comparing the property to similar ones in the area), income approach (evaluating the property\'s income potential), and cost approach (estimating the cost to replace the property).'
+      },
+      'Equities/Stocks': {
+        category: 'Market instruments',
+        description: 'Pricing of equities or stocks is primarily determined by supply and demand in the stock market. Factors influencing stock prices include company performance, economic indicators, industry trends, and investor sentiment. Stock prices are often determined by the market through a continuous auction process on stock exchanges.'
+      },
+      'Agriculture': {
+        category: 'Agro investments',
+        description: 'Agriculture pricing involves determining the value of agricultural products such as crops and livestock. Pricing can be influenced by factors such as crop yield, weather conditions, market demand, government policies, and international trade. Farmers often use a combination of cost-based pricing, market-based pricing, and negotiation with buyers to set prices for their products.'
+      },
+      'Air BNB': {
+        category: 'Short-term rentals',
+        description: 'Airbnb pricing refers to setting rental prices for properties listed on the Airbnb platform. Hosts typically consider factors such as location, property type, amenities, seasonality, local events, and competition when determining their pricing strategy. Dynamic pricing algorithms may also be used to adjust prices based on demand and supply fluctuations.'
+      },
+      'Commodities': {
+        category: 'Exchange-traded assets',
+        description: 'Commodities pricing involves determining the value of raw materials or primary agricultural products that are traded in bulk on commodity exchanges. Prices for commodities such as oil, gold, wheat, and coffee are influenced by factors such as supply and demand dynamics, geopolitical events, weather conditions, currency fluctuations, and global economic trends.'
+      },
+      'Cannabis': {
+        category: 'Emerging markets',
+        description: 'Cannabis pricing refers to the pricing of cannabis products, including marijuana and hemp-derived products. Pricing strategies can vary depending on factors such as product type (e.g., flower, edibles, extracts), potency, quality, brand reputation, regulatory environment, and market demand. Pricing in the cannabis industry is still evolving due to ongoing legalization and regulation changes in various jurisdictions.'
+      },
+      'Retirement Plan': {
+        category: 'Long-horizon income',
+        description: 'Retirement planning is the process of determining your retirement income goals and the actions and decisions necessary to achieve those goals. It involves analyzing your current financial status, estimating your financial needs during retirement, and creating a strategy to reach your desired retirement lifestyle.'
+      }
+    };
+
     async function loadPlans() {
       if (!checkAdminAuth()) return;
       
@@ -141,13 +182,13 @@
         showLoading(true);
         const res = await adminFetch('/api/admin/plans');
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: Failed to fetch plans`);
+          throw new Error(`HTTP ${res.status}: Failed to fetch pricing tiers`);
         }
         const data = await res.json();
         renderPlans(data.plans || []);
       } catch (error) {
-        console.error('Load plans error:', error);
-        showToast(error.message || 'Failed to load plans', 'error');
+        console.error('Load pricing error:', error);
+        showToast(error.message || 'Failed to load pricing tiers', 'error');
       } finally {
         showLoading(false);
       }
@@ -158,13 +199,17 @@
       if (!tbody) return;
       
       if (plans.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No plans found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 2rem;">No pricing tiers found</td></tr>';
         return;
       }
       
-      tbody.innerHTML = plans.map(plan => `
+      tbody.innerHTML = plans.map(plan => {
+        const meta = PRICING_METADATA[plan.plan_name] || {};
+        return `
         <tr>
           <td><strong>${plan.plan_name}</strong></td>
+          <td>${meta.category ? sanitizeHTML(meta.category) : '-'}</td>
+          <td class="pricing-meta-cell">${meta.description ? sanitizeHTML(meta.description) : '-'}</td>
           <td>$${formatNumber(plan.min_amount)}</td>
           <td>${plan.max_amount ? '$' + formatNumber(plan.max_amount) : 'Unlimited'}</td>
           <td>${(plan.daily_percent * 100).toFixed(2)}%</td>
@@ -183,7 +228,8 @@
             </button>
           </td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
     }
 
     function openPlanModal(id = null, name = '', minAmount = 0, maxAmount = null, dailyPercent = 0, duration = 7, isActive = true) {
@@ -194,7 +240,7 @@
       document.getElementById('planDailyPercent').value = dailyPercent;
       document.getElementById('planDuration').value = duration;
       document.getElementById('planIsActive').checked = isActive;
-      document.getElementById('planModalTitle').textContent = id ? 'Edit Investment Plan' : 'Add Investment Plan';
+      document.getElementById('planModalTitle').textContent = id ? 'Edit Pricing Tier' : 'Add Pricing Tier';
       openModal('planModal');
     }
 
@@ -227,35 +273,35 @@
         });
         
         if (res.ok) {
-          showToast('Plan saved successfully', 'success');
+          showToast('Pricing tier saved successfully', 'success');
           closeModal('planModal');
           loadPlans();
         } else {
           const data = await res.json();
-          showToast(data.message || 'Failed to save plan', 'error');
+          showToast(data.message || 'Failed to save pricing tier', 'error');
         }
       } catch (error) {
-        console.error('Save plan error:', error);
-        showToast('Failed to save plan', 'error');
+        console.error('Save pricing error:', error);
+        showToast('Failed to save pricing tier', 'error');
       } finally {
         showLoading(false);
       }
     }
 
     async function deletePlan(id) {
-      if (!confirm('Delete this investment plan?')) return;
+      if (!confirm('Delete this pricing tier?')) return;
       
       try {
         const res = await adminFetch(`/api/admin/plans/${id}`, { method: 'DELETE' });
         if (res.ok) {
-          showToast('Plan deleted successfully', 'success');
+          showToast('Pricing tier deleted successfully', 'success');
           loadPlans();
         } else {
-          showToast('Failed to delete plan', 'error');
+          showToast('Failed to delete pricing tier', 'error');
         }
       } catch (error) {
-        console.error('Delete plan error:', error);
-        showToast('Failed to delete plan', 'error');
+        console.error('Delete pricing error:', error);
+        showToast('Failed to delete pricing tier', 'error');
       }
     }
 

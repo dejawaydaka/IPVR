@@ -357,6 +357,57 @@ const pool = new Pool({
 // Test database connection (non-blocking for Railway) and ensure schema
 let dbConnected = false;
 
+function createRandomReferralCode(length = 8) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+async function generateReferralCode() {
+    while (true) {
+        const code = createRandomReferralCode();
+        const { rows } = await pool.query('SELECT 1 FROM users WHERE referral_code = $1', [code]);
+        if (rows.length === 0) {
+            return code;
+        }
+    }
+}
+
+async function ensureReferralCodes() {
+    const { rows } = await pool.query('SELECT id FROM users WHERE referral_code IS NULL OR referral_code = \'\'');
+    for (const row of rows) {
+        const code = await generateReferralCode();
+        await pool.query('UPDATE users SET referral_code = $1 WHERE id = $2', [code, row.id]);
+    }
+}
+
+async function awardReferralBonus(referrerId, referredEmail = '', dbClient = pool) {
+    const bonusAmount = 5;
+    const executor = dbClient && typeof dbClient.query === 'function' ? dbClient : pool;
+
+    await executor.query(
+        'UPDATE users SET balance = balance + $1, bonus = bonus + $1 WHERE id = $2',
+        [bonusAmount, referrerId]
+    );
+    await executor.query(
+        `INSERT INTO transactions (user_id, type, amount, currency, status, description, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+        [
+            referrerId,
+            'referral_bonus',
+            bonusAmount,
+            'USD',
+            'completed',
+            referredEmail
+                ? `Referral Bonus - ${referredEmail} verified`
+                : 'Referral Bonus'
+        ]
+    );
+}
+
 async function ensureSchema() {
   const createUsers = `
     CREATE TABLE IF NOT EXISTS users (
@@ -531,11 +582,36 @@ async function ensureSchema() {
     await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token TEXT;');
     await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT;');
     await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30);');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS country VARCHAR(100);');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code VARCHAR(20);');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by INTEGER;');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_bonus_awarded BOOLEAN DEFAULT FALSE;');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_status VARCHAR(20) DEFAULT \'pending\';');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_full_name VARCHAR(255);');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_front_url TEXT;');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_back_url TEXT;');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_submitted_at TIMESTAMP;');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_reviewed_at TIMESTAMP;');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_reviewer_email VARCHAR(255);');
+    await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS users_referral_code_idx ON users(referral_code) WHERE referral_code IS NOT NULL;');
+    await pool.query('CREATE INDEX IF NOT EXISTS users_referred_by_idx ON users(referred_by);');
     console.log('✅ Email verification columns added to users table');
   } catch (err) {
     // Columns might already exist, ignore error
     if (!err.message.includes('already exists')) {
       console.error('Error adding email columns:', err.message);
+    }
+  }
+  try {
+    await pool.query(`
+      ALTER TABLE users
+      ADD CONSTRAINT fk_users_referred_by
+      FOREIGN KEY (referred_by) REFERENCES users(id) ON DELETE SET NULL
+    ;`);
+  } catch (err) {
+    if (!err.message.includes('already exists')) {
+      console.error('Error adding referred_by foreign key:', err.message);
     }
   }
 }
@@ -555,6 +631,13 @@ pool.connect()
         
         // Small delay to ensure table is fully created
         await new Promise(resolve => setTimeout(resolve, 500));
+
+        try {
+          await ensureReferralCodes();
+          console.log('🔁 Referral codes ensured for all users');
+        } catch (referralErr) {
+          console.error('Error ensuring referral codes:', referralErr.message);
+        }
         
         // Initialize investment plans after schema is ready
         await initializeInvestmentPlans();
@@ -677,6 +760,35 @@ const walletUpload = multer({
     }
 });
 
+const kycStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const kycPath = path.join(__dirname, 'public', 'uploads', 'kyc');
+        if (!fs.existsSync(kycPath)) {
+            fs.mkdirSync(kycPath, { recursive: true });
+        }
+        cb(null, kycPath);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
+    }
+});
+
+const kycUpload = multer({
+    storage: kycStorage,
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed for KYC uploads'));
+        }
+    }
+}).fields([
+    { name: 'kycFront', maxCount: 1 },
+    { name: 'kycBack', maxCount: 1 }
+]);
+
 // Middleware to serve static files
 app.use(express.static('public'));
 
@@ -707,16 +819,130 @@ function sanitizeString(str) {
     return str.trim().replace(/[<>]/g, '');
 }
 
-// Profit rates for investment plans
-const profitRates = {
-    'Starter Plan': 0.02,
-    'Bronze Plan': 0.025,
-    'Silver Plan': 0.03,
-    'Gold Plan': 0.035,
-    'Platinum Plan': 0.04,
-    'Diamond Plan': 0.05,
-    'Elite Plan': 0.05
-};
+function sanitizeOptionalString(str) {
+    if (!str || typeof str !== 'string') return '';
+    return str.trim();
+}
+
+function normalizeReferralCode(code) {
+    if (!code || typeof code !== 'string') return '';
+    return code.trim().toUpperCase();
+}
+
+const PRICING_PLANS = [
+    {
+        name: 'Real Estate',
+        slug: 'real-estate',
+        category: 'Property portfolios',
+        minAmount: 50,
+        maxAmount: 499,
+        dailyPercent: 0.02,
+        duration: 7,
+        description: `Real estate pricing involves valuing properties based on various factors such as location, size, condition, amenities, and market demand. Common pricing strategies include comparative market analysis (comparing the property to similar ones in the area), income approach (evaluating the property's income potential), and cost approach (estimating the cost to replace the property).`,
+        highlights: [
+            'Benchmark assets against comparable properties in prime locations.',
+            'Balance income, cost, and market approaches for valuation discipline.',
+            'Monitor demand signals to time acquisitions and exits effectively.'
+        ]
+    },
+    {
+        name: 'Equities/Stocks',
+        slug: 'equities-stocks',
+        category: 'Market instruments',
+        minAmount: 500,
+        maxAmount: 999,
+        dailyPercent: 0.025,
+        duration: 7,
+        description: `Pricing of equities or stocks is primarily determined by supply and demand in the stock market. Factors influencing stock prices include company performance, economic indicators, industry trends, and investor sentiment. Stock prices are often determined by the market through a continuous auction process on stock exchanges.`,
+        highlights: [
+            'React to market supply-and-demand shifts in real time.',
+            'Track company fundamentals alongside macroeconomic indicators.',
+            'Use exchange-driven price discovery to capture momentum opportunities.'
+        ]
+    },
+    {
+        name: 'Agriculture',
+        slug: 'agriculture',
+        category: 'Agro investments',
+        minAmount: 1000,
+        maxAmount: 1999,
+        dailyPercent: 0.03,
+        duration: 7,
+        description: `Agriculture pricing involves determining the value of agricultural products such as crops and livestock. Pricing can be influenced by factors such as crop yield, weather conditions, market demand, government policies, and international trade. Farmers often use a combination of cost-based pricing, market-based pricing, and negotiation with buyers to set prices for their products.`,
+        highlights: [
+            'Balance yield forecasts with weather and seasonal demand patterns.',
+            'Blend cost-based and market-based pricing for resilient margins.',
+            'Stay responsive to policy changes and cross-border trade flows.'
+        ]
+    },
+    {
+        name: 'Air BNB',
+        slug: 'air-bnb',
+        category: 'Short-term rentals',
+        minAmount: 2000,
+        maxAmount: 3999,
+        dailyPercent: 0.035,
+        duration: 7,
+        description: `Airbnb pricing refers to setting rental prices for properties listed on the Airbnb platform. Hosts typically consider factors such as location, property type, amenities, seasonality, local events, and competition when determining their pricing strategy. Dynamic pricing algorithms may also be used to adjust prices based on demand and supply fluctuations.`,
+        highlights: [
+            'Adjust nightly rates around events, seasonality, and demand spikes.',
+            'Differentiate offerings with amenities and localized guest experiences.',
+            'Adopt dynamic pricing tools to stay competitive in active markets.'
+        ]
+    },
+    {
+        name: 'Commodities',
+        slug: 'commodities',
+        category: 'Exchange-traded assets',
+        minAmount: 4000,
+        maxAmount: 6999,
+        dailyPercent: 0.04,
+        duration: 7,
+        description: `Commodities pricing involves determining the value of raw materials or primary agricultural products that are traded in bulk on commodity exchanges. Prices for commodities such as oil, gold, wheat, and coffee are influenced by factors such as supply and demand dynamics, geopolitical events, weather conditions, currency fluctuations, and global economic trends.`,
+        highlights: [
+            'Manage exposure to global supply-and-demand shocks.',
+            'Track geopolitical catalysts and currency movements closely.',
+            'Leverage exchange benchmarks for transparent, real-time pricing.'
+        ]
+    },
+    {
+        name: 'Cannabis',
+        slug: 'cannabis',
+        category: 'Emerging markets',
+        minAmount: 7000,
+        maxAmount: null,
+        dailyPercent: 0.05,
+        duration: 7,
+        description: `Cannabis pricing refers to the pricing of cannabis products, including marijuana and hemp-derived products. Pricing strategies can vary depending on factors such as product type (e.g., flower, edibles, extracts), potency, quality, brand reputation, regulatory environment, and market demand. Pricing in the cannabis industry is still evolving due to ongoing legalization and regulation changes in various jurisdictions.`,
+        highlights: [
+            'Align price models with evolving regulatory requirements.',
+            'Segment offerings by potency, quality, and brand positioning.',
+            'Respond quickly to demand shifts in fast-moving regional markets.'
+        ]
+    },
+    {
+        name: 'Retirement Plan',
+        slug: 'retirement-plan',
+        category: 'Long-horizon income',
+        minAmount: 7000,
+        maxAmount: null,
+        dailyPercent: 0.05,
+        duration: 7,
+        description: `Retirement planning is the process of determining your retirement income goals and the actions and decisions necessary to achieve those goals. It involves analyzing your current financial status, estimating your financial needs during retirement, and creating a strategy to reach your desired retirement lifestyle.`,
+        highlights: [
+            'Define retirement income targets based on lifestyle aspirations.',
+            'Model savings, investments, and expected cash-flow requirements.',
+            'Rebalance regularly to keep long-term goals on track.'
+        ]
+    }
+];
+
+const pricingPlanNames = PRICING_PLANS.map(plan => plan.name);
+
+const profitRates = PRICING_PLANS.reduce((map, plan) => {
+    map[plan.name] = plan.dailyPercent;
+    return map;
+}, {});
 
 // Helper to calculate profits from database investments
 async function calculateUserProfits(userId) {
@@ -776,25 +1002,126 @@ async function checkDatabase() {
     }
 }
 
-// Public route to view investment plans
-app.get('/plans', (req, res) => {
-    res.json({
-        plans: [
-            { id: 1, name: 'Starter Plan', dailyReturn: '2%', minInvestment: '$50' },
-            { id: 2, name: 'Bronze Plan', dailyReturn: '2.5%', minInvestment: '$500' },
-            { id: 3, name: 'Silver Plan', dailyReturn: '3%', minInvestment: '$1000' },
-            { id: 4, name: 'Gold Plan', dailyReturn: '3.5%', minInvestment: '$2000' },
-            { id: 5, name: 'Diamond Plan', dailyReturn: '4%', minInvestment: '$4000' },
-            { id: 6, name: 'Elite Plan', dailyReturn: '5%', minInvestment: '$7000' }
-        ]
-    });
+async function getPricingData() {
+    try {
+        await checkDatabase();
+
+        const { rows } = await pool.query(
+            'SELECT * FROM investment_plans ORDER BY min_amount ASC'
+        );
+
+        const dbPlansByName = rows.reduce((acc, row) => {
+            acc[row.plan_name] = row;
+            return acc;
+        }, {});
+
+        const formatCurrency = (value) => {
+            const number = Number(value || 0);
+            return `$${number.toLocaleString('en-US', { minimumFractionDigits: 0 })}`;
+        };
+
+        const formatPercent = (value) => {
+            const percent = (Number(value || 0) * 100);
+            const decimals = Number.isInteger(percent) ? 0 : 1;
+            return `${percent.toFixed(decimals)}%`;
+        };
+
+        const formatRange = (min, max) => {
+            if (max === null || max === undefined) {
+                return `${formatCurrency(min)}+`;
+            }
+            return `${formatCurrency(min)} – ${formatCurrency(max)}`;
+        };
+
+        return PRICING_PLANS.map((plan, index) => {
+            const dbPlan = dbPlansByName[plan.name];
+            const minAmount = dbPlan ? Number(dbPlan.min_amount) : plan.minAmount;
+            const maxAmount = dbPlan && dbPlan.max_amount !== null
+                ? Number(dbPlan.max_amount)
+                : plan.maxAmount;
+            const dailyPercent = dbPlan ? Number(dbPlan.daily_percent) : plan.dailyPercent;
+            const duration = dbPlan ? Number(dbPlan.duration) : plan.duration;
+            const totalPercent = dailyPercent * duration;
+            const isActive = dbPlan ? dbPlan.is_active !== false : true;
+            const id = dbPlan ? dbPlan.id : index + 1;
+
+            return {
+                id,
+                name: plan.name,
+                slug: plan.slug,
+                category: plan.category,
+                description: plan.description,
+                highlights: plan.highlights,
+                minAmount,
+                maxAmount,
+                dailyPercent,
+                duration,
+                totalPercent,
+                isActive,
+                rangeLabel: formatRange(minAmount, maxAmount),
+                dailyReturnLabel: formatPercent(dailyPercent),
+                totalReturnLabel: formatPercent(totalPercent),
+                durationLabel: `${duration} days`
+            };
+        });
+    } catch (err) {
+        console.error('Pricing data load error:', err.message);
+        // Fallback to static defaults if database lookup fails
+        return PRICING_PLANS.map((plan, index) => {
+            const totalPercent = plan.dailyPercent * plan.duration;
+            return {
+                id: index + 1,
+                name: plan.name,
+                slug: plan.slug,
+                category: plan.category,
+                description: plan.description,
+                highlights: plan.highlights,
+                minAmount: plan.minAmount,
+                maxAmount: plan.maxAmount,
+                dailyPercent: plan.dailyPercent,
+                duration: plan.duration,
+                totalPercent,
+                isActive: true,
+                rangeLabel: plan.maxAmount === null
+                    ? `$${plan.minAmount.toLocaleString()}+`
+                    : `$${plan.minAmount.toLocaleString()} – $${plan.maxAmount.toLocaleString()}`,
+                dailyReturnLabel: `${(plan.dailyPercent * 100).toFixed(1)}%`,
+                totalReturnLabel: `${(totalPercent * 100).toFixed(1)}%`,
+                durationLabel: `${plan.duration} days`
+            };
+        });
+    }
+}
+
+app.get('/api/pricing', async (req, res) => {
+    try {
+        const pricing = await getPricingData();
+        res.json({ pricing });
+    } catch (err) {
+        console.error('API pricing error:', err.message);
+        res.status(500).json({ message: 'Failed to load pricing data' });
+    }
+});
+
+// Legacy endpoint retained for backward compatibility
+app.get('/pricing', async (req, res) => {
+    try {
+        const pricing = await getPricingData();
+        res.json({ pricing });
+    } catch (err) {
+        console.error('Legacy pricing endpoint error:', err.message);
+        res.status(500).json({ message: 'Failed to load pricing data' });
+    }
 });
 
 // Register endpoint with PostgreSQL
 app.post('/register', [
     body('email').isEmail().normalizeEmail(),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    body('name').optional().trim().isLength({ max: 100 })
+    body('name').optional().trim().isLength({ max: 100 }),
+    body('phone').trim().notEmpty().withMessage('Phone is required').isLength({ max: 30 }),
+    body('country').trim().notEmpty().withMessage('Country is required').isLength({ max: 100 }),
+    body('referralId').optional().trim().isLength({ max: 20 })
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -804,8 +1131,11 @@ app.post('/register', [
     try {
         // Check database connection first
         await checkDatabase();
-        
-    const { email, password, name } = req.body;
+        const { email, password, referralId } = req.body;
+        const name = sanitizeString(req.body.name || '');
+        const phone = sanitizeOptionalString(req.body.phone);
+        const country = sanitizeOptionalString(req.body.country);
+        const referralIdRaw = normalizeReferralCode(referralId);
 
         // Check if user exists
         const { rows: existingUsers } = await pool.query(
@@ -814,24 +1144,65 @@ app.post('/register', [
         );
 
         if (existingUsers.length > 0) {
-        return res.status(400).json({ message: 'Email already exists' });
-    }
+            return res.status(400).json({ message: 'Email already exists' });
+        }
 
         // Hash password
-        const hashedPassword = bcrypt.hashSync(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         // Generate verification token
         const verificationToken = crypto.randomBytes(32).toString('hex');
         const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
         const verificationLink = `${baseUrl}/verify?token=${verificationToken}`;
 
-        // Create user with $5 bonus (unverified by default)
-        const { rows: newUser } = await pool.query(
-            `INSERT INTO users (email, password, name, balance, bonus, verification_token)
-             VALUES ($1, $2, $3, $4, $5, $6)
-             RETURNING id, email, name, balance, bonus, admin_approved, created_at`,
-            [sanitizeString(email), hashedPassword, sanitizeString(name || ''), 5, 5, verificationToken]
-        );
+        const client = await pool.connect();
+        let referralCode = '';
+
+        try {
+            await client.query('BEGIN');
+
+            let referredByUserId = null;
+            if (referralIdRaw) {
+                const refLookup = await client.query(
+                    'SELECT id FROM users WHERE referral_code = $1',
+                    [referralIdRaw]
+                );
+                if (refLookup.rows.length > 0) {
+                    referredByUserId = refLookup.rows[0].id;
+                }
+            }
+
+            const insertResult = await client.query(
+                `INSERT INTO users (email, password, name, phone, country, balance, bonus, verification_token, referred_by)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                 RETURNING id, email, name, created_at`,
+                [
+                    sanitizeString(email),
+                    hashedPassword,
+                    name || null,
+                    phone || null,
+                    country || null,
+                    5,
+                    5,
+                    verificationToken,
+                    referredByUserId
+                ]
+            );
+
+            const createdUser = insertResult.rows[0];
+            referralCode = await generateReferralCode();
+            await client.query(
+                'UPDATE users SET referral_code = $1 WHERE id = $2',
+                [referralCode, createdUser.id]
+            );
+
+            await client.query('COMMIT');
+        } catch (txErr) {
+            await client.query('ROLLBACK');
+            throw txErr;
+        } finally {
+            client.release();
+        }
 
         // Send verification email
         const verifyHtml = emailTemplates.verifyEmail.verifyEmail(email, verificationLink);
@@ -928,11 +1299,34 @@ app.get('/verify', async (req, res) => {
             return res.status(200).send('<html><body><h1>Account Already Verified</h1><p>Your account is already verified. You can <a href="/dashboard/index.html">log in</a> now.</p></body></html>');
         }
 
-        // Verify user
-        await pool.query(
-            'UPDATE users SET verified = TRUE, verification_token = NULL WHERE id = $1',
-            [user.id]
-        );
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            await client.query(
+                'UPDATE users SET verified = TRUE, verification_token = NULL WHERE id = $1',
+                [user.id]
+            );
+
+            if (user.referred_by && !user.referral_bonus_awarded) {
+                try {
+                    await awardReferralBonus(user.referred_by, user.email, client);
+                    await client.query(
+                        'UPDATE users SET referral_bonus_awarded = TRUE WHERE id = $1',
+                        [user.id]
+                    );
+                } catch (bonusErr) {
+                    console.error('Referral bonus error:', bonusErr.message);
+                }
+            }
+
+            await client.query('COMMIT');
+        } catch (txErr) {
+            await client.query('ROLLBACK');
+            throw txErr;
+        } finally {
+            client.release();
+        }
 
         res.status(200).send('<html><body><h1>Email Verified Successfully!</h1><p>Your account has been verified. You can now <a href="/dashboard/index.html">log in</a> to your account.</p></body></html>');
     } catch (err) {
@@ -1185,7 +1579,7 @@ app.post('/deposit', [
 // Investment endpoint with PostgreSQL
 app.post('/invest', [
     body('email').isEmail().normalizeEmail(),
-    body('plan').isIn(Object.keys(profitRates)).withMessage('Invalid investment plan'),
+    body('plan').isIn(pricingPlanNames).withMessage('Invalid pricing option'),
     body('amount').isFloat({ min: 1 }).withMessage('Amount must be at least $1')
 ], async (req, res) => {
     const errors = validationResult(req);
@@ -1219,6 +1613,30 @@ app.post('/invest', [
             });
         }
 
+        const pricingOptions = await getPricingData();
+        const selectedPlan = pricingOptions.find(option => option.name === plan);
+
+        if (!selectedPlan) {
+            return res.status(400).json({ message: 'Invalid pricing option' });
+        }
+
+        const minAmount = Number(selectedPlan.minAmount || 0);
+        const hasUpperBound = selectedPlan.maxAmount !== null && selectedPlan.maxAmount !== undefined;
+        const maxAmount = hasUpperBound ? Number(selectedPlan.maxAmount) : Number.MAX_SAFE_INTEGER;
+
+        if (numericAmount < minAmount || numericAmount > maxAmount) {
+            const minLabel = `$${minAmount.toLocaleString()}`;
+            if (hasUpperBound) {
+                const maxLabel = `$${Number(selectedPlan.maxAmount).toLocaleString()}`;
+                return res.status(400).json({
+                    message: `Amount must be between ${minLabel} and ${maxLabel} for ${plan}`
+                });
+            }
+            return res.status(400).json({
+                message: `Amount must be at least ${minLabel} for ${plan}`
+            });
+        }
+
         // Calculate available balance
         const profits = await calculateUserProfits(user.id);
         const availableBalance = Number(user.balance || 0) + profits.totalProfit;
@@ -1237,7 +1655,7 @@ app.post('/invest', [
         }
 
         // Create investment
-        const dailyPercent = profitRates[plan];
+        const dailyPercent = Number(selectedPlan.dailyPercent || 0);
         const { rows: investment } = await pool.query(
             `INSERT INTO investments (user_id, plan, amount, daily_percent, days, start_date, profit)
              VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -1587,6 +2005,9 @@ app.get('/dashboard', [
             timestamp: txn.created_at.getTime()
         }));
         
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const referralLink = user.referral_code ? `${baseUrl}/register.html?ref=${user.referral_code}` : '';
+
         const responseData = {
             email: user.email, 
             name: user.name || '', 
@@ -1601,7 +2022,16 @@ app.get('/dashboard', [
             totalDeposits: calculatedTotalDeposits,
             dailyEarnings: profits.dailyEarnings,
             balance: balance,
-            adminApproved: user.admin_approved || false
+            adminApproved: user.admin_approved || false,
+            phone: user.phone || '',
+            country: user.country || '',
+            referralCode: user.referral_code || '',
+            referralLink,
+            kycStatus: user.kyc_status || 'pending',
+            kycFullName: user.kyc_full_name || '',
+            kycFrontUrl: user.kyc_front_url || '',
+            kycBackUrl: user.kyc_back_url || '',
+            verified: !!user.verified
         };
         
         res.json(responseData);
@@ -1756,8 +2186,11 @@ app.get('/api/user/:email', async (req, res) => {
         
         console.log(`[API] Formatted ${formattedTransactions.length} transactions for user ${user.id}`);
         
-        const { password: _, ...userData } = {
-            ...user,
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const referralLink = user.referral_code ? `${baseUrl}/register.html?ref=${user.referral_code}` : '';
+
+        const { password: _, verification_token: __, reset_token: ___, ...userData } = {
+            id: user.id,
             email: user.email,
             name: user.name,
             profileImage: user.profile_image || '',
@@ -1772,7 +2205,17 @@ app.get('/api/user/:email', async (req, res) => {
             bonus: bonus,
             totalDeposits: calculatedTotalDeposits,
             dailyEarnings: profits.dailyEarnings,
-            adminApproved: user.admin_approved || false
+            adminApproved: user.admin_approved || false,
+            phone: user.phone || '',
+            country: user.country || '',
+            referralCode: user.referral_code || '',
+            referralLink,
+            referredBy: user.referred_by || null,
+            kycStatus: user.kyc_status || 'pending',
+            kycFullName: user.kyc_full_name || '',
+            kycFrontUrl: user.kyc_front_url || '',
+            kycBackUrl: user.kyc_back_url || '',
+            verified: !!user.verified
         };
         
         res.json(userData);
@@ -1785,7 +2228,7 @@ app.get('/api/user/:email', async (req, res) => {
 // POST invest (API version)
 app.post('/api/invest', [
     body('email').isEmail().normalizeEmail(),
-    body('plan').notEmpty(),
+    body('plan').isIn(pricingPlanNames).withMessage('Invalid pricing option'),
     body('amount').isFloat({ min: 1 })
 ], async (req, res) => {
     const errors = validationResult(req);
@@ -1818,24 +2261,28 @@ app.post('/api/invest', [
             });
         }
 
-        // Validate plan
-        const planRanges = {
-            'Starter Plan': { min: 50, max: 499 },
-            'Bronze Plan': { min: 500, max: 999 },
-            'Silver Plan': { min: 1000, max: 1999 },
-            'Gold Plan': { min: 2000, max: 3999 },
-            'Diamond Plan': { min: 4000, max: 6999 },
-            'Elite Plan': { min: 7000, max: 999999 }
-        };
+        // Validate pricing selection
+        const pricingOptions = await getPricingData();
+        const selectedPlan = pricingOptions.find(option => option.name === plan);
 
-        const planRange = planRanges[plan];
-        if (!planRange) {
-            return res.status(400).json({ message: 'Invalid investment plan' });
+        if (!selectedPlan) {
+            return res.status(400).json({ message: 'Invalid pricing option' });
         }
 
-        if (numericAmount < planRange.min || numericAmount > planRange.max) {
-            return res.status(400).json({ 
-                message: `Amount must be between $${planRange.min} and $${planRange.max} for ${plan}` 
+        const minAmount = Number(selectedPlan.minAmount || 0);
+        const hasUpperBound = selectedPlan.maxAmount !== null && selectedPlan.maxAmount !== undefined;
+        const maxAmount = hasUpperBound ? Number(selectedPlan.maxAmount) : Number.MAX_SAFE_INTEGER;
+
+        if (numericAmount < minAmount || numericAmount > maxAmount) {
+            const minLabel = `$${minAmount.toLocaleString()}`;
+            if (hasUpperBound) {
+                const maxLabel = `$${Number(selectedPlan.maxAmount).toLocaleString()}`;
+                return res.status(400).json({
+                    message: `Amount must be between ${minLabel} and ${maxLabel} for ${plan}`
+                });
+            }
+            return res.status(400).json({
+                message: `Amount must be at least ${minLabel} for ${plan}`
             });
         }
 
@@ -1857,7 +2304,7 @@ app.post('/api/invest', [
         }
 
         // Create investment
-        const dailyPercent = profitRates[plan] || 0;
+        const dailyPercent = Number(selectedPlan.dailyPercent || 0);
         const { rows: investment } = await pool.query(
             `INSERT INTO investments (user_id, plan, amount, daily_percent, days, start_date, profit)
              VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -2158,6 +2605,114 @@ app.put('/api/user/:email/update', [
         res.json({ message: 'User updated successfully', user: updatedUsers[0] });
     } catch (err) {
         console.error('Update user API error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/user/:email/kyc', kycUpload, async (req, res) => {
+    try {
+        const { email } = req.params;
+        const fullName = sanitizeString(req.body.fullName || '');
+
+        if (!fullName) {
+            return res.status(400).json({ message: 'Full name is required for KYC submission' });
+        }
+
+        const { rows: users } = await pool.query(
+            'SELECT * FROM users WHERE email = $1',
+            [email]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const user = users[0];
+        const frontFile = req.files && req.files.kycFront ? req.files.kycFront[0] : null;
+        const backFile = req.files && req.files.kycBack ? req.files.kycBack[0] : null;
+
+        if (!frontFile || !backFile) {
+            return res.status(400).json({ message: 'Front and back ID images are required' });
+        }
+
+        const frontPath = `/uploads/kyc/${frontFile.filename}`;
+        const backPath = `/uploads/kyc/${backFile.filename}`;
+
+        // Clean up previously uploaded files if they exist
+        const previousFiles = [user.kyc_front_url, user.kyc_back_url]
+            .filter(Boolean)
+            .map(filePath => path.join(__dirname, 'public', filePath));
+
+        for (const filePath of previousFiles) {
+            try {
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+            } catch (fsErr) {
+                console.error('Failed to remove old KYC file:', fsErr.message);
+            }
+        }
+
+        await pool.query(
+            `UPDATE users
+             SET kyc_full_name = $1,
+                 kyc_front_url = $2,
+                 kyc_back_url = $3,
+                 kyc_status = $4,
+                 kyc_submitted_at = NOW(),
+                 kyc_reviewed_at = NULL,
+                 kyc_reviewer_email = NULL
+             WHERE id = $5`,
+            [fullName, frontPath, backPath, 'submitted', user.id]
+        );
+
+        res.json({
+            message: 'KYC documents submitted successfully. We will review them shortly.',
+            kycStatus: 'submitted',
+            kycFullName: fullName,
+            kycFrontUrl: frontPath,
+            kycBackUrl: backPath
+        });
+    } catch (err) {
+        console.error('KYC submission error:', err);
+        res.status(500).json({ message: 'Failed to submit KYC documents' });
+    }
+});
+
+app.post('/api/admin/users/:id/kyc-status', adminAuth, [
+    body('status').isIn(['approved', 'rejected']).withMessage('Invalid KYC status')
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: errors.array()[0].msg });
+    }
+
+    try {
+        const { id } = req.params;
+        const status = req.body.status;
+        const reviewer = req.headers['x-admin-username'] || req.headers['username'] || 'admin';
+
+        const { rows: users } = await pool.query(
+            'SELECT id FROM users WHERE id = $1',
+            [id]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        await pool.query(
+            `UPDATE users
+             SET kyc_status = $1,
+                 kyc_reviewed_at = NOW(),
+                 kyc_reviewer_email = $2
+             WHERE id = $3`,
+            [status, reviewer, id]
+        );
+
+        res.json({ message: `KYC ${status} successfully`, kycStatus: status });
+    } catch (err) {
+        console.error('Admin KYC status update error:', err);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -3254,32 +3809,47 @@ async function initializeInvestmentPlans() {
       return;
     }
     
-    const { rows: existing } = await pool.query('SELECT COUNT(*) as count FROM investment_plans');
-    if (parseInt(existing[0].count) === 0) {
-      const defaultPlans = [
-        ['Starter Plan', 50, 499, 0.02, 7],
-        ['Bronze Plan', 500, 999, 0.025, 7],
-        ['Silver Plan', 1000, 1999, 0.03, 7],
-        ['Gold Plan', 2000, 3999, 0.035, 7],
-        ['Platinum Plan', 4000, 6999, 0.04, 7],
-        ['Diamond Plan', 7000, null, 0.05, 7]
-      ];
-      
-      for (const plan of defaultPlans) {
-        try {
-          await pool.query(
-            'INSERT INTO investment_plans (plan_name, min_amount, max_amount, daily_percent, duration) VALUES ($1, $2, $3, $4, $5)',
-            plan
-          );
-        } catch (insertErr) {
-          // Skip if plan already exists
-          if (insertErr.code !== '23505') {
-            console.error('Error inserting plan:', plan[0], insertErr.message);
-          }
-        }
+    const upsertQuery = `
+      INSERT INTO investment_plans (plan_name, min_amount, max_amount, daily_percent, duration, is_active)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      ON CONFLICT (plan_name)
+      DO UPDATE SET 
+        min_amount = EXCLUDED.min_amount,
+        max_amount = EXCLUDED.max_amount,
+        daily_percent = EXCLUDED.daily_percent,
+        duration = EXCLUDED.duration,
+        is_active = EXCLUDED.is_active,
+        updated_at = CURRENT_TIMESTAMP;
+    `;
+
+    for (const plan of PRICING_PLANS) {
+      try {
+        await pool.query(upsertQuery, [
+          plan.name,
+          plan.minAmount,
+          plan.maxAmount,
+          plan.dailyPercent,
+          plan.duration,
+          true
+        ]);
+      } catch (err) {
+        console.error('Error syncing pricing plan:', plan.name, err.message);
       }
-      console.log('✅ Default investment plans initialized');
     }
+
+    try {
+      const placeholders = PRICING_PLANS.map((_, idx) => `$${idx + 1}`).join(', ');
+      await pool.query(
+        `UPDATE investment_plans 
+         SET is_active = FALSE 
+         WHERE plan_name NOT IN (${placeholders})`,
+        PRICING_PLANS.map(plan => plan.name)
+      );
+    } catch (err) {
+      console.warn('Unable to deactivate legacy pricing plans:', err.message);
+    }
+
+    console.log('✅ Pricing catalog synchronized');
   } catch (err) {
     console.error('Investment plans init error:', err.message);
     // Don't crash - plans can be added manually later
