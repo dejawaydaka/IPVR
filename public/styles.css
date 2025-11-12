@@ -1,3 +1,10 @@
+.text-light {
+    color: #ffffff !important;
+}
+
+.text-muted-light {
+    color: rgba(255, 255, 255, 0.78) !important;
+}
 /* Reset and Base Styles */
 * {
     margin: 0;
@@ -85,9 +92,9 @@ section {
 }
 
 .home-page .header .container {
-    padding: 1.6rem 36px;
+    padding: 1.4rem 32px;
     align-items: center;
-    gap: 2.5rem;
+    gap: 2rem;
 }
 
 .home-page .nav-link {
@@ -344,27 +351,21 @@ section {
 }
 
 .home-page .nav-actions {
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.75rem;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
     margin-left: auto;
-    min-width: 280px;
-    width: auto;
+    min-width: auto;
 }
 
 .home-page .nav-buttons {
-    gap: 1.25rem;
-    width: 100%;
+    gap: 1rem;
+    width: auto;
     justify-content: flex-end;
 }
 
 .nav-actions .btn {
     min-width: 110px;
-}
-
-.home-page .nav-buttons .btn {
-    min-width: 140px;
-    padding: 0.85rem 1.75rem;
 }
 
 .translator-anchor {
@@ -386,9 +387,9 @@ section {
 
 .home-page .nav-actions .translator-anchor {
     position: relative;
-    transform: translateY(10%);
-    margin-top: 0.25rem;
-    width: 100%;
+    transform: translateY(120%);
+    margin-top: 0;
+    width: auto;
 }
 
 .translator-anchor-footer {
@@ -889,6 +890,7 @@ section {
     max-width: 900px;
     margin: 0 auto;
     text-align: center;
+    color: #ffffff;
 }
 
 .pricing-hero-title {
@@ -896,7 +898,7 @@ section {
     font-weight: 700;
     line-height: 1.2;
     margin-bottom: 1.5rem;
-    color: var(--text-primary);
+    color: #ffffff;
 }
 
 .pricing-hero-subtitle {
@@ -946,7 +948,7 @@ section {
 /* Pricing Section */
 .pricing-section {
     padding: 6rem 0;
-    background: var(--bg-primary);
+    background: linear-gradient(135deg, rgba(6, 21, 15, 0.96), rgba(3, 9, 6, 0.98));
 }
 
 .pricing-grid {
@@ -1000,7 +1002,7 @@ section {
 .pricing-card h3 {
     margin: 0;
     font-size: 1.65rem;
-    color: var(--text-primary);
+    color: #ffffff;
 }
 
 .pricing-badge {
@@ -1049,7 +1051,7 @@ section {
 .metric-value {
     font-size: 1.15rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: #ffffff;
 }
 
 .metric-emphasis {
@@ -2361,7 +2363,7 @@ section {
 
     .home-page .mobile-menu-toggle {
         color: #ffffff;
-        transform: translateY(-43%);
+        transform: translateY(-37%);
     }
 
     .home-page .mobile-menu-toggle i {
