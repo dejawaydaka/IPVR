@@ -344,21 +344,27 @@ section {
 }
 
 .home-page .nav-actions {
-    flex-direction: row;
-    align-items: center;
-    gap: 1.5rem;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.75rem;
     margin-left: auto;
-    min-width: auto;
+    min-width: 280px;
+    width: auto;
 }
 
 .home-page .nav-buttons {
-    gap: 1rem;
-    width: auto;
+    gap: 1.25rem;
+    width: 100%;
     justify-content: flex-end;
 }
 
 .nav-actions .btn {
     min-width: 110px;
+}
+
+.home-page .nav-buttons .btn {
+    min-width: 140px;
+    padding: 0.85rem 1.75rem;
 }
 
 .translator-anchor {
@@ -380,9 +386,9 @@ section {
 
 .home-page .nav-actions .translator-anchor {
     position: relative;
-    transform: translateY(120%);
-    margin-top: 0;
-    width: auto;
+    transform: translateY(10%);
+    margin-top: 0.25rem;
+    width: 100%;
 }
 
 .translator-anchor-footer {

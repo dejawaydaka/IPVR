@@ -10,8 +10,11 @@ function getQueryParam(name) {
 function storeReferralFromQuery() {
     const referralParam = getQueryParam('ref');
     if (referralParam) {
-        localStorage.setItem(REFERRAL_STORAGE_KEY, referralParam.toUpperCase());
+        const normalized = referralParam.toUpperCase();
+        localStorage.setItem(REFERRAL_STORAGE_KEY, normalized);
+        return normalized;
     }
+    return null;
 }
 
 function setupTranslator() {
@@ -894,11 +897,16 @@ window.openServiceModal = openServiceModal;
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    storeReferralFromQuery();
+    const referralFromUrl = storeReferralFromQuery();
     setupTranslator();
     window.realSphere = new RealSphere();
     // Bind plan buttons after DOM content is ready
     window.realSphere.bindPlanButtons();
+    if (referralFromUrl && window.realSphere) {
+        setTimeout(() => {
+            window.realSphere.showModal('registerModal');
+        }, 200);
+    }
 });
 
 // Add some additional utility functions
