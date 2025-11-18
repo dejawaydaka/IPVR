@@ -957,7 +957,26 @@ async function calculateUserProfits(userId) {
         let dailyEarnings = 0;
         
         investments.forEach(inv => {
-            const elapsed = Math.floor((now - inv.start_date) / (1000 * 60 * 60 * 24));
+            // Handle start_date - can be Date object, timestamp (number), or string
+            let startDate;
+            if (inv.start_date instanceof Date) {
+                startDate = inv.start_date.getTime();
+            } else if (typeof inv.start_date === 'number') {
+                startDate = inv.start_date;
+            } else if (typeof inv.start_date === 'string') {
+                startDate = new Date(inv.start_date).getTime();
+            } else {
+                console.warn('[calculateUserProfits] Invalid start_date format:', inv.start_date);
+                startDate = now; // Default to now to avoid errors
+            }
+            
+            // Ensure startDate is valid
+            if (isNaN(startDate) || startDate <= 0) {
+                console.warn('[calculateUserProfits] Invalid start_date value:', inv.start_date);
+                startDate = now;
+            }
+            
+            const elapsed = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
             const days = Number(inv.days) || 7;
             const rate = Number(inv.daily_percent) || 0;
             const base = Number(inv.amount) || 0;
@@ -976,7 +995,7 @@ async function calculateUserProfits(userId) {
             dailyEarnings: Math.round(dailyEarnings * 100) / 100 
         };
     } catch (err) {
-        console.error('Error calculating profits:', err);
+        console.error('[calculateUserProfits] Error calculating profits:', err);
         return { totalProfit: 0, dailyEarnings: 0 };
     }
 }
@@ -2107,14 +2126,28 @@ app.get('/api/user/:email', async (req, res) => {
         const bonus = Number(user.bonus || 0);
         
         // Format data for frontend
-        const formattedInvestments = investments.map(inv => ({
-            plan: inv.plan,
-            amount: Number(inv.amount),
-            startDate: inv.start_date,
-            days: inv.days,
-            profit: Number(inv.profit || 0),
-            dailyPercent: Number(inv.daily_percent)
-        }));
+        const formattedInvestments = investments.map(inv => {
+            // Handle start_date - convert to timestamp if it's a Date object
+            let startDate;
+            if (inv.start_date instanceof Date) {
+                startDate = inv.start_date.getTime();
+            } else if (typeof inv.start_date === 'number') {
+                startDate = inv.start_date;
+            } else if (typeof inv.start_date === 'string') {
+                startDate = new Date(inv.start_date).getTime();
+            } else {
+                startDate = Date.now();
+            }
+            
+            return {
+                plan: inv.plan,
+                amount: Number(inv.amount),
+                startDate: startDate,
+                days: inv.days,
+                profit: Number(inv.profit || 0),
+                dailyPercent: Number(inv.daily_percent)
+            };
+        });
         
         const formattedWithdrawals = withdrawals.map(wd => {
             let timestamp;
@@ -2220,8 +2253,12 @@ app.get('/api/user/:email', async (req, res) => {
         
         res.json(userData);
     } catch (err) {
-        console.error('Get user API error:', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error('[API] Get user API error:', err);
+        console.error('[API] Error stack:', err.stack);
+        res.status(500).json({ 
+            message: 'Server error while fetching user data',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 });
 

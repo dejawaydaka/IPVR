@@ -66,12 +66,15 @@ function showLoading(show = true) {
     // Check if this is an admin page - reduce timeout to 1 second
     const isAdminPage = window.location.pathname.includes('/admin/') || 
                         localStorage.getItem('isAdmin') === 'true';
-    const timeout = isAdminPage ? 1000 : 1200;
+    // Increased timeout for dashboard to allow API calls to complete (20 seconds)
+    const timeout = isAdminPage ? 1000 : 20000;
     
     if (show) {
       overlay.classList.remove('hidden');
-      // Safety timeout: hide loader after timeout (1s for admin, 1.2s for regular)
+      // Safety timeout: hide loader after timeout (1s for admin, 20s for regular dashboard)
+      // This prevents infinite loading if API call fails silently
       loadingTimeout = setTimeout(() => {
+        console.warn('[Loading] Safety timeout reached, hiding loader');
         overlay.classList.add('hidden');
         loadingTimeout = null;
       }, timeout);
@@ -188,9 +191,25 @@ async function fetchUserData(email) {
   try {
     showLoading(true);
     console.log('[API] Fetching user data for:', email);
-    const response = await fetch(`${API_BASE}/api/user/${encodeURIComponent(email)}`, {
-      cache: 'no-store'
-    });
+    
+    // Add timeout to prevent infinite loading
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+    
+    let response;
+    try {
+      response = await fetch(`${API_BASE}/api/user/${encodeURIComponent(email)}`, {
+        cache: 'no-store',
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        throw new Error('Request timeout. Please check your connection and try again.');
+      }
+      throw fetchError;
+    }
     
     console.log('[API] Response status:', response.status);
     
