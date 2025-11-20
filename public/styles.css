@@ -288,6 +288,16 @@ img[src*="1.png"] {
     background: transparent !important;
     background-color: transparent !important;
     mix-blend-mode: normal;
+    object-fit: contain;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+/* Ensure logo containers also have transparent backgrounds */
+.nav-brand .logo,
+.dashboard-logo {
+    background: transparent !important;
+    background-color: transparent !important;
 }
 
 .nav-brand .logo i {

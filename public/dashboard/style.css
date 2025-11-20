@@ -104,6 +104,16 @@ img[src*="Rswhite.png"] {
   background: transparent !important;
   background-color: transparent !important;
   mix-blend-mode: normal;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Ensure logo containers also have transparent backgrounds */
+.dashboard-logo,
+.sidebar .logo-img {
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 .sidebar .user-display {
