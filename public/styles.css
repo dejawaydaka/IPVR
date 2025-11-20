@@ -280,6 +280,15 @@ section {
     margin-top: 17.4px;
 }
 
+/* Ensure logo images have transparent backgrounds */
+.nav-brand .logo img,
+.dashboard-logo img,
+img[alt="RealSphere"] {
+    background: transparent !important;
+    background-color: transparent !important;
+    mix-blend-mode: normal;
+}
+
 .nav-brand .logo i {
     color: var(--primary-color);
     font-size: 1.8rem;

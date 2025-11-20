@@ -417,7 +417,7 @@ function renderSidebar(currentPage = '') {
     <aside class="sidebar">
       <div style="text-align: center; margin-bottom: 1rem;">
         <a href="../index.html" style="display: inline-block; cursor: pointer;">
-          <img src="../Rswhite.png" alt="RealSphere" style="height: 72px; width: auto; max-width: 100%;">
+          <img src="../rsbwhite.png" alt="RealSphere" style="height: 72px; width: auto; max-width: 100%; background: transparent;">
         </a>
       </div>
       <div class="user-display">

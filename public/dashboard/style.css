@@ -92,6 +92,17 @@ body[data-theme="light"]::before {
   height: 50px;
   width: auto;
   max-width: 100%;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Ensure all RealSphere logo images have transparent backgrounds */
+img[alt="RealSphere"],
+img[src*="rsbwhite.png"],
+img[src*="Rswhite.png"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  mix-blend-mode: normal;
 }
 
 .sidebar .user-display {
@@ -1442,6 +1453,8 @@ body.pricing-page .modal-content .summary-item strong {
   height: 65px;
   width: auto;
   max-width: 216px;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 /* Hide dashboard logo when sidebar is open (behind menu) */
