@@ -98,6 +98,7 @@ body[data-theme="light"]::before {
 
 /* Ensure all RealSphere logo images have transparent backgrounds */
 img[alt="RealSphere"],
+img[src*="1.png"],
 img[src*="rsbwhite.png"],
 img[src*="Rswhite.png"] {
   background: transparent !important;

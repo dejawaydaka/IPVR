@@ -68,7 +68,7 @@ function renderAdminSidebar(currentPage = '') {
     <aside class="sidebar">
       <div style="text-align: center; margin-bottom: 1rem;">
         <a href="${isInAdminFolder ? '../../' : '../'}index.html" style="display: inline-block; cursor: pointer;">
-          <img src="${isInAdminFolder ? '../' : ''}../rsbwhite.png" alt="RealSphere" style="height: 50px; width: auto; max-width: 100%; background: transparent;">
+          <img src="${isInAdminFolder ? '../' : ''}../1.png" alt="RealSphere" style="height: 50px; width: auto; max-width: 100%; background: transparent;">
         </a>
       </div>
       <div class="user-display">

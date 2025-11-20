@@ -283,7 +283,8 @@ section {
 /* Ensure logo images have transparent backgrounds */
 .nav-brand .logo img,
 .dashboard-logo img,
-img[alt="RealSphere"] {
+img[alt="RealSphere"],
+img[src*="1.png"] {
     background: transparent !important;
     background-color: transparent !important;
     mix-blend-mode: normal;
