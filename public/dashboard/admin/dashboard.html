@@ -83,6 +83,30 @@
       </div>
     </div>
 
+    <!-- KYC Approval Section -->
+    <div class="admin-section">
+      <h2><i class="fas fa-id-card"></i> Pending KYC Requests</h2>
+      <div class="table-section">
+        <table id="pendingKycTable">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Email</th>
+              <th>Full Name (KYC)</th>
+              <th>Submitted</th>
+              <th>ID Documents</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="pendingKycBody">
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 2rem;">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Pending Deposits Section -->
     <div class="admin-section">
       <h2><i class="fas fa-inbox"></i> Pending Deposits</h2>
@@ -234,12 +258,145 @@
           renderConfirmedWithdrawals(confirmedWithdrawalsData.withdrawals || []);
         }
         
+        // Fetch pending KYC requests
+        const kycRes = await adminFetch('/api/admin/kyc/pending');
+        if (kycRes.ok) {
+          const kycData = await kycRes.json();
+          renderPendingKyc(kycData.kycRequests || []);
+        }
+        
       } catch (error) {
         console.error('Dashboard data load error:', error);
         showToast(error.message || 'Failed to load dashboard data', 'error');
       } finally {
         showLoading(false);
       }
+    }
+
+    // Render pending KYC requests
+    function renderPendingKyc(kycRequests) {
+      const tbody = document.getElementById('pendingKycBody');
+      if (!tbody) return;
+      
+      if (!kycRequests || kycRequests.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 2rem;">
+              <div class="empty-state">
+                <i class="fas fa-check-circle" style="font-size: 3rem; color: rgba(255, 255, 255, 0.3); margin-bottom: 1rem;"></i>
+                <p>No pending KYC requests</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      tbody.innerHTML = kycRequests.map(kyc => {
+        const submittedDate = kyc.kyc_submitted_at 
+          ? new Date(kyc.kyc_submitted_at).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          : 'N/A';
+        
+        const frontUrl = kyc.kyc_front_url || '';
+        const backUrl = kyc.kyc_back_url || '';
+        
+        return `
+          <tr>
+            <td>${sanitizeHTML(kyc.name || kyc.email?.split('@')[0] || 'User')}</td>
+            <td>${sanitizeHTML(kyc.email || 'N/A')}</td>
+            <td>${sanitizeHTML(kyc.kyc_full_name || 'N/A')}</td>
+            <td>${submittedDate}</td>
+            <td>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                ${frontUrl ? `<a href="${frontUrl}" target="_blank" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;"><i class="fas fa-eye"></i> Front</a>` : ''}
+                ${backUrl ? `<a href="${backUrl}" target="_blank" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;"><i class="fas fa-eye"></i> Back</a>` : ''}
+              </div>
+            </td>
+            <td>
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-primary" onclick="approveKyc(${kyc.id})" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                  <i class="fas fa-check"></i> Approve
+                </button>
+                <button class="btn btn-outline" onclick="rejectKyc(${kyc.id})" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                  <i class="fas fa-times"></i> Reject
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Approve KYC
+    async function approveKyc(userId) {
+      if (!confirm('Are you sure you want to approve this KYC request?')) {
+        return;
+      }
+      
+      try {
+        showLoading(true);
+        const res = await adminFetch(`/api/admin/users/${userId}/kyc-status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'approved' })
+        });
+        
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({ message: 'Failed to approve KYC' }));
+          throw new Error(error.message || 'Failed to approve KYC');
+        }
+        
+        showToast('KYC approved successfully', 'success');
+        loadDashboardData(); // Reload to refresh the list
+      } catch (error) {
+        console.error('Approve KYC error:', error);
+        showToast(error.message || 'Failed to approve KYC', 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    // Reject KYC
+    async function rejectKyc(userId) {
+      if (!confirm('Are you sure you want to reject this KYC request?')) {
+        return;
+      }
+      
+      try {
+        showLoading(true);
+        const res = await adminFetch(`/api/admin/users/${userId}/kyc-status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'rejected' })
+        });
+        
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({ message: 'Failed to reject KYC' }));
+          throw new Error(error.message || 'Failed to reject KYC');
+        }
+        
+        showToast('KYC rejected successfully', 'success');
+        loadDashboardData(); // Reload to refresh the list
+      } catch (error) {
+        console.error('Reject KYC error:', error);
+        showToast(error.message || 'Failed to reject KYC', 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    // Helper function to sanitize HTML
+    function sanitizeHTML(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
     }
 
     if (document.readyState === 'loading') {

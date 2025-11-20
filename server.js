@@ -2716,6 +2716,24 @@ app.post('/api/user/:email/kyc', kycUpload, async (req, res) => {
     }
 });
 
+// Get pending KYC requests
+app.get('/api/admin/kyc/pending', adminAuth, async (req, res) => {
+    try {
+        const { rows: kycRequests } = await pool.query(
+            `SELECT id, email, name, kyc_full_name, kyc_front_url, kyc_back_url, 
+                    kyc_status, kyc_submitted_at, kyc_reviewed_at, kyc_reviewer_email
+             FROM users 
+             WHERE kyc_status = 'submitted' 
+             ORDER BY kyc_submitted_at DESC`
+        );
+
+        res.json({ kycRequests });
+    } catch (err) {
+        console.error('Admin KYC fetch error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 app.post('/api/admin/users/:id/kyc-status', adminAuth, [
     body('status').isIn(['approved', 'rejected']).withMessage('Invalid KYC status')
 ], async (req, res) => {
