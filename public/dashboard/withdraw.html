@@ -136,7 +136,7 @@
 
       try {
         const userData = await fetchUserData(currentUser.email);
-        const totalBalance = Number(userData.balance || 0);
+        const totalBalance = Number(userData.totalBalance || userData.balance || 0);
         
         document.getElementById('availableBalance').textContent = `Available Balance: $${totalBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         document.getElementById('availableBalanceAmount').textContent = totalBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -194,7 +194,7 @@
 
       try {
         const userData = await fetchUserData(currentUser.email);
-        const totalBalance = Number(userData.balance || 0);
+        const totalBalance = Number(userData.totalBalance || userData.balance || 0);
 
         if (amount > totalBalance) {
           showError(`Insufficient balance. Available: $${totalBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}`);

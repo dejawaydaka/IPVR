@@ -37,7 +37,7 @@
 - ✅ **Real-time metrics** - Total Balance, Investment, Daily Earnings, Bonus, Deposits, Profit
 - ✅ **Chart.js integration** - Daily earnings trend and portfolio composition charts
 - ✅ **Investment system** - 6 plans with range validation
-- ✅ **Withdrawal system** - Profit-based validation
+- ✅ **Withdrawal system** - Total balance validation (balance + profit)
 - ✅ **Deposit system** - File upload for payment proof
 - ✅ **Theme persistence** - Dark/light theme saved in localStorage
 

@@ -61,7 +61,7 @@ public/dashboard/
 - Status: **FULLY FUNCTIONAL** (requires multer - installed)
 
 ### ✅ **POST `/api/withdraw`**
-- Validates withdrawal amount vs available profit
+- Validates withdrawal amount vs total available balance (balance + profit)
 - Records withdrawal request
 - Stores crypto type and wallet address
 - Returns success message
@@ -117,11 +117,11 @@ public/dashboard/
 - Withdrawal form with amount input
 - Crypto type dropdown (BTC, ETH, USDT, SOL)
 - Wallet address input
-- Validation: amount ≤ available profit
+- Validation: amount ≤ total available balance (balance + profit)
 - Withdrawal history table
 
 **Data Binding:**
-- ✅ Available profit fetched from `/api/user/:email`
+- ✅ Total available balance fetched from `/api/user/:email`
 - ✅ Withdrawal submission via `/api/withdraw`
 - ✅ History displayed from user data
 - ✅ Form validation working

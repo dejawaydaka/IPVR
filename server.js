@@ -2559,13 +2559,14 @@ app.post('/api/withdraw', [
 
         const user = users[0];
 
-        // Calculate available profit
+        // Calculate total available balance (balance + profit)
         const profits = await calculateUserProfits(user.id);
-        const totalProfit = profits.totalProfit;
+        const balance = Number(user.balance || 0);
+        const totalAvailableBalance = balance + profits.totalProfit;
 
-        if (numericAmount > totalProfit) {
+        if (numericAmount > totalAvailableBalance) {
             return res.status(400).json({ 
-                message: `Insufficient profit. Available: $${totalProfit.toFixed(2)}` 
+                message: `Insufficient balance. Available: $${totalAvailableBalance.toFixed(2)}` 
             });
         }
 
