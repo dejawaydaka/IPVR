@@ -801,10 +801,14 @@ app.get('/news/:slug.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public/news/template.html'));
 });
 
-// Rate limiting
+// Rate limiting (skip admin routes as they have their own auth)
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // limit each IP to 100 requests per windowMs
+    max: 100, // limit each IP to 100 requests per windowMs
+    skip: (req) => {
+        // Skip rate limiting for admin routes
+        return req.path.startsWith('/admin') || req.originalUrl.startsWith('/api/admin');
+    }
 });
 app.use('/api/', limiter);
 
