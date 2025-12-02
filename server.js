@@ -3252,11 +3252,41 @@ app.post('/api/admin/withdrawals/:id/approve', adminAuth, async (req, res) => {
         
         const withdrawal = withdrawals[0];
         
-        // Update withdrawal status
-        await pool.query(
-            'UPDATE withdrawals SET status = $1 WHERE id = $2',
-            ['approved', id]
-        );
+        // Check if withdrawal is already approved
+        if (withdrawal.status === 'approved') {
+            return res.status(400).json({ message: 'Withdrawal is already approved' });
+        }
+        
+        // Only process if withdrawal was pending
+        if (withdrawal.status === 'pending') {
+            // Update withdrawal status
+            await pool.query(
+                'UPDATE withdrawals SET status = $1 WHERE id = $2',
+                ['approved', id]
+            );
+
+            // Deduct withdrawal amount from user's balance
+            await pool.query(
+                'UPDATE users SET balance = balance - $1 WHERE id = $2',
+                [withdrawal.amount, withdrawal.user_id]
+            );
+
+            // Create transaction record for the withdrawal
+            await pool.query(
+                `INSERT INTO transactions (user_id, type, amount, currency, status, description, reference_id, reference_type, created_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+                [
+                    withdrawal.user_id,
+                    'withdrawal',
+                    withdrawal.amount,
+                    'USD',
+                    'completed',
+                    `Withdrawal - ${withdrawal.crypto_type} to ${withdrawal.wallet_address.substring(0, 10)}...`,
+                    withdrawal.id,
+                    'withdrawal'
+                ]
+            );
+        }
 
         // Get user email for notification
         const { rows: users } = await pool.query(
@@ -3275,7 +3305,6 @@ app.post('/api/admin/withdrawals/:id/approve', adminAuth, async (req, res) => {
             await sendEmail(users[0].email, 'Withdrawal Approved', withdrawalHtml);
         }
         
-        // Deduct from user's total profit (already deducted when created, just update status)
         res.json({ message: 'Withdrawal approved successfully' });
     } catch (err) {
         console.error('Approve withdrawal error:', err);
